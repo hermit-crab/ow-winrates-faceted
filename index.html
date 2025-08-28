@@ -54,6 +54,14 @@ body {
 .info {
     font-size: 80%;
     opacity: 40%;
+    margin-bottom: 10px;
+}
+.info a {
+    color: black;
+    text-decoration: dotted;
+}
+.info a:hover {
+    text-decoration: underline;
 }
 .entry {
     padding-bottom: 3px;
@@ -134,7 +142,7 @@ body {
     </div>
 </div>
 <div class="info">
-    dataset timestamp: <span id="datasetTs"></span> | TIP: double click any plot to toggle own relative scale
+    dataset timestamp: <span id="datasetTs"></span> | <a href="https://overwatch.blizzard.com/en-us/rates/">official source</a> | tip: double click any plot to toggle own relative scale
 </div>
 <div id="plots"></div>
 </div>
