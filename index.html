@@ -142,13 +142,13 @@ body {
 <script src="winrate-data.js"></script>
 <script>
 
-const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'];
-const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8ae960', '#8d71fe'];
-const REGIONS = ['Americas', 'Asia', 'Europe']
-const REGION_COLORS = ['#f14141', '#ffac00', '#3c90ff']
-const PLATFORMS = ['PC', 'Console']
-// const PLATFORM_COLORS = ['#16a616', '#8d71fe']
-const PLATFORM_COLORS = ['black', 'gray']
+const TIERS = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"];
+const TIER_COLORS = ["#cd7850", "#c4c6c8", "#d8a43d", "#98d8b9", "#5f9ff0", "#8ae960", "#8d71fe"];
+const REGIONS = ["Americas", "Asia", "Europe"];
+const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
+const PLATFORMS = ["PC", "Console"];
+// const PLATFORM_COLORS = ["#16a616", "#8d71fe"]
+const PLATFORM_COLORS = ["black", "gray"];
 
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
@@ -176,23 +176,23 @@ function processData(rawData) {
     }
     const heroes = Object.fromEntries(rawData[0]["rates"].map(e => 
         [e.hero.name, {role: e.hero.role.toLowerCase(), iconUrl: e.hero.portrait, roleIconUrl: e.hero.roleIcon}]
-    ))
+    ));
     return [heroes, rows];
 }
 
 function setup() {
     Object.entries(conf).forEach(([k, elem]) => {
-        if (k === 'filterRole') elem.addEventListener('change', toggleRoles);
-        else elem.addEventListener('change', render);
+        if (k === "filterRole") elem.addEventListener("change", toggleRoles);
+        else elem.addEventListener("change", render);
     });
     render();
 }
 
 function toggleRoles() {
     const confVal = conf.filterRole.value;
-    [...document.querySelectorAll('.entry')].forEach(elem => {
-        if (confVal == 'all') elem.style.display = 'flex';
-        else elem.style.display = elem.className.includes(confVal) ? 'flex' : 'none';
+    [...document.querySelectorAll(".entry")].forEach(elem => {
+        if (confVal == "all") elem.style.display = "flex";
+        else elem.style.display = elem.className.includes(confVal) ? "flex" : "none";
     });
 }
 
@@ -203,51 +203,51 @@ function render(settings) {
     let [heroes, entries] = processData(rawData);
 
     const facet = conf.facet.value;
-    const facetField = facet === 'region' ? 'region' : 'input';
-    const facetValues = facet === 'region' ? REGIONS : PLATFORMS;
-    const facetColors = facet === 'region' ? REGION_COLORS : PLATFORM_COLORS;
-    const filterFacet = facet === 'region' ? 'input' : 'region';
-    const filterFacetValue = facet === 'region' ? conf.filterPlatform.value : conf.filterRegion.value;
-    const sortFacet = facet === 'region' ? 'region' : 'input';
-    const sortFacetValue = facet === 'region' ? conf.sortingRegion.value : conf.sortingPlatform.value;
-    conf.filterRegion.disabled = facet === 'region';
-    conf.filterPlatform.disabled = facet === 'platform';
-    conf.sortingRegion.disabled = facet === 'platform' || conf.sortingMode.value === 'name';
-    conf.sortingPlatform.disabled = facet === 'region' || conf.sortingMode.value === 'name';
+    const facetField = facet === "region" ? "region" : "input";
+    const facetValues = facet === "region" ? REGIONS : PLATFORMS;
+    const facetColors = facet === "region" ? REGION_COLORS : PLATFORM_COLORS;
+    const filterFacet = facet === "region" ? "input" : "region";
+    const filterFacetValue = facet === "region" ? conf.filterPlatform.value : conf.filterRegion.value;
+    const sortFacet = facet === "region" ? "region" : "input";
+    const sortFacetValue = facet === "region" ? conf.sortingRegion.value : conf.sortingPlatform.value;
+    conf.filterRegion.disabled = facet === "region";
+    conf.filterPlatform.disabled = facet === "platform";
+    conf.sortingRegion.disabled = facet === "platform" || conf.sortingMode.value === "name";
+    conf.sortingPlatform.disabled = facet === "region" || conf.sortingMode.value === "name";
     tsElem.innerHTML = moment(dataTs * 1000).fromNow();
     tsElem.title = moment(dataTs * 1000).toString();
 
     entries = entries.filter(e => (
-        e.rq === '2' &&
-        e.role === 'All' &&
-        e.map === 'all-maps' &&
+        e.rq === "2" &&
+        e.role === "All" &&
+        e.map === "all-maps" &&
         e[filterFacet] == filterFacetValue
     ));
 
     let names = Object.keys(heroes);
     names.sort();
-    if (conf.sortingMode.value !== 'name') {
+    if (conf.sortingMode.value !== "name") {
         let sorterKey = names.map(name => {
             const selected = entries.filter(d => d.name === name && d[sortFacet] === sortFacetValue);
-            const e_b = selected.filter(e => e.tier === 'Bronze')[0];
-            const e_m = selected.filter(e => e.tier === 'Master')[0];
-            const e_all = selected.filter(e => e.tier === 'All')[0];
-            if (conf.sortingMode.value === 'wr-delta') return e_m.winrate - e_b.winrate;
-            if (conf.sortingMode.value === 'pr-delta') return e_m.pickrate - e_b.pickrate;
-            if (conf.sortingMode.value === 'wr-all') return e_all.winrate;
-            if (conf.sortingMode.value === 'pr-all') return e_all.pickrate;
+            const e_b = selected.filter(e => e.tier === "Bronze")[0];
+            const e_m = selected.filter(e => e.tier === "Master")[0];
+            const e_all = selected.filter(e => e.tier === "All")[0];
+            if (conf.sortingMode.value === "wr-delta") return e_m.winrate - e_b.winrate;
+            if (conf.sortingMode.value === "pr-delta") return e_m.pickrate - e_b.pickrate;
+            if (conf.sortingMode.value === "wr-all") return e_all.winrate;
+            if (conf.sortingMode.value === "pr-all") return e_all.pickrate;
         })
         names.sort((a, b) => sorterKey[names.indexOf(a)] - sorterKey[names.indexOf(b)])
     }
     if (conf.sortingReverse.checked) names.reverse();
     
-    entries = entries.filter(e => e.tier !== 'All');
+    entries = entries.filter(e => e.tier !== "All");
 
     plotsElem.innerHTML = "";
     names.forEach(name => {
         const nameEntries = entries.filter(d => d.name === name);
 
-        const [tracesWr, tracesPr] = ['winrate', 'pickrate'].map(type => {
+        const [tracesWr, tracesPr] = ["winrate", "pickrate"].map(type => {
             return facetValues.map(value => {
                 const facetEntries = nameEntries.filter(d => d[facetField] === value);
                 return {
@@ -267,14 +267,14 @@ function render(settings) {
             <img src="${heroes[name].iconUrl}" title="${name}">
             <div class="plot plot-wr"></div>
             <div class="plot plot-pr"></div>
-        `
+        `;
         plotsElem.appendChild(container);
 
         const plotCommon = {
             margin: { l: 20, r: 0, t: 0, b: 15 },
             showlegend: false,
-            plot_bgcolor: '#fafafa',
-            paper_bgcolor: '#fafafa',
+            plot_bgcolor: "#fafafa",
+            paper_bgcolor: "#fafafa",
             hovermode: "x",
             xaxis: { 
                 range: [-.5, TIERS.length-.5],
@@ -286,7 +286,7 @@ function render(settings) {
             },
         }
         const plotConf = { displayModeBar: false, responsive: true }
-        Plotly.newPlot(container.querySelector('.plot-wr'), tracesWr, {
+        Plotly.newPlot(container.querySelector(".plot-wr"), tracesWr, {
             ...plotCommon,
             yaxis: { range: [40, 60], zeroline: false, tickfont: { size: 10 }},
             shapes: [{
@@ -294,7 +294,7 @@ function render(settings) {
                 line: {color: "black", width: .5, dash: "dot"}
             }],
         }, plotConf);
-        Plotly.newPlot(container.querySelector('.plot-pr'), tracesPr, {
+        Plotly.newPlot(container.querySelector(".plot-pr"), tracesPr, {
             ...plotCommon,
             yaxis: { range: [-1, 40], zeroline: false, tickfont: { size: 10 }},
             shapes: [{
