@@ -8,7 +8,7 @@ from tqdm import tqdm
 params = {
     'map': ['all-maps'],
     'role': ['All'],
-    'rq': ['0', '2'], # 0=QP; 2=Comp; 1=?
+    'rq': ['0', '1'], # 0=QP; 1=Comp; 2=?
     'input': ['Console', 'PC'],
     'region': ['Americas', 'Asia', 'Europe'],
     'tier': ['All', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'],
@@ -41,8 +41,16 @@ for combo in tqdm(list(combinations(list(params.items()))), 'Loading data...'):
         data = rq.get(url).text
         with open(cache_fpath, 'w') as f:
             f.write(data)
-        pass
-    facets.append((combo, json.loads(data)))
+    data = json.loads(data)
+    if isinstance(data, list) and not data:
+        print('==x no data for', url)
+        continue
+    expected = sorted(combo)
+    reported = sorted(data['selected'].items())
+    if expected != reported:
+        print(f'==x unexpected selection reported, expected:\n{expected}\ngot:\n{reported}')
+    data['_url'] = url
+    facets.append((combo, data))
 
 ts = os.stat(cache_fpath).st_mtime
 

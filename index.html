@@ -172,7 +172,7 @@ const conf = {
 function processData(rawData) {
     const rows = [];
     for (facet of rawData) {
-        for (entry of facet["rates"]) rows.push({...entry.cells, ...facet.selected});
+        for (entry of facet["rates"]) rows.push({...entry.cells, ...facet.selected, url: facet._url});
     }
     const heroes = Object.fromEntries(rawData[0]["rates"].map(e => 
         [e.hero.name, {role: e.hero.role.toLowerCase(), iconUrl: e.hero.portrait, roleIconUrl: e.hero.roleIcon}]
@@ -218,7 +218,7 @@ function render(settings) {
     tsElem.title = moment(dataTs * 1000).toString();
 
     entries = entries.filter(e => (
-        e.rq === "2" &&
+        e.rq === "1" &&
         e.role === "All" &&
         e.map === "all-maps" &&
         e[filterFacet] == filterFacetValue
