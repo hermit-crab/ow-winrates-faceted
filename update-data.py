@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+from itertools import product
 
 import requests as rq
 from tqdm import tqdm
@@ -17,18 +18,13 @@ base_url = 'https://overwatch.blizzard.com/en-us/rates/data/'
 cache_dir = 'cache'
 os.makedirs(cache_dir, exist_ok=True)
 
-def combinations(params, parents=None):
-    parents = parents or []
-    name, vals = params[0]
-    for val in vals:
-        new_parents = [*parents, (name, val)]
-        if not params[1:]:
-            yield new_parents
-        else:
-            yield from combinations(params[1:], parents=new_parents)
+def combinations(params):
+    keys = list(params.keys())
+    for values in product(*params.values()):
+        yield list(zip(keys, values))
 
 facets = []
-for combo in tqdm(list(combinations(list(params.items()))), 'Loading data...'):
+for combo in tqdm(list(combinations(params)), 'Loading data...'):
     url = base_url + '?' + '&'.join(f'{k}={v}' for k, v in combo)
     key = 'owwr.' + hashlib.md5(url.encode('utf8')).hexdigest() + '.json'
     cache_fpath = os.path.join(cache_dir, key)
