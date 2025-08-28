@@ -1,7 +1,6 @@
 import hashlib
 import json
 import os
-import time
 
 import requests as rq
 from tqdm import tqdm
@@ -45,5 +44,7 @@ for combo in tqdm(list(combinations(list(params.items()))), 'Loading data...'):
         pass
     facets.append((combo, json.loads(data)))
 
+ts = os.stat(cache_fpath).st_mtime
+
 with open('winrate-data.js', 'w') as f:
-    f.write('const DATA=' + json.dumps([time.time()] + [facet[1] for facet in facets]))
+    f.write('const DATA=' + json.dumps([ts] + [facet[1] for facet in facets]))
