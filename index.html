@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Overwatch 2 Winrates & Pickrates : Faceted</title>
+<title>Overwatch 2 Winrates & Pickrates – Faceted</title>
 <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
 <script src="https://momentjs.com/downloads/moment.min.js"></script>
 <style>
@@ -98,7 +98,7 @@ body {
         Facet
         <select id="facet">
             <option value="region" selected>Region</option>
-            <option value="platform">Platform</option>
+            <option value="input">Platform</option>
         </select>
     </div>
     <div class="conf-block">
@@ -142,7 +142,9 @@ body {
     </div>
 </div>
 <div class="info">
-    dataset timestamp: <span id="datasetTs"></span> | <a href="https://overwatch.blizzard.com/en-us/rates/">official source</a> | tip: double click any plot to toggle own relative scale
+    dataset timestamp: <span id="datasetTs"></span> |
+    <a href="https://overwatch.blizzard.com/en-us/rates/">official source</a> |
+    tip: double click any plot to toggle own relative scale
 </div>
 <div id="plots"></div>
 </div>
@@ -166,7 +168,7 @@ const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
 const xticklabels = TIERS.map(n => `<span style="color: ${tiersInfo[n].color}; font-weight: bold">${tiersInfo[n].shorthand}</span>`);
 const plotsElem = document.getElementById("plots");
 const tsElem = document.getElementById("datasetTs");
-const conf = {
+const confElems = {
     facet: document.getElementById("facet"),
     filterRole: document.getElementById("filterRole"),
     filterPlatform: document.getElementById("filterPlatform"),
@@ -175,7 +177,7 @@ const conf = {
     sortingRegion: document.getElementById("sortingRegion"),
     sortingPlatform: document.getElementById("sortingPlatform"),
     sortingReverse: document.getElementById("sortingReverse"),
-}
+};
 
 function processData(rawData) {
     const rows = [];
@@ -189,7 +191,7 @@ function processData(rawData) {
 }
 
 function setup() {
-    Object.entries(conf).forEach(([k, elem]) => {
+    Object.entries(confElems).forEach(([k, elem]) => {
         if (k === "filterRole") elem.addEventListener("change", toggleRoles);
         else elem.addEventListener("change", render);
     });
@@ -197,73 +199,94 @@ function setup() {
 }
 
 function toggleRoles() {
-    const confVal = conf.filterRole.value;
+    const confVal = confElems.filterRole.value;
     [...document.querySelectorAll(".entry")].forEach(elem => {
         if (confVal == "all") elem.style.display = "flex";
         else elem.style.display = elem.className.includes(confVal) ? "flex" : "none";
     });
 }
 
-function render(settings) {
-    // XXX: I fully re-render everything on any config changes, yes, that is not very good
-    const rawData = DATA.slice();
-    const dataTs = rawData.shift();
-    let [heroes, entries] = processData(rawData);
+function handleConf() {
+    const conf = {
+        facet: confElems.facet.value,
+        sortingMode: confElems.sortingMode.value,
+        sortingReverse: sortingReverse.checked,
+    }
+    if (conf.facet === 'region') {
+        conf.facetValues = REGIONS;
+        conf.facetColors = REGION_COLORS;
+        conf.filterFacet = "input";
+        conf.filterFacetValue = confElems.filterPlatform.value;
+        conf.sortFacet = 'region';
+        conf.sortFacetValue = confElems.sortingRegion.value;
+    } else if (conf.facet === 'input') {
+        conf.facetValues = PLATFORMS;
+        conf.facetColors = PLATFORM_COLORS;
+        conf.filterFacet = "region";
+        conf.filterFacetValue = confElems.filterRegion.value;
+        conf.sortFacet = 'input';
+        conf.sortFacetValue = confElems.sortingPlatform.value;
+    }
+    confElems.filterRegion.disabled = conf.facet === "region";
+    confElems.filterPlatform.disabled = conf.facet === "input";
+    confElems.sortingRegion.disabled = conf.facet === "input" || conf.sortingMode === "name";
+    confElems.sortingPlatform.disabled = conf.facet === "region" || conf.sortingMode === "name";
+    return conf;
+}
 
-    const facet = conf.facet.value;
-    const facetField = facet === "region" ? "region" : "input";
-    const facetValues = facet === "region" ? REGIONS : PLATFORMS;
-    const facetColors = facet === "region" ? REGION_COLORS : PLATFORM_COLORS;
-    const filterFacet = facet === "region" ? "input" : "region";
-    const filterFacetValue = facet === "region" ? conf.filterPlatform.value : conf.filterRegion.value;
-    const sortFacet = facet === "region" ? "region" : "input";
-    const sortFacetValue = facet === "region" ? conf.sortingRegion.value : conf.sortingPlatform.value;
-    conf.filterRegion.disabled = facet === "region";
-    conf.filterPlatform.disabled = facet === "platform";
-    conf.sortingRegion.disabled = facet === "platform" || conf.sortingMode.value === "name";
-    conf.sortingPlatform.disabled = facet === "region" || conf.sortingMode.value === "name";
+function render(settings) {
+    // DATA is original API data put into a list, first element is extraction timestamp
+    const rawData = DATA.slice();
+    const dataTs = rawData.shift(); 
+    const conf = handleConf();
+    const [heroes, allEntries] = processData(rawData);
+
     tsElem.innerHTML = moment(dataTs * 1000).fromNow();
     tsElem.title = moment(dataTs * 1000).toString();
 
-    entries = entries.filter(e => (
+    // ==> Filter
+    let entries = allEntries.filter(e => (
         e.rq === "1" &&
         e.role === "All" &&
         e.map === "all-maps" &&
-        e[filterFacet] == filterFacetValue
+        e[conf.filterFacet] == conf.filterFacetValue
     ));
-
+    
+    // ==> Sort
     let names = Object.keys(heroes);
     names.sort();
-    if (conf.sortingMode.value !== "name") {
+    if (conf.sortingMode !== "name") {
         let sorterKey = names.map(name => {
-            const selected = entries.filter(d => d.name === name && d[sortFacet] === sortFacetValue);
+            const selected = entries.filter(d => d.name === name && d[conf.sortFacet] === conf.sortFacetValue);
             const e_b = selected.filter(e => e.tier === "Bronze")[0];
             const e_m = selected.filter(e => e.tier === "Master")[0];
             const e_all = selected.filter(e => e.tier === "All")[0];
-            if (conf.sortingMode.value === "wr-delta") return e_m.winrate - e_b.winrate;
-            if (conf.sortingMode.value === "pr-delta") return e_m.pickrate - e_b.pickrate;
-            if (conf.sortingMode.value === "wr-all") return e_all.winrate;
-            if (conf.sortingMode.value === "pr-all") return e_all.pickrate;
+            if (conf.sortingMode === "wr-delta") return e_m.winrate - e_b.winrate;
+            if (conf.sortingMode === "pr-delta") return e_m.pickrate - e_b.pickrate;
+            if (conf.sortingMode === "wr-all") return e_all.winrate;
+            if (conf.sortingMode === "pr-all") return e_all.pickrate;
         })
         names.sort((a, b) => sorterKey[names.indexOf(a)] - sorterKey[names.indexOf(b)])
     }
-    if (conf.sortingReverse.checked) names.reverse();
+    if (conf.sortingReverse) names.reverse();
     
     entries = entries.filter(e => e.tier !== "All");
 
+    // ==> Render plots
+    // XXX: I fully re-render everything on any config changes, yes, that is not very good
     plotsElem.innerHTML = "";
     names.forEach(name => {
         const nameEntries = entries.filter(d => d.name === name);
 
         const [tracesWr, tracesPr] = ["winrate", "pickrate"].map(type => {
-            return facetValues.map(value => {
-                const facetEntries = nameEntries.filter(d => d[facetField] === value);
+            return conf.facetValues.map(value => {
+                const facetEntries = nameEntries.filter(d => d[conf.facet] === value);
                 return {
                     x: facetEntries.map(d => tiersInfo[d.tier].idx),
                     y: facetEntries.map(d => d[type]),
                     mode: "lines+markers",
-                    name: value,
-                    line: {color: facetColors[facetValues.indexOf(value)], width: 1.2},
+                    name: value == 'PC' ? 'KB&M' : value,
+                    line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
                     marker: {size: 4},
                 };
             });
