@@ -290,12 +290,12 @@ function render(settings) {
     names.forEach(name => {
         const nameEntries = entries.filter(d => d.name === name);
 
-        const [tracesWr, tracesPr] = ["winrate", "pickrate"].map(type => {
+        const [tracesWr, tracesPr] = ["winrate", "pickrate"].map(valtype => {
             return conf.facetValues.map(value => {
-                const facetEntries = nameEntries.filter(d => d[conf.facet] === value);
+                const facetEntries = nameEntries.filter(d => d[conf.facet] === value && d[valtype] != -1);
                 return {
                     x: facetEntries.map(d => tiersInfo[d.tier].idx),
-                    y: facetEntries.map(d => d[type]),
+                    y: facetEntries.map(d => d[valtype]),
                     mode: "lines+markers",
                     name: value == 'PC' ? 'KB&M' : value,
                     line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
@@ -321,6 +321,7 @@ function render(settings) {
             plot_bgcolor: "#fafafa",
             paper_bgcolor: "#fafafa",
             hovermode: "x",
+            dragmode: "pan",
             xaxis: { 
                 range: [-.5, TIERS.length-.5],
                 fixedrange: true,
