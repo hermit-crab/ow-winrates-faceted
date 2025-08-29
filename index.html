@@ -17,6 +17,10 @@ body {
     flex-direction: column;
     align-items: center;
 }
+.main > * {
+    /* prevent flexbox centering overflow issue */
+    margin: auto;
+}
 .title {
     font-size: 20px;
     text-transform: uppercase;
@@ -34,7 +38,7 @@ body {
     margin-right: 10px;
 }
 .conf {
-    margin: 10px 0;
+    margin: 10px auto;
     font-size: 90%;
     display: flex;
     flex-wrap: wrap;
@@ -70,6 +74,14 @@ body {
     height: 100px;
     width: 700px;
     display: flex;
+    position: relative;
+}
+.entry .hero-name {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    font-size: 80%;
+    color: #0000;
 }
 .entry img {
     height: 80%;
@@ -235,7 +247,7 @@ function handleConf() {
 }
 
 function render(settings) {
-    // DATA is original API data put into a list, first element is extraction timestamp
+    // DATA is the original API data put into a list, first element is extraction timestamp
     const rawData = DATA.slice();
     const dataTs = rawData.shift(); 
     const conf = handleConf();
@@ -295,10 +307,12 @@ function render(settings) {
         const container = document.createElement("div");
         container.className = `entry role-${heroes[name].role}`;
         container.innerHTML = `
-            <img src="${heroes[name].iconUrl}" title="${name}">
-            <div class="plot plot-wr"></div>
-            <div class="plot plot-pr"></div>
+        <div class="hero-name" title="${name}">${name}</div>
+        <img src="${heroes[name].iconUrl}" title="${name}">
+        <div class="plot plot-wr"></div>
+        <div class="plot plot-pr"></div>
         `;
+        // TODO: maybe add position number near hero icon (note: roles are filtered through css)
         plotsElem.appendChild(container);
 
         const plotCommon = {
