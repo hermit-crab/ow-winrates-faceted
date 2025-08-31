@@ -1,0 +1,2 @@
+![screenshot](preview.jpg)
+Data is stored in an external place for ease of updates (see `EXTERNAL_JSONP_SRC` in [index.html](index.html)), to use local data execute `localStorage.uselocal="1"` in browser JS console.
