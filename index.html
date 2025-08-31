@@ -230,6 +230,7 @@ const confElems = {
     sortingPlatform: document.getElementById("sortingPlatform"),
     sortingReverse: document.getElementById("sortingReverse"),
 };
+const plotConf = {displayModeBar: false, responsive: true};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
     showlegend: false,
@@ -246,7 +247,7 @@ const plotLayout = {
         ticktext: xticklabels,
         tickfont: {size: 9},
     },
-}
+};
 let rawData, dataTs, heroes, allEntries, lastViewKey;
 
 function processRawData(rawData) {
@@ -262,6 +263,13 @@ function processRawData(rawData) {
 
 function setup() {
     Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener("change", render));
+    document.addEventListener("click", function(e) {
+        // for phones: unhover plot if clicked off it
+        [...document.querySelectorAll(".plot")].forEach(elem => {
+            if (elem.contains(e.target)) return;
+            Plotly.Fx.unhover(elem);
+        });
+    });
     loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
 }
 
@@ -281,14 +289,6 @@ function jsonp(data) {
     tsElem.title = moment(dataTs * 1000).toString();
     renderHeroes();
     render();
-}
-
-function toggleRoles() {
-    const confVal = confElems.filterRole.value;
-    [...document.querySelectorAll(".entry")].forEach(elem => {
-        if (confVal == "all") elem.style.display = "flex";
-        else elem.style.display = elem.className.includes(confVal) ? "flex" : "none";
-    });
 }
 
 function handleConf() {
@@ -349,7 +349,7 @@ function render() {
     
     // ==> Sort heroes
     let names = Object.keys(heroes);
-    if (conf.filterRole !== 'all') names = names.filter(name => heroes[name].role == conf.filterRole);
+    if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
     names.sort(); // sort alphabetically by default
     if (conf.sortingMode !== "name") {
         let sorterKey = names.map(name => {
@@ -366,7 +366,7 @@ function render() {
     }
     if (conf.sortingReverse) names.reverse();
     Object.entries(heroes).forEach(([name, hero]) => {
-        names.includes(name) ? hero.elem.classList.remove('hidden') : hero.elem.classList.add('hidden');
+        names.includes(name) ? hero.elem.classList.remove("hidden") : hero.elem.classList.add("hidden");
         hero.elem.style.order = names.indexOf(name);
     });
     
@@ -395,7 +395,6 @@ function render() {
             });
         });
 
-        const plotConf = {displayModeBar: false, responsive: true}
         Plotly.react(heroes[name].elem.querySelector(".plot-wr"), tracesWr, {
             ...plotLayout,
             datarevision: Date.now(),
