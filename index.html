@@ -199,7 +199,8 @@ const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
 const PLATFORMS = ["PC", "Console"];
 // const PLATFORM_COLORS = ["#16a616", "#8d71fe"]
 const PLATFORM_COLORS = ["black", "gray"];
-const DEFAULT_JSONP_SRC = "winrate-data.js";
+const LOCAL_JSONP_SRC = "winrate-data.js";
+const EXTERNAL_JSONP_SRC = "https://hermit-crab.neocities.org/winrate-data.js?nocache=" + parseInt(Date.now()/1000/60/60);
 
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
@@ -237,13 +238,13 @@ function setup() {
         if (k === "filterRole") elem.addEventListener("change", toggleRoles);
         else elem.addEventListener("change", render);
     });
-    loadData();
+    loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
 }
 
 function loadData(jsonpSrc) {
     const script = document.createElement("script");
     script.type = "text/javascript";
-    script.src = jsonpSrc || DEFAULT_JSONP_SRC;
+    script.src = jsonpSrc;
     document.body.appendChild(script);
 }
 
