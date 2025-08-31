@@ -186,7 +186,6 @@ body {
 <div id="plots"></div>
 </div>
 
-<script src="winrate-data.js"></script>
 <script>
 
 const TIERS = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"];
@@ -196,6 +195,7 @@ const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
 const PLATFORMS = ["PC", "Console"];
 // const PLATFORM_COLORS = ["#16a616", "#8d71fe"]
 const PLATFORM_COLORS = ["black", "gray"];
+const DEFAULT_JSONP_SRC = 'winrate-data.js';
 
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
@@ -215,6 +215,7 @@ const confElems = {
     sortingPlatform: document.getElementById("sortingPlatform"),
     sortingReverse: document.getElementById("sortingReverse"),
 };
+let rawData, dataTs;
 
 function processData(rawData) {
     const rows = [];
@@ -232,6 +233,18 @@ function setup() {
         if (k === "filterRole") elem.addEventListener("change", toggleRoles);
         else elem.addEventListener("change", render);
     });
+    loadData();
+}
+
+function loadData(jsonpSrc) {
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = jsonpSrc || DEFAULT_JSONP_SRC;
+    document.body.appendChild(script);
+}
+
+function jsonp(data) {
+    rawData = data;
     render();
 }
 
@@ -271,11 +284,10 @@ function handleConf() {
     return conf;
 }
 
-function render(settings) {
+function render() {
     // DATA is the original API data put into a list, first element is extraction timestamp
-    const rawData = DATA.slice();
-    const dataTs = rawData.shift(); 
     const conf = handleConf();
+    const dataTs = rawData[0]._ts;
     const [heroes, allEntries] = processData(rawData);
 
     tsElem.innerHTML = moment(dataTs * 1000).fromNow();

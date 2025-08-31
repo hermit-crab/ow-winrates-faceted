@@ -24,13 +24,17 @@ def combinations(params):
         yield list(zip(keys, values))
 
 facets = []
-for combo in tqdm(list(combinations(params)), 'Loading data...'):
-    url = base_url + '?' + '&'.join(f'{k}={v}' for k, v in combo)
-    key = 'owwr.' + hashlib.md5(url.encode('utf8')).hexdigest() + '.json'
-    cache_fpath = os.path.join(cache_dir, key)
+cache_hits = 0
+rqs = []
+for combo in combinations(params):
     if ('rq', '0') in combo and ('tier', 'All') not in combo:
         continue
+    rqs.append((combo, base_url + '?' + '&'.join(f'{k}={v}' for k, v in combo)))
+for combo, url in tqdm(rqs, 'Loading data...'):
+    key = 'owwr.' + hashlib.md5(url.encode('utf8')).hexdigest() + '.json'
+    cache_fpath = os.path.join(cache_dir, key)
     if os.path.exists(cache_fpath):
+        cache_hits += 1
         with open(cache_fpath) as f:
             data = f.read()
     else:
@@ -46,9 +50,10 @@ for combo in tqdm(list(combinations(params)), 'Loading data...'):
     if expected != reported:
         print(f'==x unexpected selection reported, expected:\n{expected}\ngot:\n{reported}')
     data['_url'] = url
+    data['_ts'] = os.stat(cache_fpath).st_mtime
     facets.append((combo, data))
 
-ts = os.stat(cache_fpath).st_mtime
+print(f'Cache hits: {cache_hits}/{len(rqs)}')
 
 with open('winrate-data.js', 'w') as f:
-    f.write('const DATA=' + json.dumps([ts] + [facet[1] for facet in facets]))
+    f.write('jsonp(' + json.dumps([facet[1] for facet in facets]) + ')')
