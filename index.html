@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>Overwatch 2 Winrates & Pickrates – Faceted</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
 <script src="https://momentjs.com/downloads/moment.min.js"></script>
 <!-- basic analytics, just for me to know if page has any visitors and I need to maintain it -->
@@ -93,14 +94,23 @@ body {
     padding-left: 10px;
 }
 
+#plots {
+    margin-bottom: 200px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+
 .entry {
     padding-bottom: 3px;
     margin-top: 3px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.271);
     height: 100px;
-    width: 700px;
     display: flex;
     position: relative;
+}
+.entry.hidden {
+    display: none;
 }
 .entry .hero-name {
     position: absolute;
@@ -143,7 +153,7 @@ body {
     <div class="conf-block">
         Select
         <select id="filterRole">
-            <option value="all" selected>All</option>
+            <option value="all" selected>All Roles</option>
             <option value="support">Support</option>
             <option value="tank">Tank</option>
             <option value="damage">Damage</option>
@@ -220,7 +230,24 @@ const confElems = {
     sortingPlatform: document.getElementById("sortingPlatform"),
     sortingReverse: document.getElementById("sortingReverse"),
 };
-let rawData, dataTs, heroes, allEntries;
+const plotLayout = {
+    margin: { l: 20, r: 0, t: 0, b: 15 },
+    showlegend: false,
+    plot_bgcolor: "#fafafa",
+    paper_bgcolor: "#fafafa",
+    hovermode: "x",
+    dragmode: "pan",
+    yaxis: {zeroline: false, tickfont: {size: 10}},
+    xaxis: { 
+        range: [-.5, TIERS.length-.5],
+        fixedrange: true,
+        zeroline: false,
+        tickvals: TIERS.map((_, idx) => idx),
+        ticktext: xticklabels,
+        tickfont: {size: 9},
+    },
+}
+let rawData, dataTs, heroes, allEntries, lastViewKey;
 
 function processRawData(rawData) {
     const rows = [];
@@ -234,10 +261,7 @@ function processRawData(rawData) {
 }
 
 function setup() {
-    Object.entries(confElems).forEach(([k, elem]) => {
-        if (k === "filterRole") elem.addEventListener("change", toggleRoles);
-        else elem.addEventListener("change", render);
-    });
+    Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener("change", render));
     loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
 }
 
@@ -252,6 +276,10 @@ function loadData(jsonpSrc) {
 function jsonp(data) {
     rawData = data;
     [heroes, allEntries] = processRawData(rawData);
+    const dataTs = rawData[0]._ts;
+    tsElem.innerHTML = moment(dataTs * 1000).fromNow();
+    tsElem.title = moment(dataTs * 1000).toString();
+    renderHeroes();
     render();
 }
 
@@ -267,8 +295,9 @@ function handleConf() {
     const conf = {
         facet: confElems.facet.value,
         sortingMode: confElems.sortingMode.value,
-        sortingReverse: sortingReverse.checked,
-    }
+        sortingReverse: confElems.sortingReverse.checked,
+        filterRole: confElems.filterRole.value,
+    };
     if (conf.facet === "region") {
         conf.facetValues = REGIONS;
         conf.facetColors = REGION_COLORS;
@@ -291,14 +320,26 @@ function handleConf() {
     return conf;
 }
 
+function renderHeroes() {
+    plotsElem.innerHTML = "";
+    Object.entries(heroes).forEach(([name, hero]) => {
+        hero.elem = document.createElement("div");
+        hero.elem.className = `entry role-${hero.role}`;
+        hero.elem.innerHTML = `
+        <div class="hero-name" title="${name}">${name}</div>
+        <img src="${hero.iconUrl}" title="${name}">
+        <div class="plot plot-wr"></div>
+        <div class="plot plot-pr"></div>
+        `;
+        // TODO: maybe add position number near hero icon
+        plotsElem.appendChild(hero.elem);
+    });
+}
+
 function render() {
     const conf = handleConf();
-    const dataTs = rawData[0]._ts;
 
-    tsElem.innerHTML = moment(dataTs * 1000).fromNow();
-    tsElem.title = moment(dataTs * 1000).toString();
-
-    // ==> Filter
+    // ==> Filter entries
     let entries = allEntries.filter(e => (
         e.rq === "1" &&
         e.role === "All" &&
@@ -306,12 +347,13 @@ function render() {
         e[conf.filterFacet] == conf.filterFacetValue
     ));
     
-    // ==> Sort
+    // ==> Sort heroes
     let names = Object.keys(heroes);
-    names.sort();
+    if (conf.filterRole !== 'all') names = names.filter(name => heroes[name].role == conf.filterRole);
+    names.sort(); // sort alphabetically by default
     if (conf.sortingMode !== "name") {
         let sorterKey = names.map(name => {
-            const selected = entries.filter(d => d.name === name && d[conf.sortFacet] === conf.sortFacetValue);
+            const selected = entries.filter(e => e.name === name && e[conf.sortFacet] === conf.sortFacetValue);
             const e_b = selected.filter(e => e.tier === "Bronze")[0];
             const e_m = selected.filter(e => e.tier === "Master")[0];
             const e_all = selected.filter(e => e.tier === "All")[0];
@@ -323,76 +365,56 @@ function render() {
         names.sort((a, b) => sorterKey[names.indexOf(a)] - sorterKey[names.indexOf(b)])
     }
     if (conf.sortingReverse) names.reverse();
+    Object.entries(heroes).forEach(([name, hero]) => {
+        names.includes(name) ? hero.elem.classList.remove('hidden') : hero.elem.classList.add('hidden');
+        hero.elem.style.order = names.indexOf(name);
+    });
     
-    entries = entries.filter(e => e.tier !== "All");
-
-    // ==> Render plots
-    // XXX: I fully re-render everything on any config changes, yes, that is not very good
-    plotsElem.innerHTML = "";
+    // ==> Update plots
+    const viewKey = `${conf.facet}${conf.filterFacetValue}`
+    if (lastViewKey == viewKey) return; // no need to update if we're only sorting
+    lastViewKey = viewKey;
     names.forEach(name => {
-        const nameEntries = entries.filter(d => d.name === name);
+        const nameEntries = entries.filter(e => e.name === name);
 
         const [tracesWr, tracesPr] = ["winrate", "pickrate"].map(valtype => {
             return conf.facetValues.map(value => {
-                const facetEntries = nameEntries.filter(d => d[conf.facet] === value && d[valtype] != -1);
+                const facetEntries = nameEntries.filter(e => (
+                    e.tier !== "All" &&
+                    e[conf.facet] === value &&
+                    e[valtype] != -1
+                ));
                 return {
-                    x: facetEntries.map(d => tiersInfo[d.tier].idx),
-                    y: facetEntries.map(d => d[valtype]),
+                    x: facetEntries.map(e => tiersInfo[e.tier].idx),
+                    y: facetEntries.map(e => e[valtype]),
                     mode: "lines+markers",
                     name: value == "PC" ? "KB&M" : value,
                     line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
                     marker: {size: 4},
                 };
             });
-        })
-        
-        const container = document.createElement("div");
-        container.className = `entry role-${heroes[name].role}`;
-        container.innerHTML = `
-        <div class="hero-name" title="${name}">${name}</div>
-        <img src="${heroes[name].iconUrl}" title="${name}">
-        <div class="plot plot-wr"></div>
-        <div class="plot plot-pr"></div>
-        `;
-        // TODO: maybe add position number near hero icon (note: roles are filtered through css)
-        plotsElem.appendChild(container);
+        });
 
-        const plotCommon = {
-            margin: { l: 20, r: 0, t: 0, b: 15 },
-            showlegend: false,
-            plot_bgcolor: "#fafafa",
-            paper_bgcolor: "#fafafa",
-            hovermode: "x",
-            dragmode: "pan",
-            xaxis: { 
-                range: [-.5, TIERS.length-.5],
-                fixedrange: true,
-                zeroline: false,
-                tickvals: TIERS.map((_, idx) => idx),
-                ticktext: xticklabels,
-                tickfont: { size: 9 },
-            },
-        }
-        const plotConf = { displayModeBar: false, responsive: true }
-        Plotly.newPlot(container.querySelector(".plot-wr"), tracesWr, {
-            ...plotCommon,
-            yaxis: { range: [41, 60], zeroline: false, tickfont: { size: 10 }},
+        const plotConf = {displayModeBar: false, responsive: true}
+        Plotly.react(heroes[name].elem.querySelector(".plot-wr"), tracesWr, {
+            ...plotLayout,
+            datarevision: Date.now(),
+            yaxis: {range: [41, 60], ...plotLayout.yaxis},
             shapes: [{
                 type: "line", x0: -1, x1: 10, y0: 50, y1: 50,
                 line: {color: "black", width: .5, dash: "dot"}
             }],
         }, plotConf);
-        Plotly.newPlot(container.querySelector(".plot-pr"), tracesPr, {
-            ...plotCommon,
-            yaxis: { range: [-1, 40], zeroline: false, tickfont: { size: 10 }},
+        Plotly.react(heroes[name].elem.querySelector(".plot-pr"), tracesPr, {
+            ...plotLayout,
+            datarevision: Date.now(),
+            yaxis: {range: [-1, 40], ...plotLayout.yaxis},
             shapes: [{
                 type: "line", x0: -1, x1: 10, y0: 0, y1: 0,
                 line: {color: "black", width: .5, dash: "dot"}
             }],
         }, plotConf);
     });
-
-    toggleRoles();
 }
 
 setup();
