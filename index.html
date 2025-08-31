@@ -220,9 +220,9 @@ const confElems = {
     sortingPlatform: document.getElementById("sortingPlatform"),
     sortingReverse: document.getElementById("sortingReverse"),
 };
-let rawData, dataTs;
+let rawData, dataTs, heroes, allEntries;
 
-function processData(rawData) {
+function processRawData(rawData) {
     const rows = [];
     for (facet of rawData) {
         for (entry of facet["rates"]) rows.push({...entry.cells, ...facet.selected, url: facet._url});
@@ -242,6 +242,7 @@ function setup() {
 }
 
 function loadData(jsonpSrc) {
+    // DATA is the original API data put into a list
     const script = document.createElement("script");
     script.type = "text/javascript";
     script.src = jsonpSrc;
@@ -250,6 +251,7 @@ function loadData(jsonpSrc) {
 
 function jsonp(data) {
     rawData = data;
+    [heroes, allEntries] = processRawData(rawData);
     render();
 }
 
@@ -290,10 +292,8 @@ function handleConf() {
 }
 
 function render() {
-    // DATA is the original API data put into a list, first element is extraction timestamp
     const conf = handleConf();
     const dataTs = rawData[0]._ts;
-    const [heroes, allEntries] = processData(rawData);
 
     tsElem.innerHTML = moment(dataTs * 1000).fromNow();
     tsElem.title = moment(dataTs * 1000).toString();
