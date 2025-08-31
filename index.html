@@ -131,6 +131,10 @@ body {
     height: 100%;
     width: 300px;
 }
+svg.main-svg, svg.main-svg * {
+    /* allow xtick tooltipx overflow */
+    overflow: visible;
+}
 
 </style>
 </head>
@@ -374,7 +378,8 @@ function render() {
     const viewKey = `${conf.facet}${conf.filterFacetValue}`
     if (lastViewKey === viewKey) return; // no need to update if we're only sorting
     lastViewKey = viewKey;
-    names.forEach(name => {
+    names.forEach((name, idx) => {
+        heroes[name].elem.style.zIndex = names.length - idx;
         const nameEntries = entries.filter(e => e.name === name);
 
         const [tracesWr, tracesPr] = ["winrate", "pickrate"].map(valtype => {
