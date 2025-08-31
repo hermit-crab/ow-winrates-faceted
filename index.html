@@ -195,7 +195,7 @@ const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
 const PLATFORMS = ["PC", "Console"];
 // const PLATFORM_COLORS = ["#16a616", "#8d71fe"]
 const PLATFORM_COLORS = ["black", "gray"];
-const DEFAULT_JSONP_SRC = 'winrate-data.js';
+const DEFAULT_JSONP_SRC = "winrate-data.js";
 
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
@@ -237,8 +237,8 @@ function setup() {
 }
 
 function loadData(jsonpSrc) {
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
+    const script = document.createElement("script");
+    script.type = "text/javascript";
     script.src = jsonpSrc || DEFAULT_JSONP_SRC;
     document.body.appendChild(script);
 }
@@ -262,19 +262,19 @@ function handleConf() {
         sortingMode: confElems.sortingMode.value,
         sortingReverse: sortingReverse.checked,
     }
-    if (conf.facet === 'region') {
+    if (conf.facet === "region") {
         conf.facetValues = REGIONS;
         conf.facetColors = REGION_COLORS;
         conf.filterFacet = "input";
         conf.filterFacetValue = confElems.filterPlatform.value;
-        conf.sortFacet = 'region';
+        conf.sortFacet = "region";
         conf.sortFacetValue = confElems.sortingRegion.value;
-    } else if (conf.facet === 'input') {
+    } else if (conf.facet === "input") {
         conf.facetValues = PLATFORMS;
         conf.facetColors = PLATFORM_COLORS;
         conf.filterFacet = "region";
         conf.filterFacetValue = confElems.filterRegion.value;
-        conf.sortFacet = 'input';
+        conf.sortFacet = "input";
         conf.sortFacetValue = confElems.sortingPlatform.value;
     }
     confElems.filterRegion.disabled = conf.facet === "region";
@@ -334,7 +334,7 @@ function render() {
                     x: facetEntries.map(d => tiersInfo[d.tier].idx),
                     y: facetEntries.map(d => d[valtype]),
                     mode: "lines+markers",
-                    name: value == 'PC' ? 'KB&M' : value,
+                    name: value == "PC" ? "KB&M" : value,
                     line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
                     marker: {size: 4},
                 };
