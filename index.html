@@ -23,6 +23,7 @@ body {
     /* prevent flexbox centering overflow issue */
     margin: auto;
 }
+
 .title {
     font-size: 20px;
     text-transform: uppercase;
@@ -39,6 +40,7 @@ body {
     min-height: 25px;
     margin-right: 10px;
 }
+
 .conf {
     margin: 10px auto;
     font-size: 90%;
@@ -57,6 +59,7 @@ body {
     padding-left: 0;
     border-left: none;
 }
+
 .info {
     font-size: 80%;
     opacity: 40%;
@@ -69,6 +72,23 @@ body {
 .info a:hover {
     text-decoration: underline;
 }
+
+.plots-title {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 700px;
+    display: none;
+}
+.plots-title > div:first-child {
+    margin-left: 80px;
+}
+.plots-title > div {
+    font-size: 60%;
+    width: 300px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
 .entry {
     padding-bottom: 3px;
     margin-top: 3px;
@@ -86,7 +106,8 @@ body {
     color: #0000;
 }
 .entry img {
-    height: 80%;
+    height: 80px;
+    width: 80px;
     display: block;
     border-radius: 50%;
     align-self: center;
@@ -156,10 +177,12 @@ body {
     </div>
 </div>
 <div class="info">
-    dataset timestamp: <span id="datasetTs"></span> |
-    <a href="https://overwatch.blizzard.com/en-us/rates/">official source</a> |
+    dataset refreshed: <span id="datasetTs"></span> ┊
+    <a href="https://overwatch.blizzard.com/en-us/rates/">official source</a> ┊
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog">report issue</a> ┊
     tip: double click any plot to toggle own relative scale
 </div>
+<div class="plots-title"><div>Winrate</div><div>Pickrate</div></div>
 <div id="plots"></div>
 </div>
 
