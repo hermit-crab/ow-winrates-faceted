@@ -33,6 +33,7 @@ body {
     align-items: center;
     font-weight: bold;
     color: #393939;
+    white-space: nowrap;
 }
 .title svg {
     height: 25px;
@@ -46,19 +47,21 @@ body {
     margin: 10px auto !important;
     font-size: 90%;
     display: flex;
+    column-gap: 6px;
     flex-wrap: wrap;
     justify-content: center;
     align-items: baseline;
 }
 .conf-block {
     display: inline-block;
-    padding: 0 6px;
     text-wrap: nowrap;
-    border-left: 1px solid rgba(0, 0, 0, 0.271);
 }
 .conf-block:first-child {
     padding-left: 0;
     border-left: none;
+}
+.flex-break {
+    flex-basis: 100%;
 }
 
 .info {
@@ -148,6 +151,18 @@ body {
     align-self: center;
     margin-right: 10px;
 }
+.entry .box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.entry .bar {
+    width: 300px;
+    height: 10px;
+}
+.entry .bar svg {
+    vertical-align: top;
+}
 .entry .plot {
     height: 100px;
     width: 300px;
@@ -157,16 +172,26 @@ svg.main-svg, svg.main-svg * {
     overflow: visible;
 }
 
+.view-all .bar, .view-all .plot {display: block;}
+.view-all .entry {height: 110px;}
+.view-bars .entry {height: 50px;}
+.view-bars .entry img {height: 50px; width: 50px;}
+.view-bars .entry .bar {height: 15px;}
+.view-bars .bar {display: block;}
+.view-bars .plot {display: none;}
+.view-lines .bar {display: none;}
+.view-lines .plot {display: block;}
+
 /* for mobile */
 @media screen and (max-width: 680px) {
     .conf {justify-content: left;}
     .entry img {height: 60px; width: 60px;}
     .plots-title.pc {display: none;}
     .plots-title.mobile {display: flex;}
-    .mobile-show-wr .plot-pr {display: none;}
-    .mobile-show-pr .plot-pr {display: block;}
-    .mobile-show-wr .plot-wr {display: block;}
-    .mobile-show-pr .plot-wr {display: none;}
+    .mobile-show-wr .box-pr {display: none;}
+    .mobile-show-pr .box-pr {display: block;}
+    .mobile-show-wr .box-wr {display: block;}
+    .mobile-show-pr .box-wr {display: none;}
     .mobile-show-pr .title-pr {opacity: 100% !important;}
     .mobile-show-wr .title-wr {opacity: 100% !important;}
 }
@@ -188,6 +213,12 @@ svg.main-svg, svg.main-svg * {
             <option value="region" selected>Region</option>
             <option value="input">Platform</option>
         </select>
+        View
+        <select id="view">
+            <option value="all" selected>Bars&Lines</option>
+            <option value="bars">Total Bars</option>
+            <option value="lines">Tier Lines</option>
+        </select>
     </div>
     <div class="conf-block">
         Select
@@ -207,6 +238,7 @@ svg.main-svg, svg.main-svg * {
             <option value="Console">Console</option>
         </select>
     </div>
+    <div class="flex-break"></div>
     <div class="conf-block">
         Sort by
         <select id="sortingMode">
@@ -269,6 +301,7 @@ const plotsElem = document.getElementById("plots");
 const tsElem = document.getElementById("datasetTs");
 const confElems = {
     facet: document.getElementById("facet"),
+    view: document.getElementById("view"),
     filterRole: document.getElementById("filterRole"),
     filterPlatform: document.getElementById("filterPlatform"),
     filterRegion: document.getElementById("filterRegion"),
@@ -309,7 +342,8 @@ function processRawData(rawData) {
 }
 
 function setup() {
-    Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener("change", render));
+    const listeners = {view: applyViewMode};
+    Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener("change", listeners[k] || render));
     [...document.querySelectorAll(".plots-title.mobile div")].forEach(
         elem => elem.addEventListener("click", mobileTogglePlots)
     );
@@ -320,16 +354,23 @@ function setup() {
             Plotly.Fx.unhover(elem);
         });
     });
+    applyViewMode();
     loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
 }
 
+function applyViewMode() {
+    const mainElem = document.getElementById("main");
+    mainElem.classList.remove("view-all", "view-bars", "view-lines");
+    mainElem.classList.add(`view-${confElems.view.value}`);
+}
+
 function mobileTogglePlots(evt) {
-    const mainDiv = document.getElementById("main");
-    mainDiv.classList.remove("mobile-show-wr", "mobile-show-pr");
+    const mainElem = document.getElementById("main");
+    mainElem.classList.remove("mobile-show-wr", "mobile-show-pr");
     if (evt.target.classList.contains("title-wr"))
-        mainDiv.classList.add(["mobile-show-wr"]);
+        mainElem.classList.add(["mobile-show-wr"]);
     else if (evt.target.classList.contains("title-pr"))
-        mainDiv.classList.add(["mobile-show-pr"]);
+        mainElem.classList.add(["mobile-show-pr"]);
 }
 
 function loadData(jsonpSrc) {
@@ -387,8 +428,14 @@ function renderHeroes() {
         hero.elem.innerHTML = `
         <div class="hero-name" title="${name}">${name}</div>
         <img src="${hero.iconUrl}" title="${name}">
-        <div class="plot plot-wr"></div>
-        <div class="plot plot-pr"></div>
+        <div class="box box-wr">
+            <div class="bar bar-wr"></div>
+            <div class="plot plot-wr"></div>
+        </div>
+        <div class="box box-pr">
+            <div class="bar bar-pr"></div>
+            <div class="plot plot-pr"></div>
+        </div>
         `;
         plotsElem.appendChild(hero.elem);
     });
@@ -396,13 +443,15 @@ function renderHeroes() {
 
 function render() {
     const conf = handleConf();
+    const colorMap = Object.fromEntries(conf.facetValues.map((v, idx) => [v, conf.facetColors[idx]]));
+    // conf.facetColors[conf.facetValues.indexOf(value)]
 
     // ==> Filter entries
     let entries = allEntries.filter(e => (
         e.rq === "1" &&
         e.role === "All" &&
         e.map === "all-maps" &&
-        e[conf.filterFacet] == conf.filterFacetValue
+        e[conf.filterFacet] === conf.filterFacetValue
     ));
 
     // ==> Sort heroes
@@ -437,21 +486,43 @@ function render() {
         const nameEntries = entries.filter(e => e.name === name);
 
         const [tracesWr, tracesPr] = ["winrate", "pickrate"].map(valtype => {
-            return conf.facetValues.map(value => {
+            return conf.facetValues.map(facetValue => {
                 const facetEntries = nameEntries.filter(e => (
                     e.tier !== "All" &&
-                    e[conf.facet] === value &&
+                    e[conf.facet] === facetValue &&
                     e[valtype] != -1
                 ));
                 return {
                     x: facetEntries.map(e => tiersInfo[e.tier].idx),
                     y: facetEntries.map(e => e[valtype]),
                     mode: "lines+markers",
-                    name: value == "PC" ? "KB&M" : value,
-                    line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
+                    name: facetValue == "PC" ? "KB&M" : facetValue,
+                    line: {color: colorMap[facetValue], width: 1.2},
                     marker: {size: 4},
                 };
             });
+        });
+
+        const nameEntriesTot = nameEntries.filter(e => e.tier === "All");
+        ["winrate", "pickrate"].forEach(valtype => {
+            const barElem = heroes[name].elem.querySelector(valtype === "winrate" ? ".bar-wr" : '.bar-pr');
+            const range = valtype === "winrate" ? [40, 60] : [0, 40];
+            const valNcolr = nameEntriesTot.map(e => [ e[valtype], colorMap[e[conf.facet]] ]);
+            const vals = valNcolr.map(v => v[0]);
+            const min = Math.min(...vals);
+            const max = Math.max(...vals);
+            barElem.innerHTML = `
+            <svg viewBox="${range[0]} 0 ${range[1] - range[0]} 10" preserveAspectRatio="none" width="100%" height="100%">
+                <rect x="${range[0]}" y="2" width="${min - range[0]}" height="6" fill="rgba(0,0,0,0.3)" />
+                <rect x="${min}" y="2" width="${max - min}" height="6" fill="rgba(69,39,5,0.2)" />
+                ${valNcolr.map(([v, colr]) => `
+                    <line x1="${v}" y1="2" x2="${v}" y2="8" stroke="${colr}" stroke-width="2"
+                    vector-effect="non-scaling-stroke" />
+                `).join("")}
+                <line x1="50" y1="0" x2="50" y2="10" stroke="black" stroke-width="1"
+                    vector-effect="non-scaling-stroke" />
+            </svg>
+            `;
         });
 
         Plotly.react(heroes[name].elem.querySelector(".plot-wr"), tracesWr, {
