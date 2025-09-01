@@ -401,7 +401,6 @@ function render() {
 
         Plotly.react(heroes[name].elem.querySelector(".plot-wr"), tracesWr, {
             ...plotLayout,
-            datarevision: Date.now(),
             yaxis: {range: [41, 60], ...plotLayout.yaxis},
             shapes: [{
                 type: "line", x0: -1, x1: 10, y0: 50, y1: 50,
@@ -410,7 +409,6 @@ function render() {
         }, plotConf);
         Plotly.react(heroes[name].elem.querySelector(".plot-pr"), tracesPr, {
             ...plotLayout,
-            datarevision: Date.now(),
             yaxis: {range: [-1, 40], ...plotLayout.yaxis},
             shapes: [{
                 type: "line", x0: -1, x1: 10, y0: 0, y1: 0,
