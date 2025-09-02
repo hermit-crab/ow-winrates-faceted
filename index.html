@@ -258,6 +258,7 @@ const PLATFORMS = ["PC", "Console"];
 const PLATFORM_COLORS = ["black", "gray"];
 const LOCAL_JSONP_SRC = "winrate-data.js";
 const EXTERNAL_JSONP_SRC = "https://hermit-crab.neocities.org/winrate-data.js?nocache=" + parseInt(Date.now()/1000/60/60);
+const ALL_TIER_IDX = TIERS.length - .5;
 
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
@@ -277,7 +278,7 @@ const confElems = {
     sortingPlatform: document.getElementById("sortingPlatform"),
     sortingReverse: document.getElementById("sortingReverse"),
 };
-const plotConf = {displayModeBar: false, responsive: true};
+const plotConf = {displayModeBar: false, responsive: true, doubleClick: false};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
     showlegend: false,
@@ -287,15 +288,29 @@ const plotLayout = {
     dragmode: "pan",
     yaxis: {zeroline: false, tickfont: {size: 10}},
     xaxis: {
-        range: [-.5, TIERS.length-.5],
+        range: [-.3, ALL_TIER_IDX],
         fixedrange: true,
         zeroline: false,
-        tickvals: TIERS.map((_, idx) => idx),
-        ticktext: xticklabels,
+        tickvals: [...TIERS.map((_, idx) => idx), ALL_TIER_IDX],
+        ticktext: [...xticklabels, `<span style="color:#fafafa;">All</span>`],
         tickfont: {size: 9},
     },
 };
-let rawData, dataTs, heroes, allEntries, lastViewKey;
+const layoutExtra = {
+    winrate: {
+        yrange: [41, 60], selector: ".plot-wr", guideline: {
+            type: "line", x0: -1, x1: 10, y0: 50, y1: 50,
+            line: {color: "black", width: .5, dash: "dot"}, layer: "between",
+        }
+    },
+    pickrate: {
+        yrange: [-1, 40], selector: ".plot-pr", guideline: {
+            type: "line", x0: -1, x1: 10, y0: 0, y1: 0,
+            line: {color: "black", width: .5, dash: "dot"}, layer: "between",
+        }
+    }
+};
+let rawData, dataTs, heroes, allEntries;
 
 function processRawData(rawData) {
     const rows = [];
@@ -394,6 +409,26 @@ function renderHeroes() {
     });
 }
 
+function sortBy(values, key) {
+    const decorated = values.map(v => [v, key(v)]);
+    decorated.sort((a, b) => a[1] - b[1]);
+    return decorated.map(v => v[0]);
+}
+
+function pluck(objArr, key) {
+    return objArr.map(e => e[key]);
+}
+
+function autoscale(elem, minmax) {
+    const valtype = elem.className.includes("-wr") ? "winrate" : "pickrate";
+    const curScale = elem._fullLayout.yaxis.range;
+    const defaultScale = layoutExtra[valtype].yrange;
+    if (curScale[0] === defaultScale[0] && curScale[1] === defaultScale[1])
+        Plotly.relayout(elem, {"yaxis.range": [minmax[0]-2, minmax[1]+2]});
+    else
+        Plotly.relayout(elem, {"yaxis.range": defaultScale.slice()});
+}
+
 function render() {
     const conf = handleConf();
 
@@ -407,10 +442,11 @@ function render() {
 
     // ==> Sort heroes
     let names = Object.keys(heroes);
+    // names = names.filter(n => n.toLowerCase().includes("wuya"));
     if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
     names.sort(); // sort alphabetically by default
     if (conf.sortingMode !== "name") {
-        let sorterKey = names.map(name => {
+        names = sortBy(names, name => {
             const selected = entries.filter(e => e.name === name && e[conf.sortFacet] === conf.sortFacetValue);
             const e_b = selected.filter(e => e.tier === "Bronze")[0];
             const e_m = selected.filter(e => e.tier === "Master")[0];
@@ -419,8 +455,7 @@ function render() {
             if (conf.sortingMode === "pr-delta") return e_m.pickrate - e_b.pickrate;
             if (conf.sortingMode === "wr-all") return e_all.winrate;
             if (conf.sortingMode === "pr-all") return e_all.pickrate;
-        })
-        names.sort((a, b) => sorterKey[names.indexOf(a)] - sorterKey[names.indexOf(b)])
+        });
     }
     if (conf.sortingReverse) names.reverse();
     Object.entries(heroes).forEach(([name, hero]) => {
@@ -430,46 +465,68 @@ function render() {
 
     // ==> Update plots
     const viewKey = `${conf.facet}${conf.filterFacetValue}`
-    if (lastViewKey === viewKey) return; // no need to update if we"re only sorting
-    lastViewKey = viewKey;
     names.forEach((name, idx) => {
-        heroes[name].elem.style.zIndex = names.length - idx;
-        const nameEntries = entries.filter(e => e.name === name);
+        const entryElem = heroes[name].elem;
+        entryElem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
+        if (entryElem.dataset.lastViewKey === viewKey) return;
+        entryElem.dataset.lastViewKey = viewKey;
 
-        const [tracesWr, tracesPr] = ["winrate", "pickrate"].map(valtype => {
-            return conf.facetValues.map(value => {
+        const nameEntries = entries.filter(e => e.name === name);
+        ["winrate", "pickrate"].forEach(valtype => {
+            let totVals = [];
+
+            // Line traces
+            const traces = conf.facetValues.map(value => {
+                const valueName = value == "PC" ? "KB&M" : value;
                 const facetEntries = nameEntries.filter(e => (
-                    e.tier !== "All" &&
                     e[conf.facet] === value &&
                     e[valtype] != -1
                 ));
+                let facetEntriesTiered = facetEntries.filter(e => e.tier !== "All");
+                facetEntriesTiered = sortBy(facetEntriesTiered, e => tiersInfo[e.tier].idx);
+                let points = facetEntriesTiered.map(e => ({
+                    x: tiersInfo[e.tier].idx, y: e[valtype], size: 4, symbol: "circle"
+                }));
+                let facetEntriesTot = facetEntries.filter(e => e.tier === "All");
+                if (facetEntriesTot.length) {
+                    // Insert total points at the end.
+                    // Dud in front breaks the line so All is disconnected from GM.
+                    points = [...points, {x: TIERS.length-1}, {
+                        x: ALL_TIER_IDX, y: facetEntriesTot[0][valtype], symbol: "diamond-wide", size: 8,
+                    }];
+                    totVals.push(facetEntriesTot[0][valtype]);
+                }
                 return {
-                    x: facetEntries.map(e => tiersInfo[e.tier].idx),
-                    y: facetEntries.map(e => e[valtype]),
-                    mode: "lines+markers",
-                    name: value == "PC" ? "KB&M" : value,
+                    x: pluck(points, "x"), y: pluck(points, "y"), mode: "lines+markers", name: valueName,
                     line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
-                    marker: {size: 4},
+                    marker: {size: pluck(points, "size"), symbol: pluck(points, "symbol"), line: {width: 0}, opacity: 1},
                 };
             });
-        });
 
-        Plotly.react(heroes[name].elem.querySelector(".plot-wr"), tracesWr, {
-            ...plotLayout,
-            yaxis: {range: [41, 60], ...plotLayout.yaxis},
-            shapes: [{
-                type: "line", x0: -1, x1: 10, y0: 50, y1: 50,
-                line: {color: "black", width: .5, dash: "dot"}
-            }],
-        }, plotConf);
-        Plotly.react(heroes[name].elem.querySelector(".plot-pr"), tracesPr, {
-            ...plotLayout,
-            yaxis: {range: [-1, 40], ...plotLayout.yaxis},
-            shapes: [{
-                type: "line", x0: -1, x1: 10, y0: 0, y1: 0,
-                line: {color: "black", width: .5, dash: "dot"}
-            }],
-        }, plotConf);
+            // Figure nice own scale
+            const allVals = traces.map(a => a.y).flat().filter(v => v);
+            const minmax = [Math.min(...allVals), Math.max(...allVals)];
+
+            // Add total progressbar-like
+            totVals = sortBy(totVals, v => v);
+            const w = .08;
+            const shapes = [{
+                type: "rect", x0: ALL_TIER_IDX-w, x1: ALL_TIER_IDX+w, y0: 0, y1: totVals[0],
+                fillcolor: "#0005", line: {width: 0}, layer: "between",
+            }, {
+                type: "rect", x0: ALL_TIER_IDX-w, x1: ALL_TIER_IDX+w, y0: totVals[0], y1: totVals.at(-1),
+                fillcolor: "#0002", line: {width: 0}, layer: "between",
+            }];
+
+            const elem = entryElem.querySelector(layoutExtra[valtype].selector);
+            Plotly.react(elem, traces, {
+                ...plotLayout,
+                yaxis: {range: layoutExtra[valtype].yrange.slice(), ...plotLayout.yaxis},
+                shapes: [...shapes, layoutExtra[valtype].guideline],
+            }, plotConf);
+            elem.removeAllListeners();
+            elem.on("plotly_doubleclick", () => autoscale(elem, minmax));
+        });
     });
 }
 
