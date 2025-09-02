@@ -278,7 +278,7 @@ const confElems = {
     sortingPlatform: document.getElementById("sortingPlatform"),
     sortingReverse: document.getElementById("sortingReverse"),
 };
-const plotConf = {displayModeBar: false, responsive: true, doubleClick: false};
+const plotConf = {displayModeBar: false, responsive: true};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
     showlegend: false,
@@ -419,16 +419,6 @@ function pluck(objArr, key) {
     return objArr.map(e => e[key]);
 }
 
-function autoscale(elem, minmax) {
-    const valtype = elem.className.includes("-wr") ? "winrate" : "pickrate";
-    const curScale = elem._fullLayout.yaxis.range;
-    const defaultScale = layoutExtra[valtype].yrange;
-    if (curScale[0] === defaultScale[0] && curScale[1] === defaultScale[1])
-        Plotly.relayout(elem, {"yaxis.range": [minmax[0]-2, minmax[1]+2]});
-    else
-        Plotly.relayout(elem, {"yaxis.range": defaultScale.slice()});
-}
-
 function render() {
     const conf = handleConf();
 
@@ -473,8 +463,6 @@ function render() {
 
         const nameEntries = entries.filter(e => e.name === name);
         ["winrate", "pickrate"].forEach(valtype => {
-            let totVals = [];
-
             // Line traces
             const traces = conf.facetValues.map(value => {
                 const valueName = value == "PC" ? "KB&M" : value;
@@ -494,7 +482,6 @@ function render() {
                     points = [...points, {x: TIERS.length-1}, {
                         x: ALL_TIER_IDX, y: facetEntriesTot[0][valtype], symbol: "diamond-wide", size: 8,
                     }];
-                    totVals.push(facetEntriesTot[0][valtype]);
                 }
                 return {
                     x: pluck(points, "x"), y: pluck(points, "y"), mode: "lines+markers", name: valueName,
@@ -503,29 +490,11 @@ function render() {
                 };
             });
 
-            // Figure nice own scale
-            const allVals = traces.map(a => a.y).flat().filter(v => v);
-            const minmax = [Math.min(...allVals), Math.max(...allVals)];
-
-            // Add total progressbar-like
-            totVals = sortBy(totVals, v => v);
-            const w = .08;
-            const shapes = [{
-                type: "rect", x0: ALL_TIER_IDX-w, x1: ALL_TIER_IDX+w, y0: 0, y1: totVals[0],
-                fillcolor: "#0005", line: {width: 0}, layer: "between",
-            }, {
-                type: "rect", x0: ALL_TIER_IDX-w, x1: ALL_TIER_IDX+w, y0: totVals[0], y1: totVals.at(-1),
-                fillcolor: "#0002", line: {width: 0}, layer: "between",
-            }];
-
             const elem = entryElem.querySelector(layoutExtra[valtype].selector);
             Plotly.react(elem, traces, {
-                ...plotLayout,
+                ...plotLayout, shapes: [layoutExtra[valtype].guideline],
                 yaxis: {range: layoutExtra[valtype].yrange.slice(), ...plotLayout.yaxis},
-                shapes: [...shapes, layoutExtra[valtype].guideline],
             }, plotConf);
-            elem.removeAllListeners();
-            elem.on("plotly_doubleclick", () => autoscale(elem, minmax));
         });
     });
 }
