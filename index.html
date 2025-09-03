@@ -298,13 +298,13 @@ const plotLayout = {
 };
 const layoutExtra = {
     winrate: {
-        yrange: [41, 60], selector: ".plot-wr", guideline: {
+        yrange: {general: [41, 60]}, selector: ".plot-wr", guideline: {
             type: "line", x0: -1, x1: 10, y0: 50, y1: 50,
             line: {color: "black", width: .5, dash: "dot"}, layer: "between",
         }
     },
     pickrate: {
-        yrange: [-1, 40], selector: ".plot-pr", guideline: {
+        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: ".plot-pr", guideline: {
             type: "line", x0: -1, x1: 10, y0: 0, y1: 0,
             line: {color: "black", width: .5, dash: "dot"}, layer: "between",
         }
@@ -459,7 +459,8 @@ function render() {
     // ==> Update plots
     const viewKey = `${conf.facet}${conf.filterFacetValue}`
     names.forEach((name, idx) => {
-        const entryElem = heroes[name].elem;
+        const hero = heroes[name];
+        const entryElem = hero.elem;
         entryElem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
         if (entryElem.dataset.lastViewKey === viewKey) return;
         entryElem.dataset.lastViewKey = viewKey;
@@ -493,10 +494,11 @@ function render() {
                 };
             });
 
+            const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
             const elem = entryElem.querySelector(layoutExtra[valtype].selector);
             Plotly.react(elem, traces, {
                 ...plotLayout, shapes: [layoutExtra[valtype].guideline],
-                yaxis: {range: layoutExtra[valtype].yrange.slice(), ...plotLayout.yaxis},
+                yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
             }, plotConf);
         });
     });
