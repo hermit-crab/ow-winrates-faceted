@@ -310,7 +310,7 @@ const layoutExtra = {
         }
     }
 };
-let rawData, dataTs, heroes, allEntries;
+let rawData, dataTs, heroes, allEntries, compCode;
 
 function processRawData(rawData) {
     const rows = [];
@@ -358,6 +358,9 @@ function loadData(jsonpSrc) {
 function jsonp(data) {
     rawData = data;
     [heroes, allEntries] = processRawData(rawData);
+    const rqCodes = [...new Set(rawData.map(a => a.selected.rq))];
+    rqCodes.sort();
+    compCode = rqCodes.at(-1);
     const dataTs = rawData[0]._ts;
     tsElem.innerHTML = moment(dataTs * 1000).fromNow();
     tsElem.title = moment(dataTs * 1000).toString();
@@ -424,7 +427,7 @@ function render() {
 
     // ==> Filter entries
     let entries = allEntries.filter(e => (
-        e.rq === "1" &&
+        e.rq === compCode &&
         e.role === "All" &&
         e.map === "all-maps" &&
         e[conf.filterFacet] == conf.filterFacetValue
