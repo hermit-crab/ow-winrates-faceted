@@ -15,7 +15,7 @@ def get(url, cache_name):
     cache_fpath = os.path.join(cache_dir, cache_name)
     if os.path.exists(cache_fpath):
         with open(cache_fpath) as f:
-            return f.read(), os.stat(cache_fpath).st_mtime
+            return f.read(), os.stat(cache_fpath).st_mtime, True
     else:
         rp = rq.get(url)
         rp.raise_for_status()
@@ -23,7 +23,7 @@ def get(url, cache_name):
         assert text, f'empty body at {rp}'
         with open(cache_fpath, 'w') as f:
             f.write(text)
-        return text, None
+        return text, os.stat(cache_fpath).st_mtime, False
 
 try:
     tree = html.fromstring(get(base_url, 'main.html')[0])
@@ -72,8 +72,8 @@ for combo in combinations(params):
 for n, (combo, url) in enumerate(rqs, 1):
     print(f'\r{n}/{len(rqs)} Loading data...', end='')
     key = 'owwr.' + hashlib.md5(url.encode('utf8')).hexdigest() + '.json'
-    data, cache_ts = get(url, key)
-    if cache_ts:
+    data, ts, cached = get(url, key)
+    if cached:
         cache_hits += 1
     data = json.loads(data)
     if isinstance(data, list) and not data:
@@ -84,7 +84,7 @@ for n, (combo, url) in enumerate(rqs, 1):
     if expected != reported:
         print(f'==x unexpected selection reported, expected:\n{expected}\ngot:\n{reported}')
     data['_url'] = url
-    data['_ts'] = cache_ts
+    data['_ts'] = ts
     facets.append((combo, data))
 
 print(f'\nCache hits: {cache_hits}/{len(rqs)}')
