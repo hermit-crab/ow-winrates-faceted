@@ -81,6 +81,7 @@ body {
     color: #5c5c5c;
     letter-spacing: 1px;
     font-size: 60%;
+    gap: 10px;
 }
 .plots-title > div {
     text-align: center;
@@ -88,11 +89,10 @@ body {
 }
 .plots-title.pc > div {
     width: 300px;
-    /* account for yticks space */
-    padding-left: 10px;
 }
 .plots-title.pc > div:first-child {
-    margin-left: 80px;
+    width: 80px;
+    opacity: 0;
 }
 .plots-title.mobile {
     display: none;
@@ -129,6 +129,7 @@ body {
     height: 100px;
     display: flex;
     position: relative;
+    column-gap: 10px;
 }
 .entry.hidden {
     display: none;
@@ -146,7 +147,6 @@ body {
     display: block;
     border-radius: 50%;
     align-self: center;
-    margin-right: 10px;
 }
 .entry .plot {
     height: 100px;
@@ -237,7 +237,7 @@ svg.main-svg, svg.main-svg * {
     tip: double click any plot to toggle own relative scale
 </div>
 
-<div class="plots-title pc"><div>Winrate</div><div>Pickrate</div></div>
+<div class="plots-title pc"><div>Name</div><div>Winrate</div><div>Pickrate</div></div>
 <div class="plots-title mobile">
     <div class="title-wr">Winrate</div>
     <div class="title-pr">Pickrate</div>
