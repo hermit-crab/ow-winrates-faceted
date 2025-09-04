@@ -82,6 +82,8 @@ body {
     letter-spacing: 1px;
     font-size: 60%;
     gap: 10px;
+    cursor: pointer;
+    user-select: none;
 }
 .plots-title > div {
     text-align: center;
@@ -92,8 +94,24 @@ body {
 }
 .plots-title.pc > div:first-child {
     width: 80px;
-    opacity: 0;
+    visibility: hidden;
 }
+
+.plots-title.pc > div:after {
+    content: " ⬇";
+    visibility: hidden;
+    opacity: 80%;
+}
+.plots-title.pc > div.active:after {
+    content: " ⬆";
+}
+.plots-title.pc > div.active:after, .plots-title.pc > div.active-inv:after {
+    visibility: visible;
+}
+.plots-title.pc > div:hover:after {
+    visibility: visible;
+}
+
 .plots-title.mobile {
     display: none;
     align-items: center;
@@ -237,7 +255,11 @@ svg.main-svg, svg.main-svg * {
     tip: double click any plot to toggle own relative scale
 </div>
 
-<div class="plots-title pc"><div>Name</div><div>Winrate</div><div>Pickrate</div></div>
+<div class="plots-title pc">
+    <div>Name</div>
+    <div class="title-wr">Winrate</div>
+    <div class="title-pr">Pickrate</div>
+</div>
 <div class="plots-title mobile">
     <div class="title-wr">Winrate</div>
     <div class="title-pr">Pickrate</div>
@@ -345,6 +367,9 @@ function setup() {
             Plotly.Fx.unhover(elem);
         });
     });
+    document.querySelectorAll(".plots-title.pc > div").forEach(
+        elem => elem.addEventListener("click", titleClickSort)
+    );
     loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
 }
 
@@ -355,6 +380,18 @@ function mobileTogglePlots(evt) {
         mainDiv.classList.add(["mobile-show-wr"]);
     else if (evt.target.classList.contains("title-pr"))
         mainDiv.classList.add(["mobile-show-pr"]);
+}
+
+function titleClickSort(evt) {
+    const elem = evt.target;
+    let sortMode = null;
+    if (elem.className.includes("-wr")) sortMode = "wr-all";
+    if (elem.className.includes("-pr")) sortMode = "pr-all";
+    const currentSortMode = confElems.sortingMode.value;
+    const reversed = currentSortMode === sortMode ? !confElems.sortingReverse.checked : true;
+    confElems.sortingMode.value = sortMode;
+    confElems.sortingReverse.checked = reversed;
+    render();
 }
 
 function loadData(jsonpSrc) {
@@ -404,6 +441,16 @@ function handleConf() {
     confElems.filterPlatform.disabled = conf.facet === "input";
     confElems.sortingRegion.disabled = conf.facet === "input" || conf.sortingMode === "name";
     confElems.sortingPlatform.disabled = conf.facet === "region" || conf.sortingMode === "name";
+
+    const elemWr = document.querySelector(".plots-title.pc .title-wr");
+    const elemPr = document.querySelector(".plots-title.pc .title-pr");
+    [elemWr, elemPr].forEach(e => e.classList.remove("active", "active-inv"));
+    if (conf.sortingMode === "wr-all") {
+        elemWr.classList.add("active" + (conf.sortingReverse ? "-inv" : ""));
+    } else if (conf.sortingMode === "pr-all") {
+        elemPr.classList.add("active" + (conf.sortingReverse ? "-inv" : ""));
+    }
+
     return conf;
 }
 
