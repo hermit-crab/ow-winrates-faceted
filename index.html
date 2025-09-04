@@ -303,13 +303,19 @@ const plotLayout = {
 const layoutExtra = {
     winrate: {
         yrange: {general: [41, 60]}, selector: ".plot-wr", guideline: {
+            // 50% guideline
             type: "line", x0: -1, x1: 10, y0: 50, y1: 50,
             line: {color: "black", width: .5, dash: "dot"}, layer: "between",
         }
     },
     pickrate: {
         yrange: {general: [-1, 40], tank: [-1, 20]}, selector: ".plot-pr", guideline: {
+            // 0 guideline
             type: "line", x0: -1, x1: 10, y0: 0, y1: 0,
+            line: {color: "#0007", width: .5, dash: ""}, layer: "between",
+        }, expectedGuideline: {
+            // "expected" pickrate guideline
+            type: "line", x0: -1, x1: 10, // y0/y1 set depending on role
             line: {color: "black", width: .5, dash: "dot"}, layer: "between",
         }
     }
@@ -498,10 +504,17 @@ function render() {
                 };
             });
 
+            const extraShapes = [];
+            if (valtype === "pickrate") {
+                const inRole = Object.values(heroes).filter(h => h.role === hero.role).length;
+                const expectPr = (hero.role === "tank" ? 100 : 200) / inRole;
+                extraShapes.push({y0: expectPr, y1: expectPr, ...layoutExtra.pickrate.expectedGuideline});
+            }
+
             const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
             const elem = entryElem.querySelector(layoutExtra[valtype].selector);
             Plotly.react(elem, traces, {
-                ...plotLayout, shapes: [layoutExtra[valtype].guideline],
+                ...plotLayout, shapes: [layoutExtra[valtype].guideline, ...extraShapes],
                 yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
             }, plotConf);
         });
