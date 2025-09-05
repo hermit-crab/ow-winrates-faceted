@@ -81,6 +81,14 @@ body {
     padding-left: 0;
     border-left: none;
 }
+.conf .sort-facet.hidden {
+    display: none;
+}
+#filterPlatform:disabled,
+#sortingPlatform:disabled,
+#sortingRegion:disabled {
+    display: none;
+}
 
 .info {
     font-size: 80%;
@@ -286,13 +294,14 @@ svg.main-svg, svg.main-svg * {
     <div class="conf-block">
         Select
         <select id="filterRole">
-            <option value="all" selected>All Roles</option>
+            <option value="all" selected>Role</option>
             <option value="support">Support</option>
             <option value="tank">Tank</option>
             <option value="damage">Damage</option>
         </select>
         <select id="filterRegion">
-            <option value="Americas" selected>Americas</option>
+            <option value="all" selected>Region</option>
+            <option value="Americas">Americas</option>
             <option value="Asia">Asia</option>
             <option value="Europe">Europe</option>
         </select>
@@ -310,16 +319,18 @@ svg.main-svg, svg.main-svg * {
             <option value="pr-all">Total Pickrate</option>
             <option value="name">Name</option>
         </select>
-        in facet
-        <select id="sortingRegion">
-            <option value="Americas" selected>Americas</option>
-            <option value="Asia">Asia</option>
-            <option value="Europe">Europe</option>
-        </select>
-        <select id="sortingPlatform">
-            <option value="PC" selected>KB&M</option>
-            <option value="Console">Console</option>
-        </select>
+        <span class="sort-facet">
+            in facet
+            <select id="sortingRegion">
+                <option value="Americas" selected>Americas</option>
+                <option value="Asia">Asia</option>
+                <option value="Europe">Europe</option>
+            </select>
+            <select id="sortingPlatform">
+                <option value="PC" selected>KB&M</option>
+                <option value="Console">Console</option>
+            </select>
+        </span>
         <label><input type="checkbox" id="sortingReverse" checked></input>Reversed</label>
     </div>
 </div>
@@ -421,7 +432,7 @@ const layoutExtra = {
         }
     }
 };
-let rawData, dataTs, heroes, allEntries, compCode, expectedPr;
+let rawData, dataTs, heroes, allEntries, compCode, expectedPr, prevConf = {};
 
 function processRawData(rawData) {
     const rows = [];
@@ -519,26 +530,44 @@ function handleConf() {
         sortingMode: confElems.sortingMode.value,
         sortingReverse: confElems.sortingReverse.checked,
         filterRole: confElems.filterRole.value,
+        filterRegion: confElems.filterRegion.value,
+        filterPlatform: confElems.filterPlatform.value,
     };
+    confElems.sortingRegion.disabled = false;
+    confElems.sortingPlatform.disabled = false;
+    confElems.filterRegion.children[0].disabled = false;
+    confElems.filterPlatform.disabled = false;
     if (conf.facet === "region") {
+        if (prevConf.facet !== "region")
+            confElems.filterRegion.value = conf.filterRegion = "all";
         conf.facetValues = REGIONS;
         conf.facetColors = REGION_COLORS;
-        conf.filterFacet = "input";
-        conf.filterFacetValue = confElems.filterPlatform.value;
         conf.sortFacet = "region";
         conf.sortFacetValue = confElems.sortingRegion.value;
+        confElems.sortingPlatform.disabled = true;
+        if (conf.filterRegion !== "all") {
+            confElems.sortingRegion.value = conf.filterRegion;
+            confElems.sortingRegion.disabled = true;
+            conf.sortFacetValue = conf.filterRegion;
+        }
     } else if (conf.facet === "input") {
         conf.facetValues = PLATFORMS;
         conf.facetColors = PLATFORM_COLORS;
-        conf.filterFacet = "region";
-        conf.filterFacetValue = confElems.filterRegion.value;
         conf.sortFacet = "input";
         conf.sortFacetValue = confElems.sortingPlatform.value;
+        confElems.sortingRegion.disabled = true;
+        confElems.filterRegion.children[0].disabled = true;
+        confElems.filterPlatform.disabled = true;
+        if (conf.filterRegion === "all")
+            confElems.filterRegion.value = conf.filterRegion = REGIONS[0];
     }
-    confElems.filterRegion.disabled = conf.facet === "region";
-    confElems.filterPlatform.disabled = conf.facet === "input";
-    confElems.sortingRegion.disabled = conf.facet === "input" || conf.sortingMode === "name";
-    confElems.sortingPlatform.disabled = conf.facet === "region" || conf.sortingMode === "name";
+    if (conf.sortingMode === "name") {
+        confElems.sortingRegion.disabled = true;
+        confElems.sortingPlatform.disabled = true;
+    }
+    document.querySelector(".conf .sort-facet").classList.toggle("hidden",
+        confElems.sortingRegion.disabled && confElems.sortingPlatform.disabled
+    )
 
     const elemWr = document.querySelector(".plots-title .title-wr");
     const elemPr = document.querySelector(".plots-title .title-pr");
@@ -549,6 +578,7 @@ function handleConf() {
         elemPr.classList.add("active" + (conf.sortingReverse ? "-inv" : ""));
     }
 
+    prevConf = conf;
     return conf;
 }
 
@@ -585,7 +615,8 @@ function render() {
         e.rq === compCode &&
         e.role === "All" &&
         e.map === "all-maps" &&
-        e[conf.filterFacet] == conf.filterFacetValue
+        (e.input === conf.filterPlatform || conf.facet === "input") &&
+        (e.region === conf.filterRegion || conf.filterRegion === "all")
     ));
 
     // ==> Sort heroes
@@ -594,11 +625,12 @@ function render() {
     if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
     names.sort(); // sort alphabetically by default
     if (conf.sortingMode !== "name") {
+        const dummy = {winrate: 0, pickrate: 0};
         names = sortBy(names, name => {
             const selected = entries.filter(e => e.name === name && e[conf.sortFacet] === conf.sortFacetValue);
-            const e_b = selected.filter(e => e.tier === "Bronze")[0];
-            const e_m = selected.filter(e => e.tier === "Master")[0];
-            const e_all = selected.filter(e => e.tier === "All")[0];
+            const e_b = selected.filter(e => e.tier === "Bronze")[0] || dummy;
+            const e_m = selected.filter(e => e.tier === "Master")[0] || dummy;
+            const e_all = selected.filter(e => e.tier === "All")[0] || dummy;
             if (conf.sortingMode === "wr-delta") return e_m.winrate - e_b.winrate;
             if (conf.sortingMode === "pr-delta") return e_m.pickrate - e_b.pickrate;
             if (conf.sortingMode === "wr-all") return e_all.winrate;
@@ -612,7 +644,7 @@ function render() {
     });
 
     // ==> Update plots
-    const viewKey = `${conf.facet}${conf.filterFacetValue}`
+    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}`
     names.forEach((name, idx) => {
         const hero = heroes[name];
         const entryElem = hero.elem;
