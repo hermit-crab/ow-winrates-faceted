@@ -33,6 +33,7 @@ body {
     align-items: center;
     font-weight: bold;
     color: #393939;
+    text-wrap: nowrap;
 }
 .title svg {
     height: 25px;
@@ -114,55 +115,50 @@ body {
     letter-spacing: 1px;
     font-size: 60%;
     gap: 10px;
-    cursor: pointer;
     user-select: none;
+    position: relative;
 }
-.plots-title > div {
+.plots-title .col {
     text-align: center;
     text-transform: uppercase;
-}
-.plots-title.pc > div {
     width: 300px;
+    margin: auto;
 }
-.plots-title.pc > div:first-child {
+.plots-title .col span {
+    cursor: pointer;
+}
+.plots-title .col.title-name {
     width: 80px;
     visibility: hidden;
+    cursor: default;
 }
 
-.plots-title.pc > div:after {
+.plots-title .col span:after {
     content: " ▼";
     visibility: hidden;
     opacity: 80%;
 }
-.plots-title.pc > div.active:after {
+.plots-title .col.active span:after {
     content: " ▲";
 }
-.plots-title.pc > div.active:after, .plots-title.pc > div.active-inv:after {
+.plots-title .col.active span:after,
+.plots-title .col.active-inv span:after {
     visibility: visible;
 }
-.plots-title.pc > div:hover:after {
+.plots-title .col span:hover:after {
     visibility: visible;
 }
 
-.plots-title.mobile {
+#selectColumn {
     display: none;
-    align-items: center;
-    gap: 5px;
-    justify-content: center;
-    font-size: 80%;
-    user-select: none;
-    z-index: 200;
-    width: 100%;
-    padding: 5px 0;
-    background-color: #fafafa;
-    position: sticky;
-    top: 0;
-}
-.plots-title.mobile div {
-    border: 1px solid rgb(138, 138, 138);
-    border-radius: 5px;
-    padding: 1px 4px;
-    opacity: 50%;
+    box-shadow: 0 0 1px 0 gray;
+    border-radius: 2px;
+    padding: 0 4px;
+    opacity: 70%;
+    position: absolute;
+    left: 80px;
+    text-transform: uppercase;
+    height: 20px;
 }
 
 #plots {
@@ -211,14 +207,25 @@ svg.main-svg, svg.main-svg * {
 @media screen and (max-width: 680px) {
     .conf {justify-content: left;}
     .entry img {height: 60px; width: 60px;}
-    .plots-title.pc {display: none;}
-    .plots-title.mobile {display: flex;}
-    .mobile-show-wr .plot-pr {display: none;}
+    #selectColumn {display:inline-block;}
+    .plots-title {
+        background-color: #fafafa;
+        height: 20px;
+        font-size: 80%;
+        padding: 3px 0;
+        position: sticky;
+        z-index: 400;
+        top: 0;
+    }
+    .plot-pr {display: none;}
+    .plot-wr {display: none;}
+    .title-wr {display: none;}
+    .title-pr {display: none;}
+
     .mobile-show-pr .plot-pr {display: block;}
+    .mobile-show-pr .title-pr {display: block;}
     .mobile-show-wr .plot-wr {display: block;}
-    .mobile-show-pr .plot-wr {display: none;}
-    .mobile-show-pr .title-pr {opacity: 100% !important;}
-    .mobile-show-wr .title-wr {opacity: 100% !important;}
+    .mobile-show-wr .title-wr {display: block;}
 }
 
 </style>
@@ -298,14 +305,14 @@ svg.main-svg, svg.main-svg * {
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog">report issue</a>
 </div>
 
-<div class="plots-title pc">
-    <div>Name</div>
-    <div class="title-wr">Winrate</div>
-    <div class="title-pr">Pickrate</div>
-</div>
-<div class="plots-title mobile">
-    <div class="title-wr">Winrate</div>
-    <div class="title-pr">Pickrate</div>
+<div class="plots-title">
+    <div class="col title-name"><span>Name</span></div>
+    <div class="col title-wr"><span>Winrate</span></div>
+    <div class="col title-pr"><span>Pickrate</span></div>
+    <select id="selectColumn">
+        <option value="wr" selected>Winrate</option>
+        <option value="pr">Pickrate</option>
+    </select>
 </div>
 
 <div id="plots"></div>
@@ -400,9 +407,7 @@ function processRawData(rawData) {
 
 function setup() {
     Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener("change", render));
-    [...document.querySelectorAll(".plots-title.mobile div")].forEach(
-        elem => elem.addEventListener("click", mobileTogglePlots)
-    );
+    document.querySelector("#selectColumn").addEventListener("click", mobileSelectColumns);
     const infoPopup = document.querySelector(".info-popup");
     document.getElementById("infoBtn").addEventListener("click",
         () => infoPopup.classList.add("shown")
@@ -416,7 +421,7 @@ function setup() {
             Plotly.Fx.unhover(elem);
         });
     });
-    document.querySelectorAll(".plots-title.pc > div").forEach(
+    document.querySelectorAll(".plots-title .col span").forEach(
         elem => elem.addEventListener("click", titleClickSort)
     );
     setupColorTips();
@@ -431,20 +436,18 @@ function setupColorTips() {
     }).join(", ");
 }
 
-function mobileTogglePlots(evt) {
+function mobileSelectColumns() {
     const mainDiv = document.getElementById("main");
-    mainDiv.classList.remove("mobile-show-wr", "mobile-show-pr");
-    if (evt.target.classList.contains("title-wr"))
-        mainDiv.classList.add(["mobile-show-wr"]);
-    else if (evt.target.classList.contains("title-pr"))
-        mainDiv.classList.add(["mobile-show-pr"]);
+    mainDiv.classList.remove([...mainDiv.classList].filter(c => c.startsWith("mobile-show-")));
+    mainDiv.classList.add("mobile-show-" + document.getElementById("selectColumn").value)
 }
 
 function titleClickSort(evt) {
-    const elem = evt.target;
+    const elem = evt.target.parentElement;
     let sortMode = null;
     if (elem.className.includes("-wr")) sortMode = "wr-all";
-    if (elem.className.includes("-pr")) sortMode = "pr-all";
+    else if (elem.className.includes("-pr")) sortMode = "pr-all";
+    else return;
     const currentSortMode = confElems.sortingMode.value;
     const reversed = currentSortMode === sortMode ? !confElems.sortingReverse.checked : true;
     confElems.sortingMode.value = sortMode;
@@ -500,8 +503,8 @@ function handleConf() {
     confElems.sortingRegion.disabled = conf.facet === "input" || conf.sortingMode === "name";
     confElems.sortingPlatform.disabled = conf.facet === "region" || conf.sortingMode === "name";
 
-    const elemWr = document.querySelector(".plots-title.pc .title-wr");
-    const elemPr = document.querySelector(".plots-title.pc .title-pr");
+    const elemWr = document.querySelector(".plots-title .title-wr");
+    const elemPr = document.querySelector(".plots-title .title-pr");
     [elemWr, elemPr].forEach(e => e.classList.remove("active", "active-inv"));
     if (conf.sortingMode === "wr-all") {
         elemWr.classList.add("active" + (conf.sortingReverse ? "-inv" : ""));
