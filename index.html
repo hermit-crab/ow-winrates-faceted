@@ -580,7 +580,7 @@ function render() {
     }
     if (conf.sortingReverse) names.reverse();
     Object.entries(heroes).forEach(([name, hero]) => {
-        names.includes(name) ? hero.elem.classList.remove("hidden") : hero.elem.classList.add("hidden");
+        hero.elem.classList.toggle("hidden", !names.includes(name));
         hero.elem.style.order = names.indexOf(name);
     });
 
