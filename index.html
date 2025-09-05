@@ -235,10 +235,10 @@ svg.main-svg, svg.main-svg * {
 <div class="info-popup">
     <ul>
         <li>Line colors: <span id="colorTips"></span>.</li>
+        <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
         <li>Starting "<b>All</b>" values represent Competitive total values across all tiers.</li>
         <li><b>Dashed</b> lines represens "expected" value. For winrate it's 50%. For pickrate it's the value that would result if every hero in the role was equally desirable.</li>
         <li><b>Double click</b> any plot to zoom in/out (toggle own relative scale).</li>
-        <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
     </ul>
 </div>
 
@@ -350,7 +350,7 @@ const confElems = {
     sortingPlatform: document.getElementById("sortingPlatform"),
     sortingReverse: document.getElementById("sortingReverse"),
 };
-const plotConf = {displayModeBar: false, responsive: true};
+const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
     showlegend: false,
