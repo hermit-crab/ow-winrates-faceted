@@ -394,6 +394,7 @@ const layoutExtra = {
     }
 };
 let rawData, dataTs, heroes, allEntries, compCode, expectedPr;
+let renderTimeouts = [];
 
 function processRawData(rawData) {
     const rows = [];
@@ -418,7 +419,7 @@ function setup() {
             infoPopup.classList.remove("shown");
         // for phones: unhover plot if clicked off it
         [...document.querySelectorAll(".plot")].forEach(elem => {
-            if (elem.contains(e.target)) return;
+            if (elem.contains(e.target) || !elem.className.includes("plotly")) return;
             Plotly.Fx.unhover(elem);
         });
     });
@@ -579,6 +580,8 @@ function render() {
     });
 
     // ==> Update plots
+    renderTimeouts.forEach(t => clearTimeout(t));
+    renderTimeouts = [];
     const viewKey = `${conf.facet}${conf.filterFacetValue}`
     names.forEach((name, idx) => {
         const hero = heroes[name];
@@ -622,10 +625,14 @@ function render() {
 
             const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
             const elem = entryElem.querySelector(layoutExtra[valtype].selector);
-            Plotly.react(elem, traces, {
-                ...plotLayout, shapes: shapes,
-                yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
-            }, plotConf);
+            renderTimeouts.push(setTimeout(() => {
+                // Schedule updates one after another with a minor delay for better UX.
+                // (doing all in one go takes .8-1s of stagger)
+                Plotly.react(elem, traces, {
+                    ...plotLayout, shapes: shapes,
+                    yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
+                }, plotConf);
+            }, 30 * idx));
         });
     });
 }
