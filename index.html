@@ -320,13 +320,14 @@ svg.main-svg, svg.main-svg * {
 </div>
 
 <script>
+"use strict";
 
 const TIERS = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"];
 const TIER_COLORS = ["#cd7850", "#c4c6c8", "#d8a43d", "#98d8b9", "#5f9ff0", "#8ae960", "#8d71fe"];
 const REGIONS = ["Americas", "Asia", "Europe"];
 const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
 const PLATFORMS = ["PC", "Console"];
-// const PLATFORM_COLORS = ["#16a616", "#8d71fe"]
+// const PLATFORM_COLORS = ["#16a616", "#8d71fe"];
 const PLATFORM_COLORS = ["black", "gray"];
 const ROLES = ["tank", "support", "damage"];
 const LOCAL_JSONP_SRC = "winrate-data.js";
@@ -398,11 +399,16 @@ let renderTimeouts = [];
 
 function processRawData(rawData) {
     const rows = [];
-    for (facet of rawData) {
-        for (entry of facet["rates"]) rows.push({...entry.cells, ...facet.selected, url: facet._url});
+    for (const facet of rawData) {
+        for (const entry of facet["rates"])
+            rows.push({...entry.cells, ...facet.selected, url: facet._url});
     }
     const heroes = Object.fromEntries(rawData[0]["rates"].map(e =>
-        [e.hero.name, {role: e.hero.role.toLowerCase(), iconUrl: e.hero.portrait, roleIconUrl: e.hero.roleIcon}]
+        [e.hero.name, {
+            role: e.hero.role.toLowerCase(),
+            iconUrl: e.hero.portrait,
+            roleIconUrl: e.hero.roleIcon,
+        }]
     ));
     return [heroes, rows];
 }
