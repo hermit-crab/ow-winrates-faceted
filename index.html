@@ -328,6 +328,7 @@ const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
 const PLATFORMS = ["PC", "Console"];
 // const PLATFORM_COLORS = ["#16a616", "#8d71fe"]
 const PLATFORM_COLORS = ["black", "gray"];
+const ROLES = ["tank", "support", "damage"];
 const LOCAL_JSONP_SRC = "winrate-data.js";
 const EXTERNAL_JSONP_SRC = "https://hermit-crab.neocities.org/winrate-data.js?nocache=" + parseInt(Date.now()/1000/60/60);
 const ALL_TIER_IDX = -.5;
@@ -392,7 +393,7 @@ const layoutExtra = {
         }
     }
 };
-let rawData, dataTs, heroes, allEntries, compCode;
+let rawData, dataTs, heroes, allEntries, compCode, expectedPr;
 
 function processRawData(rawData) {
     const rows = [];
@@ -469,6 +470,9 @@ function jsonp(data) {
     const rqCodes = [...new Set(rawData.map(a => a.selected.rq))];
     rqCodes.sort();
     compCode = rqCodes.at(-1);
+    expectedPr = Object.fromEntries(ROLES.map(role =>
+        [role, (role === "tank" ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
+    ));
     const dataTs = rawData[0]._ts;
     tsElem.innerHTML = moment(dataTs * 1000).fromNow();
     tsElem.title = moment(dataTs * 1000).toString();
@@ -612,17 +616,14 @@ function render() {
                 };
             });
 
-            const extraShapes = [];
-            if (valtype === "pickrate") {
-                const inRole = Object.values(heroes).filter(h => h.role === hero.role).length;
-                const expectPr = (hero.role === "tank" ? 100 : 200) / inRole;
-                extraShapes.push({y0: expectPr, y1: expectPr, ...layoutExtra.pickrate.expectedGuideline});
-            }
+            const shapes = [layoutExtra[valtype].guideline];
+            if (valtype === "pickrate")
+                shapes.push({y0: expectedPr[hero.role], y1: expectedPr[hero.role], ...layoutExtra.pickrate.expectedGuideline});
 
             const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
             const elem = entryElem.querySelector(layoutExtra[valtype].selector);
             Plotly.react(elem, traces, {
-                ...plotLayout, shapes: [layoutExtra[valtype].guideline, ...extraShapes],
+                ...plotLayout, shapes: shapes,
                 yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
             }, plotConf);
         });
