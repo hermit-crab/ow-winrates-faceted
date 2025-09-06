@@ -658,7 +658,7 @@ function render() {
         const dummy = {winrate: 0, pickrate: 0};
         const c = conf.sortingColumn;
         names = sortBy(names, name => {
-            let entries = name2entries[name];
+            let entries = name2entries[name].filter(e => e[c] !== -1);
             if (conf.sortingMode !== "facets-spread")
                 entries = entries.filter(e => e[conf.sortFacet] === conf.sortFacetValue);
             let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
