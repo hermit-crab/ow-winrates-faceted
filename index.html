@@ -15,6 +15,8 @@ body {
     background: #fafafa;
     margin: 0;
 }
+
+/* -- main box -- */
 #main {
     display: flex;
     flex-direction: column;
@@ -29,6 +31,7 @@ body {
     margin: 0 auto;
 }
 
+/* -- title -- */
 .title {
     font-size: 20px;
     text-transform: uppercase;
@@ -53,6 +56,7 @@ body {
     margin-right: 5px;
 }
 
+/* -- conf+info box -- */
 .scroller {
     display: flex;
     flex-direction: column;
@@ -63,6 +67,7 @@ body {
     padding-bottom: 5px;
 }
 
+/* -- conf -- */
 .conf {
     margin: 10px auto !important;
     font-size: 90%;
@@ -81,15 +86,17 @@ body {
     padding-left: 0;
     border-left: none;
 }
-.conf .sort-facet.hidden {
+.sorting-reversed,
+#sortingPlatform:disabled,
+#sortingRegion:disabled,
+#filterPlatform:disabled {
     display: none;
 }
-#filterPlatform:disabled,
-#sortingPlatform:disabled,
-#sortingRegion:disabled {
-    display: none;
+#sortingRegion.shown:disabled {
+    display: inline;
 }
 
+/* -- info line -- */
 .info {
     font-size: 80%;
     opacity: 40%;
@@ -114,6 +121,7 @@ body {
     text-decoration: underline dotted;
 }
 
+/* -- info popup -- */
 .info-popup {
     display: none;
     position: fixed;
@@ -138,6 +146,7 @@ body {
     font-weight: bold;
 }
 
+/* -- column titles -- */
 .plots-title {
     display: flex;
     flex-wrap: nowrap;
@@ -150,33 +159,40 @@ body {
     position: relative;
 }
 .plots-title .col {
-    text-align: center;
+    text-align: right;
     text-transform: uppercase;
     width: 300px;
     margin: auto;
 }
 .plots-title .col span {
     cursor: pointer;
+    margin-right: 10px;
+    text-wrap: nowrap;
 }
 .plots-title .col.title-name {
     width: 80px;
-    visibility: hidden;
     cursor: default;
 }
+.plots-title .col.title-name span {
+    margin-right: 0;
+}
 
-.plots-title .col span:after {
-    content: " ▼";
+.plots-title .col span:before {
+    content: "▼ ";
     visibility: hidden;
     opacity: 80%;
 }
-.plots-title .col.active span:after {
-    content: " ▲";
+.plots-title .col.active span:before {
+    content: "▲ ";
 }
-.plots-title .col.active span:after,
-.plots-title .col.active-inv span:after {
+.plots-title .col.active.inv span:before {
+    content: "▼ ";
+}
+.plots-title .col.active span:before,
+.plots-title .col.active.inv span:before {
     visibility: visible;
 }
-.plots-title .col span:hover:after {
+.plots-title .col span:hover:before {
     visibility: visible;
 }
 
@@ -193,6 +209,7 @@ body {
     height: 20px;
 }
 
+/* -- hero entries box -- */
 #plots {
     margin-bottom: 200px;
     display: flex;
@@ -200,6 +217,7 @@ body {
     flex-wrap: nowrap;
 }
 
+/* -- hero entries -- */
 .entry {
     padding-bottom: 3px;
     margin-top: 3px;
@@ -235,7 +253,7 @@ svg.main-svg, svg.main-svg * {
     overflow: visible;
 }
 
-/* for mobile */
+/* -- mobile -- */
 @media screen and (max-width: 700px) {
     .conf {justify-content: left;}
     .title {font-size: 100%;}
@@ -312,27 +330,27 @@ svg.main-svg, svg.main-svg * {
         </select>
     </div>
     <div class="conf-block">
-        Sort by
+        Sort mode
         <select id="sortingMode">
-            <option value="wr-delta">Winrate B / M Diff.</option>
-            <option value="pr-delta">Pickrate B / M Diff.</option>
-            <option value="wr-all" selected>Total Winrate</option>
-            <option value="pr-all">Total Pickrate</option>
-            <option value="name">Name</option>
+            <option value="all" selected>All Ranks</option>
+            <option id="sortTiers">...replaced via JS</option>
+            <option value="b-m-delta">B / M Diff.</option>
+            <!-- <option value="facets-spread">Facet Diff.</option> -->
         </select>
-        <span class="sort-facet">
-            in facet
-            <select id="sortingRegion">
-                <option value="Americas" selected>Americas</option>
-                <option value="Asia">Asia</option>
-                <option value="Europe">Europe</option>
-            </select>
-            <select id="sortingPlatform">
-                <option value="PC" selected>KB&M</option>
-                <option value="Console">Console</option>
-            </select>
-        </span>
-        <label><input type="checkbox" id="sortingReverse" checked></input>Reversed</label>
+        in facet
+        <select id="sortingRegion">
+            <option value="Americas" selected>Americas</option>
+            <option value="Asia">Asia</option>
+            <option value="Europe">Europe</option>
+        </select>
+        <select id="sortingPlatform">
+            <option value="PC" selected>KB&M</option>
+            <option value="Console">Console</option>
+        </select>
+        <label class="sorting-reversed">
+            <input type="checkbox" id="sortingReverse" checked></input>
+            Reversed
+        </label>
     </div>
 </div>
 
@@ -345,9 +363,9 @@ svg.main-svg, svg.main-svg * {
 </div>
 
 <div class="plots-title">
-    <div class="col title-name"><span>Name</span></div>
-    <div class="col title-wr"><span>Winrate</span></div>
-    <div class="col title-pr"><span>Pickrate</span></div>
+    <div class="col title-name" data-sort="name"><span>Hero</span></div>
+    <div class="col title-wr active" data-sort="winrate"><span>Winrate</span></div>
+    <div class="col title-pr" data-sort="pickrate"><span>Pickrate</span></div>
     <select id="selectColumn">
         <option value="wr" selected>Winrate</option>
         <option value="pr">Pickrate</option>
@@ -469,6 +487,10 @@ function setup() {
     document.querySelectorAll(".plots-title .col span").forEach(
         elem => elem.addEventListener("click", titleClickSort)
     );
+    const tierTitles = [...TIERS.slice(0, TIERS.length-1), "GM+"];
+    document.getElementById("sortTiers").outerHTML = TIERS.map((v, i) =>
+        `<option value="tier-${v}">:${tierTitles[i]}</option>`
+    ).join("\n");
     setupColorTips();
     loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
 }
@@ -489,14 +511,11 @@ function mobileSelectColumns() {
 
 function titleClickSort(evt) {
     const elem = evt.target.parentElement;
-    let sortMode = null;
-    if (elem.className.includes("-wr")) sortMode = "wr-all";
-    else if (elem.className.includes("-pr")) sortMode = "pr-all";
-    else return;
-    const currentSortMode = confElems.sortingMode.value;
-    const reversed = currentSortMode === sortMode ? !confElems.sortingReverse.checked : true;
-    confElems.sortingMode.value = sortMode;
-    confElems.sortingReverse.checked = reversed;
+    const active = elem.classList.contains("active");
+    document.querySelectorAll(".plots-title .col").forEach(e => e.classList.remove("active", "inv"));
+    elem.classList.add("active");
+    if (active) confElems.sortingReverse.checked = !confElems.sortingReverse.checked;
+    else confElems.sortingReverse.checked = true;
     render();
 }
 
@@ -561,22 +580,14 @@ function handleConf() {
         conf.facetValues = PLATFORMS;
         conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], CONSOLE_COLOR];
     }
-    if (conf.sortingMode === "name") {
-        confElems.sortingRegion.disabled = true;
-        confElems.sortingPlatform.disabled = true;
-    }
-    document.querySelector(".conf .sort-facet").classList.toggle("hidden",
+
+    const columnTitleElem = document.querySelector(".plots-title .active");
+    conf.sortingColumn = columnTitleElem.dataset.sort;
+    columnTitleElem.classList.toggle("inv", conf.sortingReverse);
+
+    sortingRegion.classList.toggle("shown",
         confElems.sortingRegion.disabled && confElems.sortingPlatform.disabled
     )
-
-    const elemWr = document.querySelector(".plots-title .title-wr");
-    const elemPr = document.querySelector(".plots-title .title-pr");
-    [elemWr, elemPr].forEach(e => e.classList.remove("active", "active-inv"));
-    if (conf.sortingMode === "wr-all") {
-        elemWr.classList.add("active" + (conf.sortingReverse ? "-inv" : ""));
-    } else if (conf.sortingMode === "pr-all") {
-        elemPr.classList.add("active" + (conf.sortingReverse ? "-inv" : ""));
-    }
 
     prevConf = conf;
     return conf;
@@ -624,17 +635,15 @@ function render() {
     // names = names.filter(n => n.toLowerCase().includes("wuya"));
     if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
     names.sort(); // sort alphabetically by default
-    if (conf.sortingMode !== "name") {
+    if (conf.sortingColumn !== "name") {
         const dummy = {winrate: 0, pickrate: 0};
         names = sortBy(names, name => {
             const selected = entries.filter(e => e.name === name && e[conf.sortFacet] === conf.sortFacetValue);
             const e_b = selected.filter(e => e.tier === "Bronze")[0] || dummy;
             const e_m = selected.filter(e => e.tier === "Master")[0] || dummy;
             const e_all = selected.filter(e => e.tier === "All")[0] || dummy;
-            if (conf.sortingMode === "wr-delta") return e_m.winrate - e_b.winrate;
-            if (conf.sortingMode === "pr-delta") return e_m.pickrate - e_b.pickrate;
-            if (conf.sortingMode === "wr-all") return e_all.winrate;
-            if (conf.sortingMode === "pr-all") return e_all.pickrate;
+            if (conf.sortingMode === "b-m-delta") return e_m[conf.sortingColumn] - e_b[conf.sortingColumn];
+            if (conf.sortingMode === "all") return e_all[conf.sortingColumn];
         });
     }
     if (conf.sortingReverse) names.reverse();
