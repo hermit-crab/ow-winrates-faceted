@@ -291,6 +291,10 @@ svg.main-svg, svg.main-svg * {
         <li>Starting "<b>All</b>" values represent Competitive total values across all tiers.</li>
         <li><b>Dashed</b> lines represens "expected" value. For winrate it's 50%. For pickrate it's the value that would result if every hero in the role was equally desirable.</li>
         <li><b>Double click</b> any plot to zoom in/out (toggle own relative scale).</li>
+        <li>Special <b>sorting</b> modes:<ul>
+            <li>B / M Diff. – difference between Bronze and Master (slope of the facet line).</li>
+            <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).</li>
+        </ul></li>
     </ul>
 </div>
 
@@ -335,7 +339,7 @@ svg.main-svg, svg.main-svg * {
             <option value="all" selected>All Ranks</option>
             <option id="sortTiers">...replaced via JS</option>
             <option value="b-m-delta">B / M Diff.</option>
-            <!-- <option value="facets-spread">Facet Diff.</option> -->
+            <option value="facets-spread">Facet Diff.</option>
         </select>
         in facet
         <select id="sortingRegion">
@@ -581,6 +585,11 @@ function handleConf() {
         conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], CONSOLE_COLOR];
     }
 
+    if (conf.sortingMode === "facets-spread") {
+        confElems.sortingRegion.disabled = true;
+        confElems.sortingPlatform.disabled = true;
+    }
+
     const columnTitleElem = document.querySelector(".plots-title .active");
     conf.sortingColumn = columnTitleElem.dataset.sort;
     columnTitleElem.classList.toggle("inv", conf.sortingReverse);
@@ -618,6 +627,15 @@ function pluck(objArr, key) {
     return objArr.map(e => e[key]);
 }
 
+function calcMAD(lines) {
+    const totPoints = lines.flatMap(vals => vals.length).reduce((s, v) => s + v, 0);
+    return lines.map(vals => {
+        if (vals.length <= 1) return 0;
+        const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+        return vals.map(v => Math.abs(v-mean)).reduce((s, v) => s + v, 0)
+    }).reduce((s, v) => s + v, 0) / totPoints;
+}
+
 function render() {
     const conf = handleConf();
 
@@ -636,18 +654,16 @@ function render() {
     if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
     const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.name === n)]));
     names.sort(); // sort alphabetically by default
-    console.log(conf)
     if (conf.sortingColumn !== "name") {
         const dummy = {winrate: 0, pickrate: 0};
         const c = conf.sortingColumn;
         names = sortBy(names, name => {
             let entries = name2entries[name];
-            if (conf.sortingMode !== "facet-spread")
+            if (conf.sortingMode !== "facets-spread")
                 entries = entries.filter(e => e[conf.sortFacet] === conf.sortFacetValue);
             let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
-            if (conf.sortingMode === "facet-spread") {
-                return name;
-            }
+            if (conf.sortingMode === "facets-spread")
+                return calcMAD(Object.values(byTier).map(lst => pluck(lst, c)));
             Object.entries(byTier).forEach(([k, v]) => {byTier[k] = v[0] || dummy;}); // fill missing data
             const eAll = entries.filter(e => e.tier === "All")[0] || dummy;
             if (conf.sortingMode === "all") return eAll[c];
