@@ -166,6 +166,9 @@ body {
     width: 80px;
     cursor: default;
 }
+.plots-title .col.title-name.flash {
+    animation: red-flash 0.5s ease;
+}
 .plots-title .col.title-name span {
     margin-right: 0;
 }
@@ -270,6 +273,11 @@ svg.main-svg, svg.main-svg * {
     .mobile-show-wr .title-wr {display: block;}
 }
 
+@keyframes red-flash {
+    0%   {background-color: transparent;}
+    50%  {background-color: #f008;}
+    100% {background-color: transparent;}
+}
 </style>
 </head>
 <body>
@@ -584,6 +592,14 @@ function handleConf() {
     const columnTitleElem = document.querySelector(".plots-title .active");
     conf.sortingColumn = columnTitleElem.dataset.sort;
     columnTitleElem.classList.toggle("inv", conf.sortingReverse);
+
+    if (conf.sortingColumn === "name") {
+        if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue) {
+            const elem = document.querySelector(".plots-title .col.title-name");
+            elem.classList.remove("flash");
+            setTimeout(() => elem.classList.add("flash"), 0);
+        }
+    }
 
     prevConf = conf;
     return conf;
