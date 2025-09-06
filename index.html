@@ -366,8 +366,7 @@ const TIER_COLORS = ["#cd7850", "#c4c6c8", "#d8a43d", "#98d8b9", "#5f9ff0", "#8a
 const REGIONS = ["Americas", "Asia", "Europe"];
 const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
 const PLATFORMS = ["PC", "Console"];
-// const PLATFORM_COLORS = ["#16a616", "#8d71fe"];
-const PLATFORM_COLORS = ["black", "gray"];
+const CONSOLE_COLOR = "gray";
 const ROLES = ["tank", "support", "damage"];
 const LOCAL_JSONP_SRC = "winrate-data.js";
 const EXTERNAL_JSONP_SRC = "https://hermit-crab.neocities.org/winrate-data.js?nocache=" + parseInt(Date.now()/1000/60/60);
@@ -475,8 +474,8 @@ function setup() {
 }
 
 function setupColorTips() {
-    const vals = [...REGIONS, ...PLATFORMS];
-    const colr = [...REGION_COLORS, ...PLATFORM_COLORS];
+    const vals = [...REGIONS, "Console"];
+    const colr = [...REGION_COLORS, CONSOLE_COLOR];
     document.getElementById("colorTips").innerHTML = vals.map((val, i) => {
         return `<span style="color:${colr[i]}">${val}</span>`
     }).join(", ");
@@ -552,8 +551,6 @@ function handleConf() {
             conf.sortFacetValue = conf.filterRegion;
         }
     } else if (conf.facet === "input") {
-        conf.facetValues = PLATFORMS;
-        conf.facetColors = PLATFORM_COLORS;
         conf.sortFacet = "input";
         conf.sortFacetValue = confElems.sortingPlatform.value;
         confElems.sortingRegion.disabled = true;
@@ -561,6 +558,8 @@ function handleConf() {
         confElems.filterPlatform.disabled = true;
         if (conf.filterRegion === "all")
             confElems.filterRegion.value = conf.filterRegion = REGIONS[0];
+        conf.facetValues = PLATFORMS;
+        conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], CONSOLE_COLOR];
     }
     if (conf.sortingMode === "name") {
         confElems.sortingRegion.disabled = true;
