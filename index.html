@@ -15,6 +15,8 @@ body {
     background: #fafafa;
     margin: 0;
 }
+.hidden {display: none !important;}
+.shown {display: unset !important;}
 
 /* -- main box -- */
 #main {
@@ -86,14 +88,8 @@ body {
     padding-left: 0;
     border-left: none;
 }
-.sorting-reversed,
-#sortingPlatform:disabled,
-#sortingRegion:disabled,
-#filterPlatform:disabled {
+.sorting-reversed {
     display: none;
-}
-#sortingRegion.shown:disabled {
-    display: inline;
 }
 
 /* -- info line -- */
@@ -134,9 +130,6 @@ body {
     padding: 20px;
     max-width: 600px;
     box-shadow: 6px 6px #0004, 0 0 0 1px #0001;
-}
-.info-popup.shown {
-    display: block;
 }
 .info-popup ul {
     margin: 0;
@@ -226,9 +219,6 @@ body {
     display: flex;
     position: relative;
     column-gap: 10px;
-}
-.entry.hidden {
-    display: none;
 }
 .entry .hero-name {
     position: absolute;
@@ -567,7 +557,6 @@ function handleConf() {
         conf.facetColors = REGION_COLORS;
         conf.sortFacet = "region";
         conf.sortFacetValue = confElems.sortingRegion.value;
-        confElems.sortingPlatform.disabled = true;
         if (conf.filterRegion !== "all") {
             confElems.sortingRegion.value = conf.filterRegion;
             confElems.sortingRegion.disabled = true;
@@ -576,7 +565,6 @@ function handleConf() {
     } else if (conf.facet === "input") {
         conf.sortFacet = "input";
         conf.sortFacetValue = confElems.sortingPlatform.value;
-        confElems.sortingRegion.disabled = true;
         confElems.filterRegion.children[0].disabled = true;
         confElems.filterPlatform.disabled = true;
         if (conf.filterRegion === "all")
@@ -584,6 +572,9 @@ function handleConf() {
         conf.facetValues = PLATFORMS;
         conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], CONSOLE_COLOR];
     }
+
+    confElems.sortingRegion.classList.toggle("hidden", conf.facet === "input");
+    confElems.sortingPlatform.classList.toggle("hidden", conf.facet === "region");
 
     if (conf.sortingMode === "facets-spread") {
         confElems.sortingRegion.disabled = true;
@@ -593,10 +584,6 @@ function handleConf() {
     const columnTitleElem = document.querySelector(".plots-title .active");
     conf.sortingColumn = columnTitleElem.dataset.sort;
     columnTitleElem.classList.toggle("inv", conf.sortingReverse);
-
-    sortingRegion.classList.toggle("shown",
-        confElems.sortingRegion.disabled && confElems.sortingPlatform.disabled
-    )
 
     prevConf = conf;
     return conf;
