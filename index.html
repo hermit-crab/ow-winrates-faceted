@@ -634,16 +634,25 @@ function render() {
     let names = Object.keys(heroes);
     // names = names.filter(n => n.toLowerCase().includes("wuya"));
     if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
+    const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.name === n)]));
     names.sort(); // sort alphabetically by default
+    console.log(conf)
     if (conf.sortingColumn !== "name") {
         const dummy = {winrate: 0, pickrate: 0};
+        const c = conf.sortingColumn;
         names = sortBy(names, name => {
-            const selected = entries.filter(e => e.name === name && e[conf.sortFacet] === conf.sortFacetValue);
-            const e_b = selected.filter(e => e.tier === "Bronze")[0] || dummy;
-            const e_m = selected.filter(e => e.tier === "Master")[0] || dummy;
-            const e_all = selected.filter(e => e.tier === "All")[0] || dummy;
-            if (conf.sortingMode === "b-m-delta") return e_m[conf.sortingColumn] - e_b[conf.sortingColumn];
-            if (conf.sortingMode === "all") return e_all[conf.sortingColumn];
+            let entries = name2entries[name];
+            if (conf.sortingMode !== "facet-spread")
+                entries = entries.filter(e => e[conf.sortFacet] === conf.sortFacetValue);
+            let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
+            if (conf.sortingMode === "facet-spread") {
+                return name;
+            }
+            Object.entries(byTier).forEach(([k, v]) => {byTier[k] = v[0] || dummy;}); // fill missing data
+            const eAll = entries.filter(e => e.tier === "All")[0] || dummy;
+            if (conf.sortingMode === "all") return eAll[c];
+            if (conf.sortingMode === "b-m-delta") return byTier.Master[c] - byTier.Bronze[c];
+            if (conf.sortingMode.startsWith("tier-")) return byTier[conf.sortingMode.slice(5)][c];
         });
     }
     if (conf.sortingReverse) names.reverse();
@@ -662,12 +671,11 @@ function render() {
         entryElem.dataset.lastViewKey = viewKey;
         clearTimeout(hero.renderTimeout);
 
-        const nameEntries = entries.filter(e => e.name === name);
         ["winrate", "pickrate"].forEach(valtype => {
             // Line traces
             const traces = conf.facetValues.map(value => {
                 const valueName = value == "PC" ? "KB&M" : value;
-                const facetEntries = nameEntries.filter(e => (
+                const facetEntries = name2entries[name].filter(e => (
                     e[conf.facet] === value &&
                     e[valtype] !== -1
                 ));
