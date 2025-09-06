@@ -459,7 +459,7 @@ function setup() {
         () => infoPopup.classList.add("shown")
     );
     document.addEventListener("click", function(e) {
-        if (e.target.id != "infoBtn" && !infoPopup.contains(e.target))
+        if (e.target.id !== "infoBtn" && !infoPopup.contains(e.target))
             infoPopup.classList.remove("shown");
         // for phones: unhover plot if clicked off it
         [...document.querySelectorAll(".plot")].forEach(elem => {
@@ -661,7 +661,7 @@ function render() {
                 const valueName = value == "PC" ? "KB&M" : value;
                 const facetEntries = nameEntries.filter(e => (
                     e[conf.facet] === value &&
-                    e[valtype] != -1
+                    e[valtype] !== -1
                 ));
                 let facetEntriesTiered = facetEntries.filter(e => e.tier !== "All");
                 facetEntriesTiered = sortBy(facetEntriesTiered, e => tiersInfo[e.tier].idx);
