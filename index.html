@@ -293,6 +293,7 @@ svg.main-svg, svg.main-svg * {
             <li>B / M Diff. – difference between Bronze and Master (slope of the facet line).</li>
             <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).</li>
         </ul></li>
+        <li>Chinese data comes from a <a href='https://ow.blizzard.cn/herolist/'>separate official source</a>. Contains only PC data [TODO: verify claim].</li>
     </ul>
 </div>
 
@@ -331,6 +332,9 @@ svg.main-svg, svg.main-svg * {
             <option value='PC' selected>KB&M</option>
             <option value='Console'>Console</option>
         </select>
+        <label class='toggle-china'>
+            <input type='checkbox' id='toggleChina'></input>CN
+        </label>
     </div>
     <div class='conf-block'>
         Sort mode
@@ -352,8 +356,7 @@ svg.main-svg, svg.main-svg * {
             <option value='Console'>Console</option>
         </select>
         <label class='sorting-reversed'>
-            <input type='checkbox' id='sortingReverse' checked></input>
-            Reversed
+            <input type='checkbox' id='sortingReverse' checked></input>Reversed
         </label>
     </div>
 </div>
@@ -411,6 +414,7 @@ const confElems = {
     sortingRegion: document.getElementById('sortingRegion'),
     sortingPlatform: document.getElementById('sortingPlatform'),
     sortingReverse: document.getElementById('sortingReverse'),
+    toggleChina: document.getElementById('toggleChina'),
 };
 const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false};
 const plotLayout = {
@@ -600,7 +604,8 @@ function render() {
         e.mode === 'Comp' &&
         e.map === 'all-maps' &&
         (e.input === conf.filterPlatform || conf.facet === 'input') &&
-        (e.region === conf.filterRegion || conf.filterRegion === 'all')
+        (e.region === conf.filterRegion || conf.filterRegion === 'all') &&
+        (e.region !== "China" || conf.chinaOn)
     ));
 
     // ==> Sort heroes
@@ -633,7 +638,7 @@ function render() {
     });
 
     // ==> Update plots
-    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}`
+    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}${conf.chinaOn}`
     names.forEach((name, idx) => {
         const hero = heroes[name];
         const entryElem = hero.elem;
@@ -692,6 +697,7 @@ function render() {
 function handleConf() {
     const conf = {
         facet: confElems.facet.value,
+        chinaOn: confElems.toggleChina.checked,
         sortingMode: confElems.sortingMode.value,
         sortingReverse: confElems.sortingReverse.checked,
         filterRole: confElems.filterRole.value,
@@ -736,6 +742,12 @@ function handleConf() {
     const columnTitleElem = document.querySelector('.plots-title .active');
     conf.sortingColumn = columnTitleElem.dataset.sort;
     columnTitleElem.classList.toggle('inv', conf.sortingReverse);
+
+    document.querySelectorAll('select option[value="China"]').forEach(elem => elem.disabled = !conf.chinaOn);
+    if (!conf.chinaOn && conf.sortFacetValue === "China")
+        confElems.sortingRegion.value = conf.sortFacetValue = REGIONS[0];
+    if (!conf.chinaOn && conf.filterRegion === "China")
+        confElems.filterRegion.value = conf.filterRegion = 'all';
 
     if (conf.sortingColumn === 'name') {
         if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue) {
