@@ -325,6 +325,7 @@ svg.main-svg, svg.main-svg * {
             <option value='Americas'>Americas</option>
             <option value='Asia'>Asia</option>
             <option value='Europe'>Europe</option>
+            <option value='China'>China</option>
         </select>
         <select id='filterPlatform'>
             <option value='PC' selected>KB&M</option>
@@ -344,6 +345,7 @@ svg.main-svg, svg.main-svg * {
             <option value='Americas' selected>Americas</option>
             <option value='Asia'>Asia</option>
             <option value='Europe'>Europe</option>
+            <option value='China'>China</option>
         </select>
         <select id='sortingPlatform'>
             <option value='PC' selected>KB&M</option>
@@ -383,8 +385,8 @@ svg.main-svg, svg.main-svg * {
 
 const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'];
 const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8ae960', '#8d71fe'];
-const REGIONS = ['Americas', 'Asia', 'Europe'];
-const REGION_COLORS = ['#f14141', '#ffac00', '#3c90ff'];
+const REGIONS = ['Americas', 'Asia', 'Europe', 'China'];
+const REGION_COLORS = ['#f14141', '#ffac00', '#3c90ff', '#58d986'];
 const PLATFORMS = ['PC', 'Console'];
 const CONSOLE_COLOR = 'gray';
 const ROLES = ['tank', 'support', 'damage'];
@@ -513,11 +515,17 @@ function processRawData(rawData) {
 
     const select = (o, keys) => Object.fromEntries(keys.map(k => [k, o[k]]));
 
+    // NOTE: In main site pickrates data sum up to 500% [sum(tank)=100+sum(support)=200+sum(damage)=200]
+    // in CN data it is all normalized to sum up to 100%. We stick to main site convention so
+    // chinese data will be rescaled to it.
+
+    // NOTE: Main site data bundles GM+Champ together, CN data has gives Champ as is. We ignore it.
+
     const rqCodes = [...new Set(mainData.map(a => a.selected.rq))];
     rqCodes.sort();
     if (rqCodes.length != 2)
         console.error('unexpected amount of rqCodes (expected 2)', rqCodes);
-    const modes = Object.fromEntries([[rqCodes[0], 'QP'], [rqCodes[1], 'Comp']])
+    let modes = Object.fromEntries([[rqCodes[0], 'QP'], [rqCodes[1], 'Comp']])
     for (const facet of mainData) {
         for (const entry of facet['rates'])
             rows.push({
@@ -538,6 +546,31 @@ function processRawData(rawData) {
             roleIconUrl: e.hero.roleIcon,
         }]
     ));
+
+    modes = {kuaisu: 'QP', jingji: 'Comp', juedou: 'Stadium'};
+    for (const facet of cnData) {
+        const selected = Object.fromEntries(new URL(facet._url).searchParams);
+        const rolesTotalPR = Object.fromEntries(ROLES.map(r => [r, facet.data.filter(
+            e => heroes[e.hero_id].role === r
+        ).map(e => e.selection_ratio).reduce((s, v) => s + v, 0)]));
+        for (const entry of facet['data']) {
+            if (selected.mmr === 'Champion') continue;
+            if (modes[selected.game_mode] === 'Stadium') continue;
+            const role = heroes[entry.hero_id].role;
+            const totPR = rolesTotalPR[role] / (role === 'tank' ? 1 : 2);
+            rows.push({
+                hero: entry.hero_id,
+                url: facet._url,
+                winrate: entry.win_ratio,
+                pickrate: Math.round(entry.selection_ratio / totPR * 1000) / 10,
+                banrate: entry.ban_ratio,
+                kda: entry.kda,
+                mode: modes[selected.game_mode],
+                tier: selected.mmr === '-127' ? 'All' : selected.mmr,
+                map: 'all-maps', input: 'PC', region: 'China'
+            });
+        }
+    }
 
     return [heroes, rows];
 }
