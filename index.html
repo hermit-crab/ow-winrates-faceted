@@ -452,17 +452,36 @@ const layoutExtra = {
         }
     }
 };
-let rawData, dataTs, heroes, allEntries, compCode, expectedPr, prevConf = {};
+let rawData, dataTs, heroes, allEntries, expectedPr, prevConf = {};
 
 function processRawData(rawData) {
+    const mainData = rawData.filter(o => o._url.includes('blizzard.com'));
+    const cnData = rawData.filter(o => o._url.includes('blizzard.cn'));
     const rows = [];
-    for (const facet of rawData) {
+
+    const select = (o, keys) => Object.fromEntries(keys.map(k => [k, o[k]]));
+
+    const rqCodes = [...new Set(mainData.map(a => a.selected.rq))];
+    rqCodes.sort();
+    if (rqCodes.length != 2)
+        console.error('unexpected amount of rqCodes (expected 2)', rqCodes);
+    const modes = Object.fromEntries([[rqCodes[0], 'QP'], [rqCodes[1], 'Comp']])
+    for (const facet of mainData) {
         for (const entry of facet["rates"])
-            rows.push({...entry.cells, ...facet.selected, url: facet._url});
+            rows.push({
+                hero: entry.id,
+                mode: modes[facet.selected.rq],
+                url: facet._url,
+                ...select(entry.cells, ['winrate', 'pickrate']),
+                ...select(facet.selected, ['map', 'input', 'region', 'tier']),
+            });
     }
-    const heroes = Object.fromEntries(rawData[0]["rates"].map(e =>
-        [e.hero.name, {
+
+    const heroes = Object.fromEntries(mainData[0]["rates"].map(e =>
+        [e.id, {
+            name: e.hero.name,
             role: e.hero.role.toLowerCase(),
+            color: e.hero.color,
             iconUrl: e.hero.portrait,
             roleIconUrl: e.hero.roleIcon,
         }]
@@ -522,7 +541,6 @@ function titleClickSort(evt) {
 }
 
 function loadData(jsonpSrc) {
-    // DATA is the original API data put into a list
     const script = document.createElement("script");
     script.type = "text/javascript";
     script.src = jsonpSrc;
@@ -532,9 +550,6 @@ function loadData(jsonpSrc) {
 function jsonp(data) {
     rawData = data;
     [heroes, allEntries] = processRawData(rawData);
-    const rqCodes = [...new Set(rawData.map(a => a.selected.rq))];
-    rqCodes.sort();
-    compCode = rqCodes.at(-1);
     expectedPr = Object.fromEntries(ROLES.map(role =>
         [role, (role === "tank" ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
     ));
@@ -607,12 +622,12 @@ function handleConf() {
 
 function renderHeroes() {
     plotsElem.innerHTML = "";
-    Object.entries(heroes).forEach(([name, hero]) => {
+    Object.entries(heroes).forEach(([id, hero]) => {
         hero.elem = document.createElement("div");
         hero.elem.className = `entry role-${hero.role}`;
         hero.elem.innerHTML = `
-        <div class="hero-name" title="${name}">${name}</div>
-        <img src="${hero.iconUrl}" title="${name}">
+        <div class="hero-name" title="${hero.name}">${hero.name}</div>
+        <img src="${hero.iconUrl}" title="${hero.name}">
         <div class="plot plot-wr"></div>
         <div class="plot plot-pr"></div>
         `;
@@ -644,8 +659,7 @@ function render() {
 
     // ==> Filter entries
     let entries = allEntries.filter(e => (
-        e.rq === compCode &&
-        e.role === "All" &&
+        e.mode === 'Comp' &&
         e.map === "all-maps" &&
         (e.input === conf.filterPlatform || conf.facet === "input") &&
         (e.region === conf.filterRegion || conf.filterRegion === "all")
@@ -653,9 +667,9 @@ function render() {
 
     // ==> Sort heroes
     let names = Object.keys(heroes);
-    // names = names.filter(n => n.toLowerCase().includes("wuya"));
+    // names = names.filter(n => n.includes("wuya"));
     if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
-    const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.name === n)]));
+    const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.hero === n)]));
     names.sort(); // sort alphabetically by default
     if (conf.sortingColumn !== "name") {
         const dummy = {winrate: 0, pickrate: 0};
