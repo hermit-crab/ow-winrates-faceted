@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
+<meta charset='utf-8' />
 <title>Overwatch 2 Winrates & Pickrates – Faceted</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
-<script src="https://momentjs.com/downloads/moment.min.js"></script>
+<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+<script src='https://cdn.plot.ly/plotly-3.1.0.min.js'></script>
+<script src='https://momentjs.com/downloads/moment.min.js'></script>
 <!-- basic analytics, just for me to know if page has any visitors and I need to maintain it -->
-<script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+<script async src='https://scripts.simpleanalyticscdn.com/latest.js'></script>
 <style>
 
 body {
@@ -174,15 +174,15 @@ body {
 }
 
 .plots-title .col span:before {
-    content: "▼ ";
+    content: '▼ ';
     visibility: hidden;
     opacity: 80%;
 }
 .plots-title .col.active span:before {
-    content: "▲ ";
+    content: '▲ ';
 }
 .plots-title .col.active.inv span:before {
-    content: "▼ ";
+    content: '▼ ';
 }
 .plots-title .col.active span:before,
 .plots-title .col.active.inv span:before {
@@ -282,9 +282,9 @@ svg.main-svg, svg.main-svg * {
 </head>
 <body>
 
-<div class="info-popup">
+<div class='info-popup'>
     <ul>
-        <li>Line colors: <span id="colorTips"></span>.</li>
+        <li>Line colors: <span id='colorTips'></span>.</li>
         <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
         <li>Starting "<b>All</b>" values represent Competitive total values across all tiers.</li>
         <li><b>Dashed</b> lines represens "expected" value. For winrate it's 50%. For pickrate it's the value that would result if every hero in the role was equally desirable.</li>
@@ -296,128 +296,128 @@ svg.main-svg, svg.main-svg * {
     </ul>
 </div>
 
-<div id="main" class="mobile-show-wr">
+<div id='main' class='mobile-show-wr'>
 
-<div class="title">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-labelledby="blz-icon-title-overwatch-2-dark" viewBox="0 0 48 48" part="icon"><title id="blz-icon-title-overwatch-2-dark">Overwatch 2</title><path fill="#ED6516" d="M13.9 13.901a14.284 14.284 0 0 1 20.2 0l4.043-4.042a20 20 0 0 0-28.286 0z"></path><path fill="#333E48" d="m39.312 11.135-4.063 4.062a14.29 14.29 0 0 1 .995 16.159L28.891 24l-4.006-9.413h-.02V27.31l7.938 7.938a14.29 14.29 0 0 1-17.606 0l7.939-7.938V14.636l-4.027 9.365-7.355 7.355a14.29 14.29 0 0 1 .997-16.159l-4.063-4.062a20.001 20.001 0 1 0 30.624 0"></path></svg>
+<div class='title'>
+    <svg xmlns='http://www.w3.org/2000/svg' fill='none' aria-labelledby='blz-icon-title-overwatch-2-dark' viewBox='0 0 48 48' part='icon'><title id='blz-icon-title-overwatch-2-dark'>Overwatch 2</title><path fill='#ED6516' d='M13.9 13.901a14.284 14.284 0 0 1 20.2 0l4.043-4.042a20 20 0 0 0-28.286 0z'></path><path fill='#333E48' d='m39.312 11.135-4.063 4.062a14.29 14.29 0 0 1 .995 16.159L28.891 24l-4.006-9.413h-.02V27.31l7.938 7.938a14.29 14.29 0 0 1-17.606 0l7.939-7.938V14.636l-4.027 9.365-7.355 7.355a14.29 14.29 0 0 1 .997-16.159l-4.063-4.062a20.001 20.001 0 1 0 30.624 0'></path></svg>
     <span>Overwatch 2 Winrates & Pickrates – Faceted</span>
 </div>
 
-<div class="scroller">
-<div class="conf">
-    <div class="conf-block">
+<div class='scroller'>
+<div class='conf'>
+    <div class='conf-block'>
         Facet
-        <select id="facet">
-            <option value="region" selected>Region</option>
-            <option value="input">Platform</option>
+        <select id='facet'>
+            <option value='region' selected>Region</option>
+            <option value='input'>Platform</option>
         </select>
     </div>
-    <div class="conf-block">
+    <div class='conf-block'>
         Select
-        <select id="filterRole">
-            <option value="all" selected>Role</option>
-            <option value="support">Support</option>
-            <option value="tank">Tank</option>
-            <option value="damage">Damage</option>
+        <select id='filterRole'>
+            <option value='all' selected>Role</option>
+            <option value='support'>Support</option>
+            <option value='tank'>Tank</option>
+            <option value='damage'>Damage</option>
         </select>
-        <select id="filterRegion">
-            <option value="all" selected>Region</option>
-            <option value="Americas">Americas</option>
-            <option value="Asia">Asia</option>
-            <option value="Europe">Europe</option>
+        <select id='filterRegion'>
+            <option value='all' selected>Region</option>
+            <option value='Americas'>Americas</option>
+            <option value='Asia'>Asia</option>
+            <option value='Europe'>Europe</option>
         </select>
-        <select id="filterPlatform">
-            <option value="PC" selected>KB&M</option>
-            <option value="Console">Console</option>
+        <select id='filterPlatform'>
+            <option value='PC' selected>KB&M</option>
+            <option value='Console'>Console</option>
         </select>
     </div>
-    <div class="conf-block">
+    <div class='conf-block'>
         Sort mode
-        <select id="sortingMode">
-            <option value="all" selected>All Ranks</option>
-            <option id="sortTiers">...replaced via JS</option>
-            <option value="b-m-delta">B / M Diff.</option>
-            <option value="facets-spread">Facet Diff.</option>
+        <select id='sortingMode'>
+            <option value='all' selected>All Ranks</option>
+            <option id='sortTiers'>...replaced via JS</option>
+            <option value='b-m-delta'>B / M Diff.</option>
+            <option value='facets-spread'>Facet Diff.</option>
         </select>
         in facet
-        <select id="sortingRegion">
-            <option value="Americas" selected>Americas</option>
-            <option value="Asia">Asia</option>
-            <option value="Europe">Europe</option>
+        <select id='sortingRegion'>
+            <option value='Americas' selected>Americas</option>
+            <option value='Asia'>Asia</option>
+            <option value='Europe'>Europe</option>
         </select>
-        <select id="sortingPlatform">
-            <option value="PC" selected>KB&M</option>
-            <option value="Console">Console</option>
+        <select id='sortingPlatform'>
+            <option value='PC' selected>KB&M</option>
+            <option value='Console'>Console</option>
         </select>
-        <label class="sorting-reversed">
-            <input type="checkbox" id="sortingReverse" checked></input>
+        <label class='sorting-reversed'>
+            <input type='checkbox' id='sortingReverse' checked></input>
             Reversed
         </label>
     </div>
 </div>
 
-<div class="info">
-    dataset refreshed: <span id="datasetTs"></span> ┊
-    <button id="infoBtn">legend and tips</button> ┊
-    <a href="https://overwatch.blizzard.com/en-us/rates/">official source</a> ┊
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog">report issue</a>
+<div class='info'>
+    dataset refreshed: <span id='datasetTs'></span> ┊
+    <button id='infoBtn'>legend and tips</button> ┊
+    <a href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
+    <a href='https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog'>report issue</a>
 </div>
 </div>
 
-<div class="plots-title">
-    <div class="col title-name" data-sort="name"><span>Hero</span></div>
-    <div class="col title-wr active" data-sort="winrate"><span>Winrate</span></div>
-    <div class="col title-pr" data-sort="pickrate"><span>Pickrate</span></div>
-    <select id="selectColumn">
-        <option value="wr" selected>Winrate</option>
-        <option value="pr">Pickrate</option>
+<div class='plots-title'>
+    <div class='col title-name' data-sort='name'><span>Hero</span></div>
+    <div class='col title-wr active' data-sort='winrate'><span>Winrate</span></div>
+    <div class='col title-pr' data-sort='pickrate'><span>Pickrate</span></div>
+    <select id='selectColumn'>
+        <option value='wr' selected>Winrate</option>
+        <option value='pr'>Pickrate</option>
     </select>
 </div>
 
-<div id="plots"></div>
+<div id='plots'></div>
 
 </div>
 
 <script>
-"use strict";
+'use strict';
 
-const TIERS = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"];
-const TIER_COLORS = ["#cd7850", "#c4c6c8", "#d8a43d", "#98d8b9", "#5f9ff0", "#8ae960", "#8d71fe"];
-const REGIONS = ["Americas", "Asia", "Europe"];
-const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
-const PLATFORMS = ["PC", "Console"];
-const CONSOLE_COLOR = "gray";
-const ROLES = ["tank", "support", "damage"];
-const LOCAL_JSONP_SRC = "winrate-data.js";
-const EXTERNAL_JSONP_SRC = "https://hermit-crab.neocities.org/winrate-data.js?nocache=" + parseInt(Date.now()/1000/60/60);
+const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'];
+const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8ae960', '#8d71fe'];
+const REGIONS = ['Americas', 'Asia', 'Europe'];
+const REGION_COLORS = ['#f14141', '#ffac00', '#3c90ff'];
+const PLATFORMS = ['PC', 'Console'];
+const CONSOLE_COLOR = 'gray';
+const ROLES = ['tank', 'support', 'damage'];
+const LOCAL_JSONP_SRC = 'winrate-data.js';
+const EXTERNAL_JSONP_SRC = 'https://hermit-crab.neocities.org/winrate-data.js?nocache=' + parseInt(Date.now()/1000/60/60);
 const ALL_TIER_IDX = -.5;
 
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
     color: TIER_COLORS[idx],
-    shorthand: name !== "Grandmaster" ? name[0] : "GM+",
+    shorthand: name !== 'Grandmaster' ? name[0] : 'GM+',
 }]));
-const xticklabels = TIERS.map(n => `<span style="color: ${tiersInfo[n].color}; font-weight: bold">${tiersInfo[n].shorthand}</span>`);
-const plotsElem = document.getElementById("plots");
-const tsElem = document.getElementById("datasetTs");
+const xticklabels = TIERS.map(n => `<span style='color: ${tiersInfo[n].color}; font-weight: bold'>${tiersInfo[n].shorthand}</span>`);
+const plotsElem = document.getElementById('plots');
+const tsElem = document.getElementById('datasetTs');
 const confElems = {
-    facet: document.getElementById("facet"),
-    filterRole: document.getElementById("filterRole"),
-    filterPlatform: document.getElementById("filterPlatform"),
-    filterRegion: document.getElementById("filterRegion"),
-    sortingMode: document.getElementById("sortingMode"),
-    sortingRegion: document.getElementById("sortingRegion"),
-    sortingPlatform: document.getElementById("sortingPlatform"),
-    sortingReverse: document.getElementById("sortingReverse"),
+    facet: document.getElementById('facet'),
+    filterRole: document.getElementById('filterRole'),
+    filterPlatform: document.getElementById('filterPlatform'),
+    filterRegion: document.getElementById('filterRegion'),
+    sortingMode: document.getElementById('sortingMode'),
+    sortingRegion: document.getElementById('sortingRegion'),
+    sortingPlatform: document.getElementById('sortingPlatform'),
+    sortingReverse: document.getElementById('sortingReverse'),
 };
 const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
     showlegend: false,
-    plot_bgcolor: "#fafafa",
-    paper_bgcolor: "#fafafa",
-    hovermode: "x",
-    dragmode: "pan",
+    plot_bgcolor: '#fafafa',
+    paper_bgcolor: '#fafafa',
+    hovermode: 'x',
+    dragmode: 'pan',
     yaxis: {
         zeroline: false,
         tickfont: {size: 10},
@@ -428,31 +428,83 @@ const plotLayout = {
         fixedrange: true,
         zeroline: false,
         tickvals: [...TIERS.map((_, idx) => idx), ALL_TIER_IDX],
-        ticktext: [...xticklabels, `<span style="color:#fafafa;">All</span>`],
+        ticktext: [...xticklabels, `<span style='color:#fafafa;'>All</span>`],
         tickfont: {size: 9},
     },
 };
 const layoutExtra = {
     winrate: {
-        yrange: {general: [41, 60]}, selector: ".plot-wr", guideline: {
+        yrange: {general: [41, 60]}, selector: '.plot-wr', guideline: {
             // 50% guideline
-            type: "line", x0: -1, x1: 10, y0: 50, y1: 50,
-            line: {color: "black", width: .5, dash: "dot"}, layer: "between",
+            type: 'line', x0: -1, x1: 10, y0: 50, y1: 50,
+            line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
         }
     },
     pickrate: {
-        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: ".plot-pr", guideline: {
+        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: '.plot-pr', guideline: {
             // 0 guideline
-            type: "line", x0: -1, x1: 10, y0: 0, y1: 0,
-            line: {color: "#0007", width: .5, dash: ""}, layer: "between",
+            type: 'line', x0: -1, x1: 10, y0: 0, y1: 0,
+            line: {color: '#0007', width: .5, dash: ''}, layer: 'between',
         }, expectedGuideline: {
-            // "expected" pickrate guideline
-            type: "line", x0: -1, x1: 10, // y0/y1 set depending on role
-            line: {color: "black", width: .5, dash: "dot"}, layer: "between",
+            // 'expected' pickrate guideline
+            type: 'line', x0: -1, x1: 10, // y0/y1 set depending on role
+            line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
         }
     }
 };
 let rawData, dataTs, heroes, allEntries, expectedPr, prevConf = {};
+setup();
+
+
+function setup() {
+    Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener('change', render));
+    document.querySelector('#selectColumn').addEventListener('click', mobileSelectColumns);
+    const infoPopup = document.querySelector('.info-popup');
+    document.getElementById('infoBtn').addEventListener('click',
+        () => infoPopup.classList.add('shown')
+    );
+    document.addEventListener('click', function(e) {
+        if (e.target.id !== 'infoBtn' && !infoPopup.contains(e.target))
+            infoPopup.classList.remove('shown');
+        // for phones: unhover plot if clicked off it
+        [...document.querySelectorAll('.plot')].forEach(elem => {
+            if (elem.contains(e.target) || !elem.className.includes('plotly')) return;
+            Plotly.Fx.unhover(elem);
+        });
+    });
+    document.querySelectorAll('.plots-title .col span').forEach(
+        elem => elem.addEventListener('click', titleClickSort)
+    );
+    const tierTitles = [...TIERS.slice(0, TIERS.length-1), 'GM+'];
+    document.getElementById('sortTiers').outerHTML = TIERS.map((v, i) =>
+        `<option value='tier-${v}'>:${tierTitles[i]}</option>`
+    ).join('\n');
+    setupColorTips();
+    loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
+}
+
+
+function loadData(jsonpSrc) {
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = jsonpSrc;
+    document.body.appendChild(script);
+}
+
+
+function jsonp(data) {
+    rawData = data;
+    [heroes, allEntries] = processRawData(rawData);
+    expectedPr = Object.fromEntries(ROLES.map(role =>
+        [role, (role === 'tank' ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
+    ));
+    const dataTs = rawData[0]._ts;
+    tsElem.innerHTML = moment(dataTs * 1000).fromNow();
+    tsElem.title = moment(dataTs * 1000).toString();
+    renderHeroes();
+    render();
+}
+
 
 function processRawData(rawData) {
     const mainData = rawData.filter(o => o._url.includes('blizzard.com'));
@@ -467,7 +519,7 @@ function processRawData(rawData) {
         console.error('unexpected amount of rqCodes (expected 2)', rqCodes);
     const modes = Object.fromEntries([[rqCodes[0], 'QP'], [rqCodes[1], 'Comp']])
     for (const facet of mainData) {
-        for (const entry of facet["rates"])
+        for (const entry of facet['rates'])
             rows.push({
                 hero: entry.id,
                 mode: modes[facet.selected.rq],
@@ -477,7 +529,7 @@ function processRawData(rawData) {
             });
     }
 
-    const heroes = Object.fromEntries(mainData[0]["rates"].map(e =>
+    const heroes = Object.fromEntries(mainData[0]['rates'].map(e =>
         [e.id, {
             name: e.hero.name,
             role: e.hero.role.toLowerCase(),
@@ -486,173 +538,26 @@ function processRawData(rawData) {
             roleIconUrl: e.hero.roleIcon,
         }]
     ));
+
     return [heroes, rows];
 }
 
-function setup() {
-    Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener("change", render));
-    document.querySelector("#selectColumn").addEventListener("click", mobileSelectColumns);
-    const infoPopup = document.querySelector(".info-popup");
-    document.getElementById("infoBtn").addEventListener("click",
-        () => infoPopup.classList.add("shown")
-    );
-    document.addEventListener("click", function(e) {
-        if (e.target.id !== "infoBtn" && !infoPopup.contains(e.target))
-            infoPopup.classList.remove("shown");
-        // for phones: unhover plot if clicked off it
-        [...document.querySelectorAll(".plot")].forEach(elem => {
-            if (elem.contains(e.target) || !elem.className.includes("plotly")) return;
-            Plotly.Fx.unhover(elem);
-        });
-    });
-    document.querySelectorAll(".plots-title .col span").forEach(
-        elem => elem.addEventListener("click", titleClickSort)
-    );
-    const tierTitles = [...TIERS.slice(0, TIERS.length-1), "GM+"];
-    document.getElementById("sortTiers").outerHTML = TIERS.map((v, i) =>
-        `<option value="tier-${v}">:${tierTitles[i]}</option>`
-    ).join("\n");
-    setupColorTips();
-    loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
-}
-
-function setupColorTips() {
-    const vals = [...REGIONS, "Console"];
-    const colr = [...REGION_COLORS, CONSOLE_COLOR];
-    document.getElementById("colorTips").innerHTML = vals.map((val, i) => {
-        return `<span style="color:${colr[i]}">${val}</span>`
-    }).join(", ");
-}
-
-function mobileSelectColumns() {
-    const mainDiv = document.getElementById("main");
-    mainDiv.classList.remove([...mainDiv.classList].filter(c => c.startsWith("mobile-show-")));
-    mainDiv.classList.add("mobile-show-" + document.getElementById("selectColumn").value)
-}
-
-function titleClickSort(evt) {
-    const elem = evt.target.parentElement;
-    const active = elem.classList.contains("active");
-    document.querySelectorAll(".plots-title .col").forEach(e => e.classList.remove("active", "inv"));
-    elem.classList.add("active");
-    if (active) confElems.sortingReverse.checked = !confElems.sortingReverse.checked;
-    else confElems.sortingReverse.checked = true;
-    render();
-}
-
-function loadData(jsonpSrc) {
-    const script = document.createElement("script");
-    script.type = "text/javascript";
-    script.src = jsonpSrc;
-    document.body.appendChild(script);
-}
-
-function jsonp(data) {
-    rawData = data;
-    [heroes, allEntries] = processRawData(rawData);
-    expectedPr = Object.fromEntries(ROLES.map(role =>
-        [role, (role === "tank" ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
-    ));
-    const dataTs = rawData[0]._ts;
-    tsElem.innerHTML = moment(dataTs * 1000).fromNow();
-    tsElem.title = moment(dataTs * 1000).toString();
-    renderHeroes();
-    render();
-}
-
-function handleConf() {
-    const conf = {
-        facet: confElems.facet.value,
-        sortingMode: confElems.sortingMode.value,
-        sortingReverse: confElems.sortingReverse.checked,
-        filterRole: confElems.filterRole.value,
-        filterRegion: confElems.filterRegion.value,
-        filterPlatform: confElems.filterPlatform.value,
-    };
-    confElems.sortingRegion.disabled = false;
-    confElems.sortingPlatform.disabled = false;
-    confElems.filterRegion.children[0].disabled = false;
-    confElems.filterPlatform.disabled = false;
-    if (conf.facet === "region") {
-        if (prevConf.facet !== "region")
-            confElems.filterRegion.value = conf.filterRegion = "all";
-        conf.facetValues = REGIONS;
-        conf.facetColors = REGION_COLORS;
-        conf.sortFacet = "region";
-        conf.sortFacetValue = confElems.sortingRegion.value;
-        if (conf.filterRegion !== "all") {
-            confElems.sortingRegion.value = conf.filterRegion;
-            confElems.sortingRegion.disabled = true;
-            conf.sortFacetValue = conf.filterRegion;
-        }
-    } else if (conf.facet === "input") {
-        conf.sortFacet = "input";
-        conf.sortFacetValue = confElems.sortingPlatform.value;
-        confElems.filterRegion.children[0].disabled = true;
-        confElems.filterPlatform.disabled = true;
-        if (conf.filterRegion === "all")
-            confElems.filterRegion.value = conf.filterRegion = REGIONS[0];
-        conf.facetValues = PLATFORMS;
-        conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], CONSOLE_COLOR];
-    }
-
-    confElems.sortingRegion.classList.toggle("hidden", conf.facet === "input");
-    confElems.sortingPlatform.classList.toggle("hidden", conf.facet === "region");
-
-    if (conf.sortingMode === "facets-spread") {
-        confElems.sortingRegion.disabled = true;
-        confElems.sortingPlatform.disabled = true;
-    }
-
-    const columnTitleElem = document.querySelector(".plots-title .active");
-    conf.sortingColumn = columnTitleElem.dataset.sort;
-    columnTitleElem.classList.toggle("inv", conf.sortingReverse);
-
-    if (conf.sortingColumn === "name") {
-        if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue) {
-            const elem = document.querySelector(".plots-title .col.title-name");
-            elem.classList.remove("flash");
-            setTimeout(() => elem.classList.add("flash"), 0);
-        }
-    }
-
-    prevConf = conf;
-    return conf;
-}
 
 function renderHeroes() {
-    plotsElem.innerHTML = "";
+    plotsElem.innerHTML = '';
     Object.entries(heroes).forEach(([id, hero]) => {
-        hero.elem = document.createElement("div");
+        hero.elem = document.createElement('div');
         hero.elem.className = `entry role-${hero.role}`;
         hero.elem.innerHTML = `
-        <div class="hero-name" title="${hero.name}">${hero.name}</div>
-        <img src="${hero.iconUrl}" title="${hero.name}">
-        <div class="plot plot-wr"></div>
-        <div class="plot plot-pr"></div>
+        <div class='hero-name' title='${hero.name}'>${hero.name}</div>
+        <img src='${hero.iconUrl}' title='${hero.name}'>
+        <div class='plot plot-wr'></div>
+        <div class='plot plot-pr'></div>
         `;
         plotsElem.appendChild(hero.elem);
     });
 }
 
-function sortBy(values, key) {
-    const decorated = values.map(v => [v, key(v)]);
-    decorated.sort((a, b) => a[1] - b[1]);
-    return decorated.map(v => v[0]);
-}
-
-function pluck(objArr, key) {
-    return objArr.map(e => e[key]);
-}
-
-function calcMAD(lines) {
-    const totPoints = lines.flatMap(vals => vals.length).reduce((s, v) => s + v, 0);
-    return lines.map(vals => {
-        if (vals.length <= 1) return 0;
-        const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
-        return vals.map(v => Math.abs(v-mean)).reduce((s, v) => s + v, 0)
-    }).reduce((s, v) => s + v, 0) / totPoints;
-}
 
 function render() {
     const conf = handleConf();
@@ -660,37 +565,37 @@ function render() {
     // ==> Filter entries
     let entries = allEntries.filter(e => (
         e.mode === 'Comp' &&
-        e.map === "all-maps" &&
-        (e.input === conf.filterPlatform || conf.facet === "input") &&
-        (e.region === conf.filterRegion || conf.filterRegion === "all")
+        e.map === 'all-maps' &&
+        (e.input === conf.filterPlatform || conf.facet === 'input') &&
+        (e.region === conf.filterRegion || conf.filterRegion === 'all')
     ));
 
     // ==> Sort heroes
     let names = Object.keys(heroes);
-    // names = names.filter(n => n.includes("wuya"));
-    if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
+    // names = names.filter(n => n.includes('wuya'));
+    if (conf.filterRole !== 'all') names = names.filter(name => heroes[name].role == conf.filterRole);
     const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.hero === n)]));
     names.sort(); // sort alphabetically by default
-    if (conf.sortingColumn !== "name") {
+    if (conf.sortingColumn !== 'name') {
         const dummy = {winrate: 0, pickrate: 0};
         const c = conf.sortingColumn;
         names = sortBy(names, name => {
             let entries = name2entries[name].filter(e => e[c] !== -1);
-            if (conf.sortingMode !== "facets-spread")
+            if (conf.sortingMode !== 'facets-spread')
                 entries = entries.filter(e => e[conf.sortFacet] === conf.sortFacetValue);
             let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
-            if (conf.sortingMode === "facets-spread")
+            if (conf.sortingMode === 'facets-spread')
                 return calcMAD(Object.values(byTier).map(lst => pluck(lst, c)));
             Object.entries(byTier).forEach(([k, v]) => {byTier[k] = v[0] || dummy;}); // fill missing data
-            const eAll = entries.filter(e => e.tier === "All")[0] || dummy;
-            if (conf.sortingMode === "all") return eAll[c];
-            if (conf.sortingMode === "b-m-delta") return byTier.Master[c] - byTier.Bronze[c];
-            if (conf.sortingMode.startsWith("tier-")) return byTier[conf.sortingMode.slice(5)][c];
+            const eAll = entries.filter(e => e.tier === 'All')[0] || dummy;
+            if (conf.sortingMode === 'all') return eAll[c];
+            if (conf.sortingMode === 'b-m-delta') return byTier.Master[c] - byTier.Bronze[c];
+            if (conf.sortingMode.startsWith('tier-')) return byTier[conf.sortingMode.slice(5)][c];
         });
     }
     if (conf.sortingReverse) names.reverse();
     Object.entries(heroes).forEach(([name, hero]) => {
-        hero.elem.classList.toggle("hidden", !names.includes(name));
+        hero.elem.classList.toggle('hidden', !names.includes(name));
         hero.elem.style.order = names.indexOf(name);
     });
 
@@ -704,36 +609,36 @@ function render() {
         entryElem.dataset.lastViewKey = viewKey;
         clearTimeout(hero.renderTimeout);
 
-        ["winrate", "pickrate"].forEach(valtype => {
+        ['winrate', 'pickrate'].forEach(valtype => {
             // Line traces
             const traces = conf.facetValues.map(value => {
-                const valueName = value == "PC" ? "KB&M" : value;
+                const valueName = value == 'PC' ? 'KB&M' : value;
                 const facetEntries = name2entries[name].filter(e => (
                     e[conf.facet] === value &&
                     e[valtype] !== -1
                 ));
-                let facetEntriesTiered = facetEntries.filter(e => e.tier !== "All");
+                let facetEntriesTiered = facetEntries.filter(e => e.tier !== 'All');
                 facetEntriesTiered = sortBy(facetEntriesTiered, e => tiersInfo[e.tier].idx);
                 let points = facetEntriesTiered.map(e => ({
-                    x: tiersInfo[e.tier].idx, y: e[valtype], size: 4, symbol: "circle"
+                    x: tiersInfo[e.tier].idx, y: e[valtype], size: 4, symbol: 'circle'
                 }));
-                let facetEntriesTot = facetEntries.filter(e => e.tier === "All");
+                let facetEntriesTot = facetEntries.filter(e => e.tier === 'All');
                 if (facetEntriesTot.length) {
                     // Insert total points at the end.
                     // Dud in front breaks the line so All is disconnected from GM.
                     points = [...points, {x: TIERS.length-1}, {
-                        x: ALL_TIER_IDX, y: facetEntriesTot[0][valtype], symbol: "arrow-left", size: 6,
+                        x: ALL_TIER_IDX, y: facetEntriesTot[0][valtype], symbol: 'arrow-left', size: 6,
                     }];
                 }
                 return {
-                    x: pluck(points, "x"), y: pluck(points, "y"), mode: "lines+markers", name: valueName,
+                    x: pluck(points, 'x'), y: pluck(points, 'y'), mode: 'lines+markers', name: valueName,
                     line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
-                    marker: {size: pluck(points, "size"), symbol: pluck(points, "symbol"), line: {width: 0}, opacity: 1},
+                    marker: {size: pluck(points, 'size'), symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
                 };
             });
 
             const shapes = [layoutExtra[valtype].guideline];
-            if (valtype === "pickrate")
+            if (valtype === 'pickrate')
                 shapes.push({y0: expectedPr[hero.role], y1: expectedPr[hero.role], ...layoutExtra.pickrate.expectedGuideline});
 
             const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
@@ -750,7 +655,115 @@ function render() {
     });
 }
 
-setup();
+
+function handleConf() {
+    const conf = {
+        facet: confElems.facet.value,
+        sortingMode: confElems.sortingMode.value,
+        sortingReverse: confElems.sortingReverse.checked,
+        filterRole: confElems.filterRole.value,
+        filterRegion: confElems.filterRegion.value,
+        filterPlatform: confElems.filterPlatform.value,
+    };
+    confElems.sortingRegion.disabled = false;
+    confElems.sortingPlatform.disabled = false;
+    confElems.filterRegion.children[0].disabled = false;
+    confElems.filterPlatform.disabled = false;
+    if (conf.facet === 'region') {
+        if (prevConf.facet !== 'region')
+            confElems.filterRegion.value = conf.filterRegion = 'all';
+        conf.facetValues = REGIONS;
+        conf.facetColors = REGION_COLORS;
+        conf.sortFacet = 'region';
+        conf.sortFacetValue = confElems.sortingRegion.value;
+        if (conf.filterRegion !== 'all') {
+            confElems.sortingRegion.value = conf.filterRegion;
+            confElems.sortingRegion.disabled = true;
+            conf.sortFacetValue = conf.filterRegion;
+        }
+    } else if (conf.facet === 'input') {
+        conf.sortFacet = 'input';
+        conf.sortFacetValue = confElems.sortingPlatform.value;
+        confElems.filterRegion.children[0].disabled = true;
+        confElems.filterPlatform.disabled = true;
+        if (conf.filterRegion === 'all')
+            confElems.filterRegion.value = conf.filterRegion = REGIONS[0];
+        conf.facetValues = PLATFORMS;
+        conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], CONSOLE_COLOR];
+    }
+
+    confElems.sortingRegion.classList.toggle('hidden', conf.facet === 'input');
+    confElems.sortingPlatform.classList.toggle('hidden', conf.facet === 'region');
+
+    if (conf.sortingMode === 'facets-spread') {
+        confElems.sortingRegion.disabled = true;
+        confElems.sortingPlatform.disabled = true;
+    }
+
+    const columnTitleElem = document.querySelector('.plots-title .active');
+    conf.sortingColumn = columnTitleElem.dataset.sort;
+    columnTitleElem.classList.toggle('inv', conf.sortingReverse);
+
+    if (conf.sortingColumn === 'name') {
+        if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue) {
+            const elem = document.querySelector('.plots-title .col.title-name');
+            elem.classList.remove('flash');
+            setTimeout(() => elem.classList.add('flash'), 0);
+        }
+    }
+
+    prevConf = conf;
+    return conf;
+}
+
+
+function setupColorTips() {
+    const vals = [...REGIONS, 'Console'];
+    const colr = [...REGION_COLORS, CONSOLE_COLOR];
+    document.getElementById('colorTips').innerHTML = vals.map((val, i) => {
+        return `<span style='color:${colr[i]}'>${val}</span>`
+    }).join(', ');
+}
+
+
+function mobileSelectColumns() {
+    const mainDiv = document.getElementById('main');
+    mainDiv.classList.remove([...mainDiv.classList].filter(c => c.startsWith('mobile-show-')));
+    mainDiv.classList.add('mobile-show-' + document.getElementById('selectColumn').value)
+}
+
+
+function titleClickSort(evt) {
+    const elem = evt.target.parentElement;
+    const active = elem.classList.contains('active');
+    document.querySelectorAll('.plots-title .col').forEach(e => e.classList.remove('active', 'inv'));
+    elem.classList.add('active');
+    if (active) confElems.sortingReverse.checked = !confElems.sortingReverse.checked;
+    else confElems.sortingReverse.checked = true;
+    render();
+}
+
+
+function sortBy(values, key) {
+    const decorated = values.map(v => [v, key(v)]);
+    decorated.sort((a, b) => a[1] - b[1]);
+    return decorated.map(v => v[0]);
+}
+
+
+function pluck(objArr, key) {
+    return objArr.map(e => e[key]);
+}
+
+
+function calcMAD(lines) {
+    const totPoints = lines.flatMap(vals => vals.length).reduce((s, v) => s + v, 0);
+    return lines.map(vals => {
+        if (vals.length <= 1) return 0;
+        const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+        return vals.map(v => Math.abs(v-mean)).reduce((s, v) => s + v, 0)
+    }).reduce((s, v) => s + v, 0) / totPoints;
+}
 
 </script>
 </body>
