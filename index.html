@@ -403,18 +403,17 @@ const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     shorthand: name !== 'Grandmaster' ? name[0] : 'GM+',
 }]));
 const xticklabels = TIERS.map(n => `<span style='color: ${tiersInfo[n].color}; font-weight: bold'>${tiersInfo[n].shorthand}</span>`);
-const plotsElem = document.getElementById('plots');
-const tsElem = document.getElementById('datasetTs');
+const plotsElem = document.querySelector('#plots');
 const confElems = {
-    facet: document.getElementById('facet'),
-    filterRole: document.getElementById('filterRole'),
-    filterPlatform: document.getElementById('filterPlatform'),
-    filterRegion: document.getElementById('filterRegion'),
-    sortingMode: document.getElementById('sortingMode'),
-    sortingRegion: document.getElementById('sortingRegion'),
-    sortingPlatform: document.getElementById('sortingPlatform'),
-    sortingReverse: document.getElementById('sortingReverse'),
-    toggleChina: document.getElementById('toggleChina'),
+    facet: document.querySelector('#facet'),
+    filterRole: document.querySelector('#filterRole'),
+    filterPlatform: document.querySelector('#filterPlatform'),
+    filterRegion: document.querySelector('#filterRegion'),
+    sortingMode: document.querySelector('#sortingMode'),
+    sortingRegion: document.querySelector('#sortingRegion'),
+    sortingPlatform: document.querySelector('#sortingPlatform'),
+    sortingReverse: document.querySelector('#sortingReverse'),
+    toggleChina: document.querySelector('#toggleChina'),
 };
 const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false};
 const plotLayout = {
@@ -466,7 +465,7 @@ function setup() {
     Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener('change', render));
     document.querySelector('#selectColumn').addEventListener('click', mobileSelectColumns);
     const infoPopup = document.querySelector('.info-popup');
-    document.getElementById('infoBtn').addEventListener('click',
+    document.querySelector('#infoBtn').addEventListener('click',
         () => infoPopup.classList.add('shown')
     );
     document.addEventListener('click', function(e) {
@@ -482,7 +481,7 @@ function setup() {
         elem => elem.addEventListener('click', titleClickSort)
     );
     const tierTitles = [...TIERS.slice(0, TIERS.length-1), 'GM+'];
-    document.getElementById('sortTiers').outerHTML = TIERS.map((v, i) =>
+    document.querySelector('#sortTiers').outerHTML = TIERS.map((v, i) =>
         `<option value='tier-${v}'>:${tierTitles[i]}</option>`
     ).join('\n');
     setupColorTips();
@@ -505,6 +504,7 @@ function jsonp(data) {
         [role, (role === 'tank' ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
     ));
     const dataTs = rawData[0]._ts;
+    const tsElem = document.querySelector('#datasetTs');
     tsElem.innerHTML = moment(dataTs * 1000).fromNow();
     tsElem.title = moment(dataTs * 1000).toString();
     renderHeroes();
@@ -765,16 +765,16 @@ function handleConf() {
 function setupColorTips() {
     const vals = [...REGIONS, 'Console'];
     const colr = [...REGION_COLORS, CONSOLE_COLOR];
-    document.getElementById('colorTips').innerHTML = vals.map((val, i) => {
+    document.querySelector('#colorTips').innerHTML = vals.map((val, i) => {
         return `<span style='color:${colr[i]}'>${val}</span>`
     }).join(', ');
 }
 
 
 function mobileSelectColumns() {
-    const mainDiv = document.getElementById('main');
+    const mainDiv = document.querySelector('#main');
     mainDiv.classList.remove([...mainDiv.classList].filter(c => c.startsWith('mobile-show-')));
-    mainDiv.classList.add('mobile-show-' + document.getElementById('selectColumn').value)
+    mainDiv.classList.add('mobile-show-' + document.querySelector('#selectColumn').value)
 }
 
 
