@@ -107,14 +107,14 @@ body {
 .info a:hover {
     text-decoration: underline;
 }
-#infoBtn {
+.info .trigger-info {
     background: none;
     border: none;
     padding: 0;
     font: inherit;
     cursor: pointer;
 }
-#infoBtn:hover {
+.info .trigger-info:hover {
     text-decoration: underline dotted;
 }
 
@@ -138,6 +138,11 @@ body {
 }
 #colorTips {
     font-weight: bold;
+}
+#infoPopupClose {
+    position: absolute;
+    top: 5px;
+    right: 5px;
 }
 
 /* -- column titles -- */
@@ -284,6 +289,7 @@ svg.main-svg, svg.main-svg * {
 <body>
 
 <div class='info-popup'>
+    <button id='infoPopupClose'>x</button>
     <ul>
         <li>Line colors: <span id='colorTips'></span>.</li>
         <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
@@ -294,7 +300,9 @@ svg.main-svg, svg.main-svg * {
             <li>B / M Diff. – difference between Bronze and Master (slope of the facet line).</li>
             <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).</li>
         </ul></li>
-        <li>Chinese data comes from a <a href='https://ow.blizzard.cn/herolist/'>separate official source</a>. Contains only PC data [TODO: verify claim].</li>
+        <li><b>Chinese</b> data comes from a <a href='https://ow.blizzard.cn/herolist/'>separate official source</a>.
+            I do not know if the numbers are calculated in the exact same manner as on the main site.
+            There is also no PC/Console separation (is it even available on Consoles there).</li>
     </ul>
 </div>
 
@@ -365,7 +373,7 @@ svg.main-svg, svg.main-svg * {
 </div>
 
 <div class='info'>
-    <button id='infoBtn'>legend and info ★</button> ┊
+    <button class='trigger-info'>legend and info ★</button> ┊
     dataset refreshed: <span id='datasetTs'></span> ┊
     <a href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
     <a href='https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog'>report issue</a>
@@ -469,11 +477,14 @@ function setup() {
     Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener('change', render));
     document.querySelector('#selectColumn').addEventListener('click', mobileSelectColumns);
     const infoPopup = document.querySelector('.info-popup');
-    document.querySelector('#infoBtn').addEventListener('click',
-        () => infoPopup.classList.add('shown')
+    document.querySelector('#infoPopupClose').addEventListener('click',
+        () => infoPopup.classList.remove('shown')
+    );
+    document.querySelectorAll('.trigger-info').forEach(elem =>
+        elem.addEventListener('click', () => infoPopup.classList.add('shown'))
     );
     document.addEventListener('click', function(e) {
-        if (e.target.id !== 'infoBtn' && !infoPopup.contains(e.target))
+        if (!e.target.classList.contains('trigger-info') && !infoPopup.contains(e.target))
             infoPopup.classList.remove('shown');
         // for phones: unhover plot if clicked off it
         [...document.querySelectorAll('.plot')].forEach(elem => {
