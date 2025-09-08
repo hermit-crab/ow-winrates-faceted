@@ -606,9 +606,7 @@ function render() {
     const conf = handleConf();
     const smallScreen = window.matchMedia("(max-width: 700px)").matches;
 
-    let entries = [...allEntries];
-    if (conf.filterRegion === 'mean')
-        entries.push(...(conf.chinaOn ? regionMeansWithCN : regionMeans));
+    let entries = [...allEntries, ...(conf.chinaOn ? regionMeansWithCN : regionMeans)];
 
     // ==> Filter entries
     entries = entries.filter(e => (
@@ -770,6 +768,8 @@ function handleConf() {
             confElems.sortingRegion.disabled = true;
             conf.sortFacetValue = conf.filterRegion;
         }
+        if (conf.filterRegion !== 'mean')
+            conf.facetValues = REGIONS.slice(0, -1);
     } else if (conf.facet === 'input') {
         conf.sortFacet = 'input';
         conf.sortFacetValue = confElems.sortingPlatform.value;
