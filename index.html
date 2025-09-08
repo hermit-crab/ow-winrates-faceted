@@ -163,12 +163,12 @@ body {
     margin-right: 10px;
     text-wrap: nowrap;
 }
+.plots-title .col span.flash {
+    animation: flash 0.5s ease;
+}
 .plots-title .col.title-name {
     width: 80px;
     cursor: default;
-}
-.plots-title .col.title-name.flash-red {
-    animation: flash-red 0.5s ease;
 }
 .plots-title .col.title-name span {
     margin-right: 0;
@@ -274,9 +274,9 @@ svg.main-svg, svg.main-svg * {
     .mobile-show-wr .title-wr {display: block;}
 }
 
-@keyframes flash-red {
+@keyframes flash {
     0%   {background-color: transparent;}
-    50%  {background-color: #f008;}
+    50%  {background-color: rgba(74, 210, 255, 0.518);}
     100% {background-color: transparent;}
 }
 </style>
@@ -753,10 +753,8 @@ function handleConf() {
     if (!conf.chinaOn && conf.filterRegion === 'China')
         confElems.filterRegion.value = conf.filterRegion = 'all';
 
-    if (conf.sortingColumn === 'name') {
-        if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue)
-            flash(document.querySelector('.plots-title .col.title-name'), 'flash-red');
-    }
+    if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue)
+        flash(document.querySelector('.plots-title .col.active span'), 'flash');
 
     prevConf = conf;
     return conf;
