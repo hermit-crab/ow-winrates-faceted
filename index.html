@@ -77,6 +77,7 @@ body {
     flex-wrap: nowrap;
     justify-content: center;
     align-items: baseline;
+    user-select: none;
 }
 .conf-block {
     display: inline-block;
@@ -166,8 +167,8 @@ body {
     width: 80px;
     cursor: default;
 }
-.plots-title .col.title-name.flash {
-    animation: red-flash 0.5s ease;
+.plots-title .col.title-name.flash-red {
+    animation: flash-red 0.5s ease;
 }
 .plots-title .col.title-name span {
     margin-right: 0;
@@ -273,7 +274,7 @@ svg.main-svg, svg.main-svg * {
     .mobile-show-wr .title-wr {display: block;}
 }
 
-@keyframes red-flash {
+@keyframes flash-red {
     0%   {background-color: transparent;}
     50%  {background-color: #f008;}
     100% {background-color: transparent;}
@@ -327,6 +328,7 @@ svg.main-svg, svg.main-svg * {
             <option value='Asia'>Asia</option>
             <option value='Europe'>Europe</option>
             <option value='China'>China</option>
+            <!-- <option value='mean'>*Average</option> -->
         </select>
         <select id='filterPlatform'>
             <option value='PC' selected>KB&M</option>
@@ -350,6 +352,7 @@ svg.main-svg, svg.main-svg * {
             <option value='Asia'>Asia</option>
             <option value='Europe'>Europe</option>
             <option value='China'>China</option>
+            <!-- <option value='mean'>*Average</option> -->
         </select>
         <select id='sortingPlatform'>
             <option value='PC' selected>KB&M</option>
@@ -519,11 +522,11 @@ function processRawData(rawData) {
 
     const select = (o, keys) => Object.fromEntries(keys.map(k => [k, o[k]]));
 
-    // NOTE: In main site pickrates data sum up to 500% [sum(tank)=100+sum(support)=200+sum(damage)=200]
+    // NOTE: On main site pickrates data sum up to 500% [sum(tank)=100 + sum(support)=200 + sum(damage)=200]
     // in CN data it is all normalized to sum up to 100%. We stick to main site convention so
-    // chinese data will be rescaled to it.
+    // CN data will be rescaled to it.
 
-    // NOTE: Main site data bundles GM+Champ together, CN data has gives Champ as is. We ignore it.
+    // NOTE: Main site data bundles GM+Champ together, CN data gives Champ as is. We ignore it.
 
     const rqCodes = [...new Set(mainData.map(a => a.selected.rq))];
     rqCodes.sort();
@@ -605,7 +608,7 @@ function render() {
         e.map === 'all-maps' &&
         (e.input === conf.filterPlatform || conf.facet === 'input') &&
         (e.region === conf.filterRegion || conf.filterRegion === 'all') &&
-        (e.region !== "China" || conf.chinaOn)
+        (e.region !== 'China' || conf.chinaOn)
     ));
 
     // ==> Sort heroes
@@ -638,39 +641,40 @@ function render() {
     });
 
     // ==> Update plots
-    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}${conf.chinaOn}`
+    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}${conf.chinaOn}`;
     names.forEach((name, idx) => {
         const hero = heroes[name];
         const entryElem = hero.elem;
         entryElem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
         if (entryElem.dataset.lastViewKey === viewKey) return;
         entryElem.dataset.lastViewKey = viewKey;
-        clearTimeout(hero.renderTimeout);
+        clearTimeout(hero.renderTimeout); // TODO: clear all at start
 
         ['winrate', 'pickrate'].forEach(valtype => {
             // Line traces
-            const traces = conf.facetValues.map(value => {
-                const valueName = value == 'PC' ? 'KB&M' : value;
+            const traces = conf.facetValues.map(facetValue => {
                 const facetEntries = name2entries[name].filter(e => (
-                    e[conf.facet] === value &&
-                    e[valtype] !== -1
+                    e[conf.facet] === facetValue && e[valtype] !== -1
                 ));
-                let facetEntriesTiered = facetEntries.filter(e => e.tier !== 'All');
-                facetEntriesTiered = sortBy(facetEntriesTiered, e => tiersInfo[e.tier].idx);
-                let points = facetEntriesTiered.map(e => ({
-                    x: tiersInfo[e.tier].idx, y: e[valtype], size: 4, symbol: 'circle'
-                }));
-                let facetEntriesTot = facetEntries.filter(e => e.tier === 'All');
-                if (facetEntriesTot.length) {
-                    // Insert total points at the end.
-                    // Dud in front breaks the line so All is disconnected from GM.
-                    points = [...points, {x: TIERS.length-1}, {
-                        x: ALL_TIER_IDX, y: facetEntriesTot[0][valtype], symbol: 'arrow-left', size: 6,
-                    }];
-                }
+
+                // Insert total points at the end.
+                // Dud in front breaks the line so All is disconnected from GM.
+                const points = [...TIERS, null, 'All'].map((t, idx) => {
+                    if (!t) return {x: TIERS.length-1};
+                    if (facetEntries.filter(e => e.tier === t).length > 1)
+                        console.error(name, t, facetEntries.filter(e => e.tier === t))
+                    const entry = facetEntries.filter(e => e.tier === t)[0];
+                    if (!entry) return;
+                    if (t === 'All')
+                        return {x: ALL_TIER_IDX, y: entry[valtype], symbol: 'arrow-left', size: 6};
+                    return {x: idx, y: entry[valtype], symbol: 'circle', size: 4};
+                }).filter(e => e);
+
                 return {
-                    x: pluck(points, 'x'), y: pluck(points, 'y'), mode: 'lines+markers', name: valueName,
-                    line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
+                    x: pluck(points, 'x'), y: pluck(points, 'y'),
+                    name: facetValue === 'PC' ? 'KB&M' : facetValue,
+                    mode: 'lines+markers',
+                    line: {color: conf.facetColors[conf.facetValues.indexOf(facetValue)], width: 1.2},
                     marker: {size: pluck(points, 'size'), symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
                 };
             });
@@ -744,17 +748,14 @@ function handleConf() {
     columnTitleElem.classList.toggle('inv', conf.sortingReverse);
 
     document.querySelectorAll('select option[value="China"]').forEach(elem => elem.disabled = !conf.chinaOn);
-    if (!conf.chinaOn && conf.sortFacetValue === "China")
+    if (!conf.chinaOn && conf.sortFacetValue === 'China')
         confElems.sortingRegion.value = conf.sortFacetValue = REGIONS[0];
-    if (!conf.chinaOn && conf.filterRegion === "China")
+    if (!conf.chinaOn && conf.filterRegion === 'China')
         confElems.filterRegion.value = conf.filterRegion = 'all';
 
     if (conf.sortingColumn === 'name') {
-        if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue) {
-            const elem = document.querySelector('.plots-title .col.title-name');
-            elem.classList.remove('flash');
-            setTimeout(() => elem.classList.add('flash'), 0);
-        }
+        if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue)
+            flash(document.querySelector('.plots-title .col.title-name'), 'flash-red');
     }
 
     prevConf = conf;
@@ -808,6 +809,11 @@ function calcMAD(lines) {
         const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
         return vals.map(v => Math.abs(v-mean)).reduce((s, v) => s + v, 0)
     }).reduce((s, v) => s + v, 0) / totPoints;
+}
+
+function flash(elem, className) {
+    elem.classList.remove(className);
+    setTimeout(() => elem.classList.add(className), 0);
 }
 
 </script>
