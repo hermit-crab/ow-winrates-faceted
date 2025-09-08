@@ -328,7 +328,7 @@ svg.main-svg, svg.main-svg * {
             <option value='Asia'>Asia</option>
             <option value='Europe'>Europe</option>
             <option value='China'>China</option>
-            <!-- <option value='mean'>*Average</option> -->
+            <option value='mean'>*Average</option>
         </select>
         <select id='filterPlatform'>
             <option value='PC' selected>KB&M</option>
@@ -352,7 +352,7 @@ svg.main-svg, svg.main-svg * {
             <option value='Asia'>Asia</option>
             <option value='Europe'>Europe</option>
             <option value='China'>China</option>
-            <!-- <option value='mean'>*Average</option> -->
+            <option value='mean'>*Average</option>
         </select>
         <select id='sortingPlatform'>
             <option value='PC' selected>KB&M</option>
@@ -391,14 +391,15 @@ svg.main-svg, svg.main-svg * {
 
 const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'];
 const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8ae960', '#8d71fe'];
-const REGIONS = ['Americas', 'Asia', 'Europe', 'China'];
-const REGION_COLORS = ['#f14141', '#ffac00', '#3c90ff', '#58d986'];
+const REGIONS = ['Americas', 'Asia', 'Europe', 'China', 'mean'];
+const REGION_COLORS = ['#f14141', '#ffac00', '#3c90ff', '#58d986', 'black'];
 const PLATFORMS = ['PC', 'Console'];
 const CONSOLE_COLOR = 'gray';
 const ROLES = ['tank', 'support', 'damage'];
 const LOCAL_JSONP_SRC = 'winrate-data.js';
 const EXTERNAL_JSONP_SRC = 'https://hermit-crab.neocities.org/winrate-data.js?nocache=' + parseInt(Date.now()/1000/60/60);
 const ALL_TIER_IDX = -.5;
+const PRETTY_NAMES = {'PC': 'KB&M', 'mean': '*Average'};
 
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
@@ -460,7 +461,7 @@ const layoutExtra = {
         }
     }
 };
-let rawData, dataTs, heroes, allEntries, expectedPr, prevConf = {};
+let rawData, dataTs, heroes, allEntries, expectedPr, regionMeans, regionMeansWithCN, prevConf = {};
 setup();
 
 
@@ -503,6 +504,8 @@ function loadData(jsonpSrc) {
 function jsonp(data) {
     rawData = data;
     [heroes, allEntries] = processRawData(rawData);
+    regionMeans = computeRegionMeans(allEntries.filter(e => e.region !== 'China'));
+    regionMeansWithCN = computeRegionMeans(allEntries);
     expectedPr = Object.fromEntries(ROLES.map(role =>
         [role, (role === 'tank' ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
     ));
@@ -530,7 +533,7 @@ function processRawData(rawData) {
 
     const rqCodes = [...new Set(mainData.map(a => a.selected.rq))];
     rqCodes.sort();
-    if (rqCodes.length != 2)
+    if (rqCodes.length !== 2)
         console.error('unexpected amount of rqCodes (expected 2)', rqCodes);
     let modes = Object.fromEntries([[rqCodes[0], 'QP'], [rqCodes[1], 'Comp']])
     for (const facet of mainData) {
@@ -559,7 +562,7 @@ function processRawData(rawData) {
         const selected = Object.fromEntries(new URL(facet._url).searchParams);
         const rolesTotalPR = Object.fromEntries(ROLES.map(r => [r, facet.data.filter(
             e => heroes[e.hero_id].role === r
-        ).map(e => e.selection_ratio).reduce((s, v) => s + v, 0)]));
+        ).map(e => e.selection_ratio).reduce(sum, 0)]));
         for (const entry of facet['data']) {
             if (selected.mmr === 'Champion') continue;
             if (modes[selected.game_mode] === 'Stadium') continue;
@@ -602,14 +605,20 @@ function renderHeroes() {
 function render() {
     const conf = handleConf();
 
+    let entries = [...allEntries];
+    if (conf.filterRegion === 'mean')
+        entries.push(...(conf.chinaOn ? regionMeansWithCN : regionMeans));
+
     // ==> Filter entries
-    let entries = allEntries.filter(e => (
+    entries = entries.filter(e => (
         e.mode === 'Comp' &&
         e.map === 'all-maps' &&
         (e.input === conf.filterPlatform || conf.facet === 'input') &&
-        (e.region === conf.filterRegion || conf.filterRegion === 'all') &&
+        (e.region === conf.filterRegion || ['all', 'mean'].includes(conf.filterRegion)) &&
         (e.region !== 'China' || conf.chinaOn)
     ));
+    if (conf.filterRegion === 'mean' && conf.facet === 'input')
+        entries = entries.filter(e => e.region === conf.filterRegion);
 
     // ==> Sort heroes
     let names = Object.keys(heroes);
@@ -648,7 +657,7 @@ function render() {
         entryElem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
         if (entryElem.dataset.lastViewKey === viewKey) return;
         entryElem.dataset.lastViewKey = viewKey;
-        clearTimeout(hero.renderTimeout); // TODO: clear all at start
+        clearTimeout(hero.renderTimeout);
 
         ['winrate', 'pickrate'].forEach(valtype => {
             // Line traces
@@ -670,12 +679,20 @@ function render() {
                     return {x: idx, y: entry[valtype], symbol: 'circle', size: 4};
                 }).filter(e => e);
 
+                let extraAttrs = {};
+                let size = pluck(points, 'size');
+                if (conf.filterRegion === 'mean' && facetValue !== 'mean' && conf.facet === 'region') {
+                    extraAttrs = {hoverinfo: 'skip', opacity: .45};
+                    size = [...size.slice(0, -1).map(_ => 0), size.at(-1)];
+                }
+
                 return {
                     x: pluck(points, 'x'), y: pluck(points, 'y'),
-                    name: facetValue === 'PC' ? 'KB&M' : facetValue,
+                    name: PRETTY_NAMES[facetValue] || facetValue,
                     mode: 'lines+markers',
                     line: {color: conf.facetColors[conf.facetValues.indexOf(facetValue)], width: 1.2},
-                    marker: {size: pluck(points, 'size'), symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
+                    marker: {size: size, symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
+                    ...extraAttrs,
                 };
             });
 
@@ -694,6 +711,31 @@ function render() {
                 }, plotConf);
             }, 30 * idx);
         });
+    });
+}
+
+
+function computeRegionMeans(entries) {
+    const staticFields = ['hero', 'mode', 'map', 'input', 'tier'];
+    const computeFor = ['winrate', 'pickrate'];
+    const calcMean = (objs, k) => {
+        const vals = objs.map(o => o[k]).filter(v => v !== -1);
+        if (!vals.length) return -1;
+        return Math.round(vals.reduce(sum, 0) / vals.length * 10) / 10;
+    };
+    const groups = {};
+    entries.forEach(e => {
+        const key = staticFields.map(k => e[k]).join(',');
+        if (!groups[key]) groups[key] = [Object.fromEntries(staticFields.map(k => [k, e[k]]))];
+        groups[key].push(e);
+    });
+    return Object.values(groups).map(group => {
+        const copy = group.shift();
+        return {
+            region: 'mean',
+            ...copy,
+            ...Object.fromEntries(computeFor.map(k => [k, calcMean(group, k)])),
+        }
     });
 }
 
@@ -762,8 +804,8 @@ function handleConf() {
 
 
 function setupColorTips() {
-    const vals = [...REGIONS, 'Console'];
-    const colr = [...REGION_COLORS, CONSOLE_COLOR];
+    const vals = [...REGIONS.slice(0, -1), 'Console'];
+    const colr = [...REGION_COLORS.slice(0, -1), CONSOLE_COLOR];
     document.querySelector('#colorTips').innerHTML = vals.map((val, i) => {
         return `<span style='color:${colr[i]}'>${val}</span>`
     }).join(', ');
@@ -801,18 +843,22 @@ function pluck(objArr, key) {
 
 
 function calcMAD(lines) {
-    const totPoints = lines.flatMap(vals => vals.length).reduce((s, v) => s + v, 0);
+    const totPoints = lines.flatMap(vals => vals.length).reduce(sum, 0);
     return lines.map(vals => {
         if (vals.length <= 1) return 0;
-        const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
-        return vals.map(v => Math.abs(v-mean)).reduce((s, v) => s + v, 0)
-    }).reduce((s, v) => s + v, 0) / totPoints;
+        const mean = vals.reduce(sum, 0) / vals.length;
+        return vals.map(v => Math.abs(v-mean)).reduce(sum, 0)
+    }).reduce(sum, 0) / totPoints;
 }
+
 
 function flash(elem, className) {
     elem.classList.remove(className);
     setTimeout(() => elem.classList.add(className), 0);
 }
+
+
+function sum(a, b) {return a+b;}
 
 </script>
 </body>
