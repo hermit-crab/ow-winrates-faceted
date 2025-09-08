@@ -461,7 +461,7 @@ const layoutExtra = {
         }
     }
 };
-let rawData, dataTs, heroes, allEntries, expectedPr, regionMeans, regionMeansWithCN, prevConf = {};
+let rawData, dataTs, heroes, allEntries, expectedPr, regionMeans, regionMeansWithCN, lastConf = {};
 setup();
 
 
@@ -759,7 +759,7 @@ function handleConf() {
     confElems.filterRegion.children[0].disabled = false;
     confElems.filterPlatform.disabled = false;
     if (conf.facet === 'region') {
-        if (prevConf.facet !== 'region')
+        if (lastConf.facet !== 'region')
             confElems.filterRegion.value = conf.filterRegion = 'all';
         conf.facetValues = REGIONS;
         conf.facetColors = REGION_COLORS;
@@ -799,10 +799,10 @@ function handleConf() {
     if (!conf.chinaOn && conf.filterRegion === 'China')
         confElems.filterRegion.value = conf.filterRegion = 'all';
 
-    if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue)
+    if (lastConf.sortingMode !== conf.sortingMode || lastConf.sortFacetValue !== conf.sortFacetValue)
         flash(document.querySelector('.plots-title .col.active span'), 'flash');
 
-    prevConf = conf;
+    lastConf = conf;
     return conf;
 }
 
@@ -841,7 +841,11 @@ function plotToggleZoom(elem) {
         Plotly.relayout(elem, {'yaxis.range': default_.slice()});
         return;
     }
-    const ys = elem._fullData.flatMap(trace => trace.y).filter(v => v != null);
+    let traces = elem._fullData;
+    if (lastConf.filterRegion === 'mean' && lastConf.facet === 'region')
+        // in mean view we only show regional traces for faint reference
+        traces = [traces.at(-1)];
+    const ys = traces.flatMap(trace => trace.y).filter(v => v != null);
     Plotly.relayout(elem, {'yaxis.range': [Math.min(...ys)-1, Math.max(...ys)+1]});
 }
 
