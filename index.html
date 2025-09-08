@@ -419,7 +419,7 @@ const confElems = {
     sortingReverse: document.querySelector('#sortingReverse'),
     toggleChina: document.querySelector('#toggleChina'),
 };
-const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false};
+const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: false};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
     showlegend: false,
@@ -604,6 +604,7 @@ function renderHeroes() {
 
 function render() {
     const conf = handleConf();
+    const smallScreen = window.matchMedia("(max-width: 700px)").matches;
 
     let entries = [...allEntries];
     if (conf.filterRegion === 'mean')
@@ -707,8 +708,11 @@ function render() {
                 // (doing all in one go takes .8-1s of stagger)
                 Plotly.react(elem, traces, {
                     ...plotLayout, shapes: shapes,
-                    yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
+                    yaxis: {range: yrange.slice(), fixedrange: smallScreen, ...plotLayout.yaxis},
                 }, plotConf);
+                elem._defaultYrange = yrange.slice();
+                elem.removeAllListeners('plotly_doubleclick');
+                elem.on('plotly_doubleclick', () => plotToggleZoom(elem));
             }, 30 * idx);
         });
     });
@@ -827,6 +831,18 @@ function titleClickSort(evt) {
     if (active) confElems.sortingReverse.checked = !confElems.sortingReverse.checked;
     else confElems.sortingReverse.checked = true;
     render();
+}
+
+
+function plotToggleZoom(elem) {
+    const default_ = elem._defaultYrange;
+    const cur = elem._fullLayout.yaxis.range;
+    if (default_[0] !== cur[0] && default_[1] !== cur[1]) {
+        Plotly.relayout(elem, {'yaxis.range': default_.slice()});
+        return;
+    }
+    const ys = elem._fullData.flatMap(trace => trace.y).filter(v => v != null);
+    Plotly.relayout(elem, {'yaxis.range': [Math.min(...ys)-1, Math.max(...ys)+1]});
 }
 
 
