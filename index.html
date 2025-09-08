@@ -16,7 +16,6 @@ body {
     margin: 0;
 }
 .hidden {display: none !important;}
-.shown {display: unset !important;}
 
 /* -- main box -- */
 #main {
@@ -94,9 +93,9 @@ body {
 }
 
 /* -- info line -- */
-.info {
+.info, .warnings {
     font-size: 80%;
-    opacity: 40%;
+    opacity: 50%;
     text-wrap: nowrap;
     margin: 0 auto;
 }
@@ -107,20 +106,28 @@ body {
 .info a:hover {
     text-decoration: underline;
 }
-.info .trigger-info {
+.warnings > *:last-child::after {
+    content: '┊';
+    opacity: 0;
+}
+.warnings > * {
+    color: #871818;
+}
+.info .trigger-info,
+.warnings .trigger-info {
     background: none;
     border: none;
     padding: 0;
     font: inherit;
     cursor: pointer;
 }
-.info .trigger-info:hover {
+.info .trigger-info:hover,
+.warnings .trigger-info:hover {
     text-decoration: underline dotted;
 }
 
 /* -- info popup -- */
 .info-popup {
-    display: none;
     position: fixed;
     top: 10px;
     left: 10px;
@@ -169,7 +176,7 @@ body {
     text-wrap: nowrap;
 }
 .plots-title .col span.flash {
-    animation: flash 0.5s ease;
+    animation: flash 0.7s ease;
 }
 .plots-title .col.title-name {
     width: 80px;
@@ -288,7 +295,7 @@ svg.main-svg, svg.main-svg * {
 </head>
 <body>
 
-<div class='info-popup'>
+<div class='info-popup hidden'>
     <button id='infoPopupClose'>x</button>
     <ul>
         <li>Line colors: <span id='colorTips'></span>.</li>
@@ -303,6 +310,8 @@ svg.main-svg, svg.main-svg * {
         <li><b>Chinese</b> data comes from a <a href='https://ow.blizzard.cn/herolist/'>separate official source</a>.
             I do not know if the numbers are calculated in the exact same manner as on the main site.
             There is also no PC/Console separation (is it even available on Consoles there).</li>
+        <li><b>*Average</b> (mean) values are computed manually (Blizzard does not provide them).
+        Since we don't know population sizes (weights) – our mean is only an estimate of true mean.</li>
     </ul>
 </div>
 
@@ -378,6 +387,7 @@ svg.main-svg, svg.main-svg * {
     <a href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
     <a href='https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog'>report issue</a>
 </div>
+<div class='warnings hidden'></div>
 </div>
 
 <div class='plots-title'>
@@ -408,6 +418,10 @@ const LOCAL_JSONP_SRC = 'winrate-data.js';
 const EXTERNAL_JSONP_SRC = 'https://hermit-crab.neocities.org/winrate-data.js?nocache=' + parseInt(Date.now()/1000/60/60);
 const ALL_TIER_IDX = -.5;
 const PRETTY_NAMES = {'PC': 'KB&M', 'mean': '*Average'};
+const WARNINGS = {
+    cn: 'see notes about CN data',
+    avg: 'synthetic unweighted *Average',
+};
 
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
@@ -478,16 +492,15 @@ function setup() {
     document.querySelector('#selectColumn').addEventListener('click', mobileSelectColumns);
     const infoPopup = document.querySelector('.info-popup');
     document.querySelector('#infoPopupClose').addEventListener('click',
-        () => infoPopup.classList.remove('shown')
-    );
-    document.querySelectorAll('.trigger-info').forEach(elem =>
-        elem.addEventListener('click', () => infoPopup.classList.add('shown'))
+        () => infoPopup.classList.add('hidden')
     );
     document.addEventListener('click', function(e) {
         if (!e.target.classList.contains('trigger-info') && !infoPopup.contains(e.target))
-            infoPopup.classList.remove('shown');
+            infoPopup.classList.add('hidden');
+        else if (e.target.classList.contains('trigger-info'))
+            infoPopup.classList.remove('hidden');
         // for phones: unhover plot if clicked off it
-        [...document.querySelectorAll('.plot')].forEach(elem => {
+        document.querySelectorAll('.plot').forEach(elem => {
             if (elem.contains(e.target) || !elem.className.includes('plotly')) return;
             Plotly.Fx.unhover(elem);
         });
@@ -813,8 +826,23 @@ function handleConf() {
     if (lastConf.sortingMode !== conf.sortingMode || lastConf.sortFacetValue !== conf.sortFacetValue)
         flash(document.querySelector('.plots-title .col.active span'), 'flash');
 
+    toggleWarnings(conf);
+
     lastConf = conf;
     return conf;
+}
+
+
+function toggleWarnings(conf) {
+    const html = [
+        [WARNINGS.cn, conf.chinaOn],
+        [WARNINGS.avg, conf.filterRegion === 'mean' || conf.sortFacetValue === 'mean'],
+    ].map(
+        ([text, cond]) => cond ? `<span class="trigger-info">${text}</span>` : null
+    ).filter(t => t).join(' ┊ ');
+    const warnElem = document.querySelector('.warnings')
+    warnElem.classList.toggle('hidden', !html);
+    warnElem.innerHTML = html;
 }
 
 
