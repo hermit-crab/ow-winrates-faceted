@@ -946,19 +946,19 @@ function titleClickSort(evt) {
 }
 
 
-function plotToggleZoom(elem) {
-    const default_ = elem._defaultYrange;
-    const cur = elem._fullLayout.yaxis.range;
+function plotToggleZoom(plot) {
+    const default_ = plot._defaultYrange;
+    const cur = plot._fullLayout.yaxis.range;
     if (default_[0] !== cur[0] && default_[1] !== cur[1]) {
-        Plotly.relayout(elem, {'yaxis.range': default_.slice()});
+        Plotly.relayout(plot, {'yaxis.range': default_.slice()});
         return;
     }
-    let traces = elem._fullData;
+    let traces = plot._fullData;
     if (lastConf.filterRegion === 'mean' && lastConf.facet === 'region')
         // in mean view we only show regional traces for faint reference
         traces = [traces.at(-1)];
     const ys = traces.flatMap(trace => trace.y).filter(v => v != null);
-    Plotly.relayout(elem, {'yaxis.range': [Math.min(...ys)-1, Math.max(...ys)+1]});
+    Plotly.relayout(plot, {'yaxis.range': [Math.min(...ys)-1, Math.max(...ys)+1]});
 }
 
 
