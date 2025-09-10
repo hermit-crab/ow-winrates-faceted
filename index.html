@@ -472,7 +472,7 @@ function processRawData(rawData) {
 
 function setup() {
     Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener("change", render));
-    document.querySelector("#selectColumn").addEventListener("click", mobileSelectColumns);
+    document.querySelector("#selectColumn").addEventListener("change", mobileSelectColumns);
     const infoPopup = document.querySelector(".info-popup");
     document.getElementById("infoBtn").addEventListener("click",
         () => infoPopup.classList.add("shown")
