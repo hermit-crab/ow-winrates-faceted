@@ -65,7 +65,6 @@ body {
     align-items: center;
     overflow-x: auto;
     width: 100%;
-    margin-bottom: 5px !important;
     padding-bottom: 5px;
 }
 
@@ -173,7 +172,12 @@ body {
     font-size: 60%;
     gap: 10px;
     user-select: none;
-    position: relative;
+    padding-top: 5px;
+    padding-bottom: 3px;
+    background-color: #fafafa;
+    position: sticky;
+    z-index: 400;
+    top: 0;
 }
 .plots-title .col {
     text-align: right;
@@ -289,13 +293,9 @@ svg.main-svg, svg.main-svg * {
     .mobile-focused .stub {display: none;}
     .mobile-focused .plot {box-shadow: -5px 0 0 #0004;}
     .plots-title {
-        background-color: #fafafa;
         height: 20px;
         font-size: 80%;
         padding: 3px 0;
-        position: sticky;
-        z-index: 400;
-        top: 0;
     }
     .plot-parent.pr {display: none;}
     .plot-parent.wr {display: none;}
