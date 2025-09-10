@@ -825,6 +825,7 @@ function handleConf() {
     confElems.sortingRegion.disabled = false;
     confElems.sortingPlatform.disabled = false;
     confElems.filterPlatform.disabled = false;
+    confElems.filterRegion.disabled = false;
     if (conf.facet === 'region') {
         if (lastConf.facet !== 'region')
             confElems.filterRegion.value = conf.filterRegion = 'all';
@@ -887,7 +888,6 @@ function handleConf() {
             confElems.filterRegion.value = REGIONS[0];
         if (conf.facet === 'mode')
             confElems.facet.value = 'region';
-        confElems.filterRegion.disabled = false;
         lastConf.chinaOn = false;
         return handleConf();
     } else if (conf.chinaOn && !lastConf.chinaOn) {
