@@ -258,9 +258,20 @@ body {
     border-radius: 50%;
     align-self: center;
 }
+.entry .plot-parent {
+    position: relative;
+}
 .entry .plot {
     height: 100px;
     width: 300px;
+}
+.entry .stub {
+    height: 100px;
+    width: 300px;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 svg.main-svg, svg.main-svg * {
     /* allow xtick tooltipx overflow */
@@ -274,6 +285,9 @@ svg.main-svg, svg.main-svg * {
     .entry img {height: 60px; width: 60px;}
     .plots-title .col.title-name {width: 60px;}
     #selectColumn {display:inline-block;}
+    .entry .stub {display: block;}
+    .mobile-focused .stub {display: none;}
+    .mobile-focused .plot {box-shadow: -5px 0 0 #0004;}
     .plots-title {
         background-color: #fafafa;
         height: 20px;
@@ -283,14 +297,14 @@ svg.main-svg, svg.main-svg * {
         z-index: 400;
         top: 0;
     }
-    .plot-pr {display: none;}
-    .plot-wr {display: none;}
+    .plot-parent.pr {display: none;}
+    .plot-parent.wr {display: none;}
     .title-wr {display: none;}
     .title-pr {display: none;}
 
-    .mobile-show-pr .plot-pr {display: block;}
+    .mobile-show-pr .plot-parent.pr {display: block;}
     .mobile-show-pr .title-pr {display: block;}
-    .mobile-show-wr .plot-wr {display: block;}
+    .mobile-show-wr .plot-parent.wr {display: block;}
     .mobile-show-wr .title-wr {display: block;}
 }
 
@@ -485,14 +499,14 @@ const plotLayout = {
 };
 const layoutExtra = {
     winrate: {
-        yrange: {general: [41, 59]}, selector: '.plot-wr', guideline: {
+        yrange: {general: [41, 59]}, selector: '.plot.wr', guideline: {
             // 50% guideline
             type: 'line', x0: -1, x1: 10, y0: 50, y1: 50,
             line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
         }
     },
     pickrate: {
-        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: '.plot-pr', guideline: {
+        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: '.plot.pr', guideline: {
             // 0 guideline
             type: 'line', x0: -1, x1: 10, y0: 0, y1: 0,
             line: {color: '#0007', width: .5, dash: ''}, layer: 'between',
@@ -519,10 +533,12 @@ function setup() {
             infoPopup.classList.add('hidden');
         else if (e.target.classList.contains('trigger-info'))
             infoPopup.classList.remove('hidden');
-        // for phones: unhover plot if clicked off it
-        document.querySelectorAll('.plot').forEach(elem => {
-            if (elem.contains(e.target) || !elem.className.includes('plotly')) return;
-            Plotly.Fx.unhover(elem);
+        // for phones: unhover/unfocus plot if clicked off it
+        document.querySelectorAll('.plot.js-plotly-plot').forEach(plot => {
+            if (e.target.classList.contains('stub') && e.target.parentElement.contains(plot)) return;
+            if (plot.contains(e.target)) return;
+            Plotly.Fx.unhover(plot);
+            mobileFocusPlot(plot.parentElement, false);
         });
     });
     document.querySelectorAll('.plots-title .col span').forEach(
@@ -641,9 +657,14 @@ function renderHeroes() {
         hero.elem.innerHTML = `
         <div class='hero-name' title='${hero.name}'>${hero.name}</div>
         <img src='${hero.iconUrl}' title='${hero.name}'>
-        <div class='plot plot-wr'></div>
-        <div class='plot plot-pr'></div>
+        <div class='plot-parent wr'><div class='plot wr'></div><div class='stub'></div></div>
+        <div class='plot-parent pr'><div class='plot pr'></div><div class='stub'></div></div>
         `;
+        // We added an invisible overlay (stub) to prevent plot from stealing mobile drag-scroll.
+        // We hide that scroll on click.
+        hero.elem.querySelectorAll('.plot-parent').forEach(
+            elem => elem.addEventListener('click', evt => mobileFocusPlot(elem, true, evt))
+        );
         plotsElem.appendChild(hero.elem);
     });
 }
@@ -753,7 +774,7 @@ function render() {
                 // (doing all in one go takes .8-1s of stagger)
                 Plotly.react(elem, traces, {
                     ...plotLayout, shapes: shapes,
-                    yaxis: {range: yrange.slice(), fixedrange: smallScreen, ...plotLayout.yaxis},
+                    yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
                 }, plotConf);
                 elem._defaultYrange = yrange.slice();
                 elem.removeAllListeners('plotly_doubleclick');
@@ -938,6 +959,20 @@ function plotToggleZoom(elem) {
         traces = [traces.at(-1)];
     const ys = traces.flatMap(trace => trace.y).filter(v => v != null);
     Plotly.relayout(elem, {'yaxis.range': [Math.min(...ys)-1, Math.max(...ys)+1]});
+}
+
+
+function mobileFocusPlot(plotParent, focus = true, evt = null) {
+    if (focus && !plotParent.classList.contains('mobile-focused')) {
+        // the stub will be hidden, now propagate hover into the plot itself
+        const plot = plotParent.querySelector('.plot');
+        const rect = plotParent.getBoundingClientRect();
+        Plotly.Fx.hover(plot, {
+            xpx: evt.clientX - rect.left - plot._fullLayout.margin.l,
+            ypx: evt.clientY - rect.top,
+        });
+    }
+    plotParent.classList.toggle('mobile-focused', focus);
 }
 
 
