@@ -153,6 +153,12 @@ body {
 .info-popup > ul > li {
     margin-bottom: 3px;
 }
+.info-popup .extra {
+    display: none;
+}
+.show-cn-extra .info-popup .extra {
+    display: list-item;
+}
 #colorTips {
     font-weight: bold;
 }
@@ -346,8 +352,12 @@ svg.main-svg, svg.main-svg * {
         <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
         <li><b>Double click</b> any plot to zoom in/out (toggle own relative scale).</li>
         <li>Starting "<b>All</b>" values represent Competitive total values across all tiers.</li>
-        <li><b>Dashed</b> lines represens "expected" value. For winrate it's 50%.
-            For pickrate it's the value that would result if every hero was picked equally often within their role.</li>
+        <li><b>Dashed</b> lines represens "expected" value.<ul>
+            <li>For winrate it's 50%.</li>
+            <li>For pickrate it's the value if every hero was picked equally often within their role.</li>
+            <li class='extra'>For banrate it's the value if every hero was banned equally often.</li>
+            <li class='extra'>For KDA it's mean value for the role (calculated by this page).</li>
+        </ul></li>
         <li>Special <b>sorting</b> modes:<ul>
             <li>B / M Diff. – difference between Bronze and Master (slope of the facet line).</li>
             <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).</li>
@@ -516,33 +526,23 @@ const plotLayout = {
     },
 };
 const zeroline = {
-    // 0 guideline
     type: 'line', x0: -1, x1: 10, y0: 0, y1: 0,
     line: {color: '#0007', width: .5, dash: ''}, layer: 'between',
 };
+const dashedline = {
+    type: 'line', x0: -1, x1: 10,
+    line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
+};
 const layoutExtra = {
     winrate: {
-        yrange: {general: [41, 59]}, selector: '.plot.wr', guideline: {
-            // 50% guideline
-            type: 'line', x0: -1, x1: 10, y0: 50, y1: 50,
-            line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
-        }
+        yrange: {general: [41, 59]}, selector: '.plot.wr',
+        guideline: {...dashedline, y0: 50, y1: 50},  // 50% guideline
     },
     pickrate: {
         yrange: {general: [-1, 40], tank: [-1, 20]}, selector: '.plot.pr', guideline: zeroline,
-        expectedGuideline: {
-            // 'expected' pickrate guideline
-            type: 'line', x0: -1, x1: 10, // y0/y1 set depending on role
-            line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
-        }
     },
     banrate: {
         yrange: {general: [-1, 30]}, selector: '.plot.br', guideline: zeroline,
-        expectedGuideline: {
-            // 'expected' banrate guideline
-            type: 'line', x0: -1, x1: 10, // y0/y1 set depending on the total roster size
-            line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
-        }
     },
     kda: {
         yrange: {general: [0, 6]}, selector: '.plot.kd', guideline: zeroline,
@@ -727,6 +727,15 @@ function render() {
     if (conf.filterRegion === 'mean' && conf.facet === 'input')
         entries = entries.filter(e => e.region === conf.filterRegion);
 
+    // (calc KDA guideline)
+    let expectedKd;
+    if (conf.cnExtra) expectedKd = Object.fromEntries(ROLES.map(role => {
+        const vals = entries.filter(
+            e => heroes[e.hero].role === role && e.tier === 'All' && e.kda !== -1
+        ).map(e => e.kda);
+        return [role, vals.reduce(sum, 0) / vals.length];
+    }));
+
     // ==> Sort heroes
     let names = Object.keys(heroes);
     // names = names.filter(n => n.includes('wuya'));
@@ -805,11 +814,11 @@ function render() {
 
             const shapes = [layoutExtra[valtype].guideline];
             if (valtype === 'pickrate')
-                shapes.push({y0: expected.pr[hero.role], y1: expected.pr[hero.role], ...layoutExtra.pickrate.expectedGuideline});
+                shapes.push({y0: expected.pr[hero.role], y1: expected.pr[hero.role], ...dashedline});
             if (valtype === 'banrate')
-                shapes.push({y0: expected.br, y1: expected.br, ...layoutExtra.pickrate.expectedGuideline});
-            // if (valtype === 'kda')
-            //     traces.push
+                shapes.push({y0: expected.br, y1: expected.br, ...dashedline});
+            if (valtype === 'kda')
+                shapes.push({y0: expectedKd[hero.role], y1: expectedKd[hero.role], ...dashedline});
 
             const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
             const elem = entryElem.querySelector(layoutExtra[valtype].selector);
@@ -943,7 +952,7 @@ function handleConf() {
     UI.toggleCNExtra.parentElement.classList.toggle('hidden', !conf.chinaOn);
     conf.cnExtra = conf.chinaOn && UI.toggleCNExtra.checked;
     UI.toggleCNExtra.checked = conf.cnExtra;
-    UI.main.classList.toggle('show-cn-extra', conf.cnExtra);
+    document.body.classList.toggle('show-cn-extra', conf.cnExtra);
     if (conf.cnExtra !== lastConf.cnExtra) {
         UI.selectColumn.value = conf.cnExtra ? 'kd' : 'wr';
         mobileSelectColumns();
