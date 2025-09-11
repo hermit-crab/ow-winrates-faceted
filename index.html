@@ -699,7 +699,6 @@ function processRawData(rawData) {
 function renderHeroes() {
     plotsElem.innerHTML = '';
     Object.entries(heroes).forEach(([id, hero]) => {
-        hero.renderTimeouts = [];
         hero.elem = document.createElement('div');
         hero.elem.className = `entry role-${hero.role}`;
         hero.elem.innerHTML = `
@@ -722,7 +721,6 @@ function renderHeroes() {
 
 function render() {
     const conf = handleConf();
-    const smallScreen = window.matchMedia("(max-width: 700px)").matches;
 
     let entries = [...allEntries, ...(conf.chinaOn ? regionMeansWithCN : regionMeans)];
 
@@ -738,8 +736,7 @@ function render() {
         entries = entries.filter(e => e.region === conf.filterRegion);
 
     // (calc KDA guideline)
-    let expectedKd;
-    if (conf.cnExtra) expectedKd = Object.fromEntries(ROLES.map(role => {
+    if (conf.cnExtra) conf.expectedKd = Object.fromEntries(ROLES.map(role => {
         const vals = entries.filter(
             e => heroes[e.hero].role === role && e.tier === 'All' && e.kda !== -1
         ).map(e => e.kda);
@@ -776,75 +773,77 @@ function render() {
     });
 
     // ==> Update plots
-    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}${conf.chinaOn}${conf.cnExtra}`;
+    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.cnExtra].join(',');
     names.forEach((name, idx) => {
         const hero = heroes[name];
-        const entryElem = hero.elem;
-        entryElem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
-        if (entryElem.dataset.lastViewKey === viewKey) return;
-        hero.renderTimeouts.forEach(t => clearTimeout(t));
-        hero.renderTimeouts = [];
-
-        (!conf.cnExtra ? ['winrate', 'pickrate'] : ['kda', 'banrate']).forEach(valtype => {
-            // Line traces
-            const traces = conf.facetValues.map(facetValue => {
-                const facetEntries = name2entries[name].filter(e => (
-                    e[conf.facet] === facetValue && e[valtype] !== -1
-                ));
-
-                // Insert total points at the end.
-                // Dud in front breaks the line so All is disconnected from GM.
-                const points = [...TIERS, null, 'All'].map((t, idx) => {
-                    if (!t) return {x: TIERS.length-1};
-                    let entry = facetEntries.filter(e => e.tier === t);
-                    if (entry.length > 1) throw Error(`unexpected multiple entries after filter`);
-                    entry = entry[0];
-                    if (!entry) return;
-                    if (t === 'All')
-                        return {x: ALL_TIER_IDX, y: entry[valtype], symbol: 'arrow-left', size: 6};
-                    return {x: idx, y: entry[valtype], symbol: 'circle', size: 4};
-                }).filter(e => e);
-
-                let extraAttrs = {};
-                let size = pluck(points, 'size');
-                if (conf.filterRegion === 'mean' && facetValue !== 'mean' && conf.facet === 'region') {
-                    extraAttrs = {hoverinfo: 'skip', opacity: .45};
-                    size = [...size.slice(0, -1).map(_ => 0), size.at(-1)];
-                }
-
-                return {
-                    x: pluck(points, 'x'), y: pluck(points, 'y'),
-                    name: PRETTY_NAMES[facetValue] || facetValue,
-                    mode: 'lines+markers',
-                    line: {color: conf.facetColors[conf.facetValues.indexOf(facetValue)], width: 1.2},
-                    marker: {size: size, symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
-                    ...extraAttrs,
-                };
-            });
-
-            const shapes = [layoutExtra[valtype].guideline];
-            if (valtype === 'pickrate')
-                shapes.push({y0: expected.pr[hero.role], y1: expected.pr[hero.role], ...dashedline});
-            if (valtype === 'banrate')
-                shapes.push({y0: expected.br, y1: expected.br, ...dashedline});
-            if (valtype === 'kda')
-                shapes.push({y0: expectedKd[hero.role], y1: expectedKd[hero.role], ...dashedline});
-
-            const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
-            const elem = entryElem.querySelector(layoutExtra[valtype].selector);
-            hero.renderTimeouts.push(setTimeout(() => {
-                // Schedule updates one after another with a minor delay for better UX.
-                // (doing all in one go takes .8-1s of stagger)
-                Plotly.react(elem, traces, {
-                    ...plotLayout, shapes: shapes,
-                    yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
-                }, plotConf);
-                elem._defaultYrange = yrange.slice();
-                elem.removeAllListeners('plotly_doubleclick');
-                elem.on('plotly_doubleclick', () => plotToggleZoom(elem));
-            }, 30 * idx));
-        });
+        hero.elem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
+        if (hero.viewKey === viewKey) return;
+        clearTimeout(hero.renderTimeout);
+        const cols = !conf.cnExtra ? ['winrate', 'pickrate'] : ['kda', 'banrate'];
+        hero.renderTimeout = setTimeout(_ => {
+            // Schedule updates one after another with a minor delay for better UX.
+            // (doing all in one go takes .8-1s of stagger, yes I should switch to d3 or charts.js)
+            hero.viewKey = viewKey;
+            cols.forEach(valtype => renderTieredPlot(hero, name2entries[name], valtype, conf));
+        }, 30 * idx);
     });
+}
+
+
+function renderTieredPlot(hero, entries, valtype, conf) {
+    // Line traces
+    const traces = conf.facetValues.map(facetValue => {
+        const facetEntries = entries.filter(e => (
+            e[conf.facet] === facetValue && e[valtype] !== -1
+        ));
+
+        // Insert total points at the end.
+        // Dud in front breaks the line so All is disconnected from GM.
+        const points = [...TIERS, null, 'All'].map((t, idx) => {
+            if (!t) return {x: TIERS.length-1};
+            let entry = facetEntries.filter(e => e.tier === t);
+            if (entry.length > 1) throw Error(`unexpected multiple entries after filter`);
+            entry = entry[0];
+            if (!entry) return;
+            if (t === 'All')
+                return {x: ALL_TIER_IDX, y: entry[valtype], symbol: 'arrow-left', size: 6};
+            return {x: idx, y: entry[valtype], symbol: 'circle', size: 4};
+        }).filter(e => e);
+
+        let extraAttrs = {};
+        let size = pluck(points, 'size');
+        if (conf.filterRegion === 'mean' && facetValue !== 'mean' && conf.facet === 'region') {
+            extraAttrs = {hoverinfo: 'skip', opacity: .45};
+            size = [...size.slice(0, -1).map(_ => 0), size.at(-1)];
+        }
+
+        return {
+            x: pluck(points, 'x'), y: pluck(points, 'y'),
+            name: PRETTY_NAMES[facetValue] || facetValue,
+            mode: 'lines+markers',
+            line: {color: conf.facetColors[conf.facetValues.indexOf(facetValue)], width: 1.2},
+            marker: {size: size, symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
+            ...extraAttrs,
+        };
+    });
+
+    const shapes = [layoutExtra[valtype].guideline];
+    if (valtype === 'pickrate')
+        shapes.push({y0: expected.pr[hero.role], y1: expected.pr[hero.role], ...dashedline});
+    if (valtype === 'banrate')
+        shapes.push({y0: expected.br, y1: expected.br, ...dashedline});
+    if (valtype === 'kda')
+        shapes.push({y0: conf.expectedKd[hero.role], y1: conf.expectedKd[hero.role], ...dashedline});
+
+    const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
+    const plot = hero.elem.querySelector(layoutExtra[valtype].selector);
+    Plotly.react(plot, traces, {
+        ...plotLayout, shapes: shapes,
+        yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
+    }, plotConf);
+    plot._defaultYrange = yrange.slice();
+    plot.removeAllListeners('plotly_doubleclick');
+    plot.on('plotly_doubleclick', () => plotToggleZoom(plot));
 }
 
 
