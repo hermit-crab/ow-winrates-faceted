@@ -502,12 +502,16 @@ const WARNINGS = {
 };
 
 const UI = Object.fromEntries([...document.querySelectorAll('*[id]')].map(e => [e.id, e]));
+const CMAP = Object.fromEntries([
+    ...TIERS.map((k, i) => [k, TIER_COLORS[i]]),
+    ...REGIONS.map((k, i) => [k, REGION_COLORS[i]]),
+    ...Object.entries(EXTRA_COLORS),
+]);
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
-    color: TIER_COLORS[idx],
     shorthand: name !== 'Grandmaster' ? name[0] : 'GM+',
 }]));
-const xticklabels = TIERS.map(n => `<span style='color: ${tiersInfo[n].color}; font-weight: bold'>${tiersInfo[n].shorthand}</span>`);
+const xticklabels = TIERS.map(n => `<span style='color: ${CMAP[n]}; font-weight: bold'>${tiersInfo[n].shorthand}</span>`);
 const plotsElem = document.querySelector('#plots');
 const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: false};
 const plotLayout = {
@@ -910,7 +914,7 @@ function handleConf() {
         if (conf.filterRegion === 'all')
             UI.filterRegion.value = conf.filterRegion = REGIONS[0];
         conf.facetValues = PLATFORMS;
-        conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], EXTRA_COLORS.Console];
+        conf.facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.Console];
     } else if (conf.facet === 'mode') {
         conf.sortFacet = 'mode';
         conf.sortFacetValue = UI.sortingGameMode.value;
@@ -918,7 +922,7 @@ function handleConf() {
         UI.filterRegion.value = conf.filterRegion = 'China';
         UI.filterRegion.disabled = true;
         conf.facetValues = ['Comp', 'QP'];
-        conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], EXTRA_COLORS.QP];
+        conf.facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
     }
 
     // will only show all regions if faceted by region
@@ -1004,9 +1008,8 @@ function toggleWarnings(conf) {
 
 function setupColorTips() {
     const vals = [...REGIONS.slice(0, -1), 'Console'];
-    const colr = [...REGION_COLORS.slice(0, -1), EXTRA_COLORS.Console];
-    UI.colorTips.innerHTML = vals.map((val, i) => {
-        return `<span style='color:${colr[i]}'>${val}</span>`
+    UI.colorTips.innerHTML = vals.map(v => {
+        return `<span style='color:${CMAP[v]}'>${v}</span>`
     }).join(', ');
 }
 
