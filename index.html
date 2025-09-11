@@ -485,6 +485,7 @@ const WARNINGS = {
     avg: 'synthetic unweighted *Average',
 };
 
+const UI = Object.fromEntries([...document.querySelectorAll('*[id]')].map(e => [e.id, e]));
 const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx,
     color: TIER_COLORS[idx],
@@ -492,7 +493,6 @@ const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
 }]));
 const xticklabels = TIERS.map(n => `<span style='color: ${tiersInfo[n].color}; font-weight: bold'>${tiersInfo[n].shorthand}</span>`);
 const plotsElem = document.querySelector('#plots');
-const confElems = Object.fromEntries([...document.querySelectorAll('*[id]')].map(e => [e.id, e]));
 const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: false};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
@@ -553,10 +553,11 @@ setup();
 
 
 function setup() {
-    Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener('change', render));
-    document.querySelector('#selectColumn').addEventListener('change', mobileSelectColumns);
+    const confElems = document.querySelectorAll('.conf *[id]');
+    confElems.forEach(elem => elem.addEventListener('change', render));
+    UI.selectColumn.addEventListener('change', mobileSelectColumns);
     const infoPopup = document.querySelector('.info-popup');
-    document.querySelector('#infoPopupClose').addEventListener('click',
+    UI.infoPopupClose.addEventListener('click',
         () => infoPopup.classList.add('hidden')
     );
     document.addEventListener('click', function(e) {
@@ -576,7 +577,7 @@ function setup() {
         elem => elem.addEventListener('click', titleClickSort)
     );
     const tierTitles = [...TIERS.slice(0, TIERS.length-1), 'GM+'];
-    document.querySelector('#sortTiers').outerHTML = TIERS.map((v, i) =>
+    UI.sortTiers.outerHTML = TIERS.map((v, i) =>
         `<option value='tier-${v}'>:${tierTitles[i]}</option>`
     ).join('\n');
     setupColorTips();
@@ -602,9 +603,8 @@ function jsonp(data) {
     ));
     expected.br = 400 / Object.keys(heroes).length;
     const dataTs = rawData[0]._ts;
-    const tsElem = document.querySelector('#datasetTs');
-    tsElem.innerHTML = moment(dataTs * 1000).fromNow();
-    tsElem.title = moment(dataTs * 1000).toString();
+    UI.datasetTs.innerHTML = moment(dataTs * 1000).fromNow();
+    UI.datasetTs.title = moment(dataTs * 1000).toString();
     renderHeroes();
     render();
 }
@@ -858,59 +858,59 @@ function handleConf() {
     // XXX: Logic in this is probably getting too hairy,
     // consider view binding or a different pattern.
     const conf = {
-        facet: confElems.facet.value,
-        chinaOn: confElems.toggleChina.checked,
-        sortingMode: confElems.sortingMode.value,
-        sortingReverse: confElems.sortingReverse.checked,
-        filterRole: confElems.filterRole.value,
-        filterRegion: confElems.filterRegion.value,
-        filterPlatform: confElems.filterPlatform.value,
+        facet: UI.facet.value,
+        chinaOn: UI.toggleChina.checked,
+        sortingMode: UI.sortingMode.value,
+        sortingReverse: UI.sortingReverse.checked,
+        filterRole: UI.filterRole.value,
+        filterRegion: UI.filterRegion.value,
+        filterPlatform: UI.filterPlatform.value,
     };
-    confElems.sortingRegion.disabled = false;
-    confElems.sortingPlatform.disabled = false;
-    confElems.filterPlatform.disabled = false;
-    confElems.filterRegion.disabled = false;
+    UI.sortingRegion.disabled = false;
+    UI.sortingPlatform.disabled = false;
+    UI.filterPlatform.disabled = false;
+    UI.filterRegion.disabled = false;
     if (conf.facet === 'region') {
         if (lastConf.facet !== 'region')
-            confElems.filterRegion.value = conf.filterRegion = 'all';
+            UI.filterRegion.value = conf.filterRegion = 'all';
         conf.facetValues = REGIONS;
         conf.facetColors = REGION_COLORS;
         conf.sortFacet = 'region';
-        conf.sortFacetValue = confElems.sortingRegion.value;
+        conf.sortFacetValue = UI.sortingRegion.value;
         if (conf.filterRegion !== 'all') {
-            confElems.sortingRegion.value = conf.filterRegion;
-            confElems.sortingRegion.disabled = true;
+            UI.sortingRegion.value = conf.filterRegion;
+            UI.sortingRegion.disabled = true;
             conf.sortFacetValue = conf.filterRegion;
         }
         if (conf.filterRegion !== 'mean')
             conf.facetValues = REGIONS.slice(0, -1);
     } else if (conf.facet === 'input') {
         conf.sortFacet = 'input';
-        conf.sortFacetValue = confElems.sortingPlatform.value;
-        confElems.filterPlatform.disabled = true;
+        conf.sortFacetValue = UI.sortingPlatform.value;
+        UI.filterPlatform.disabled = true;
         if (conf.filterRegion === 'all')
-            confElems.filterRegion.value = conf.filterRegion = REGIONS[0];
+            UI.filterRegion.value = conf.filterRegion = REGIONS[0];
         conf.facetValues = PLATFORMS;
         conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], EXTRA_COLORS.Console];
     } else if (conf.facet === 'mode') {
         conf.sortFacet = 'mode';
-        conf.sortFacetValue = confElems.sortingGameMode.value;
+        conf.sortFacetValue = UI.sortingGameMode.value;
         // force only CN for now
-        confElems.filterRegion.value = conf.filterRegion = 'China';
-        confElems.filterRegion.disabled = true;
+        UI.filterRegion.value = conf.filterRegion = 'China';
+        UI.filterRegion.disabled = true;
         conf.facetValues = ['Comp', 'QP'];
         conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], EXTRA_COLORS.QP];
     }
 
     // will only show all regions if faceted by region
-    const filterRegionAll = confElems.filterRegion.children[0];
+    const filterRegionAll = UI.filterRegion.children[0];
     filterRegionAll.disabled = conf.facet !== 'region';
 
     // hide non applicable sort facets
     Object.entries({
-        'region': confElems.sortingRegion,
-        'input': confElems.sortingPlatform,
-        'mode': confElems.sortingGameMode,
+        'region': UI.sortingRegion,
+        'input': UI.sortingPlatform,
+        'mode': UI.sortingGameMode,
     }).forEach(([f, elem]) => {
         elem.classList.toggle('hidden', conf.facet !== f);
         if (conf.sortingMode === 'facets-spread') elem.disabled = true;
@@ -923,15 +923,15 @@ function handleConf() {
 
     // maintain CN on/off state
     document.querySelectorAll('select option[value="China"]').forEach(elem => elem.disabled = !conf.chinaOn);
-    confElems.facet.querySelector('option[value="mode"]').disabled = !conf.chinaOn;
+    UI.facet.querySelector('option[value="mode"]').disabled = !conf.chinaOn;
     if (!conf.chinaOn && lastConf.chinaOn) {
         // turning off
         if (conf.sortFacetValue === 'China')
-            confElems.sortingRegion.value = REGIONS[0];
+            UI.sortingRegion.value = REGIONS[0];
         if (conf.filterRegion === 'China')
-            confElems.filterRegion.value = 'all';
+            UI.filterRegion.value = 'all';
         if (conf.facet === 'mode')
-            confElems.facet.value = 'region';
+            UI.facet.value = 'region';
         lastConf.chinaOn = false;
         return handleConf();
     } else if (conf.chinaOn && !lastConf.chinaOn) {
@@ -940,18 +940,18 @@ function handleConf() {
     }
 
     // cnExtra state
-    confElems.toggleCNExtra.parentElement.classList.toggle('hidden', !conf.chinaOn);
-    conf.cnExtra = conf.chinaOn && confElems.toggleCNExtra.checked;
-    confElems.toggleCNExtra.checked = conf.cnExtra;
-    document.querySelector('#main').classList.toggle('show-cn-extra', conf.cnExtra);
+    UI.toggleCNExtra.parentElement.classList.toggle('hidden', !conf.chinaOn);
+    conf.cnExtra = conf.chinaOn && UI.toggleCNExtra.checked;
+    UI.toggleCNExtra.checked = conf.cnExtra;
+    UI.main.classList.toggle('show-cn-extra', conf.cnExtra);
     if (conf.cnExtra !== lastConf.cnExtra) {
-        document.querySelector('#selectColumn').value = conf.cnExtra ? 'kd' : 'wr';
+        UI.selectColumn.value = conf.cnExtra ? 'kd' : 'wr';
         mobileSelectColumns();
     }
     if (conf.cnExtra) {
-        confElems.filterRegion.disabled = true;
+        UI.filterRegion.disabled = true;
         if (!lastConf.cnExtra) {
-            confElems.filterRegion.value = 'China';
+            UI.filterRegion.value = 'China';
             lastConf.cnExtra = true;
             return handleConf();
         }
@@ -984,16 +984,15 @@ function toggleWarnings(conf) {
 function setupColorTips() {
     const vals = [...REGIONS.slice(0, -1), 'Console'];
     const colr = [...REGION_COLORS.slice(0, -1), EXTRA_COLORS.Console];
-    document.querySelector('#colorTips').innerHTML = vals.map((val, i) => {
+    UI.colorTips.innerHTML = vals.map((val, i) => {
         return `<span style='color:${colr[i]}'>${val}</span>`
     }).join(', ');
 }
 
 
 function mobileSelectColumns() {
-    const mainDiv = document.querySelector('#main');
-    mainDiv.classList.remove([...mainDiv.classList].filter(c => c.startsWith('mobile-show-')));
-    mainDiv.classList.add('mobile-show-' + document.querySelector('#selectColumn').value)
+    UI.main.classList.remove([...UI.main.classList].filter(c => c.startsWith('mobile-show-')));
+    UI.main.classList.add('mobile-show-' + UI.selectColumn.value)
 }
 
 
@@ -1002,8 +1001,8 @@ function titleClickSort(evt) {
     const active = elem.classList.contains('active');
     document.querySelectorAll('.plots-title .col').forEach(e => e.classList.remove('active', 'inv'));
     elem.classList.add('active');
-    if (active) confElems.sortingReverse.checked = !confElems.sortingReverse.checked;
-    else confElems.sortingReverse.checked = true;
+    if (active) UI.sortingReverse.checked = !UI.sortingReverse.checked;
+    else UI.sortingReverse.checked = true;
     render();
 }
 
