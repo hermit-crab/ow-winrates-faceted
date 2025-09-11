@@ -349,7 +349,7 @@ svg.main-svg, svg.main-svg * {
     <ul>
         <li>Line colors: <span id='colorTips'></span>.</li>
         <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
-        <li><b>Double click</b> any plot to zoom in/out (toggle own relative scale).</li>
+        <li><b>Double click</b> any plot to zoom in/out (toggle relative scale). Hold Ctrl to include zeroline.</li>
         <li>Starting "<b>All</b>" values represent Competitive total values across all tiers.</li>
         <li><b>Dashed</b> lines represens "expected" value.<ul>
             <li>For winrate it's 50%.</li>
@@ -554,7 +554,8 @@ const layoutExtra = {
         yrange: {general: [0, 6]}, selector: '.plot.kd', guideline: zeroline,
     },
 };
-let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN, lastConf = {}, expected = {};
+let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN,
+    pressedKeys = new Set(), lastConf = {}, expected = {};
 setup();
 
 
@@ -566,6 +567,8 @@ function setup() {
     UI.infoPopupClose.addEventListener('click',
         () => infoPopup.classList.add('hidden')
     );
+    document.addEventListener('keydown', e => pressedKeys.add(e.key));
+    document.addEventListener('keyup', e => pressedKeys.delete(e.key));
     document.addEventListener('click', function(e) {
         if (!e.target.classList.contains('trigger-info') && !infoPopup.contains(e.target))
             infoPopup.classList.add('hidden');
@@ -1038,7 +1041,10 @@ function plotToggleZoom(plot) {
         // in mean view we only show regional traces for faint reference
         traces = [traces.at(-1)];
     const ys = traces.flatMap(trace => trace.y).filter(v => v != null);
-    Plotly.relayout(plot, {'yaxis.range': [Math.min(...ys)-1, Math.max(...ys)+1]});
+    let a = Math.min(...ys), b = Math.max(...ys);
+    if (pressedKeys.has('Control')) a = 0;
+    const margin = (b - a)*.1;
+    Plotly.relayout(plot, {'yaxis.range': [a-margin, b+margin]});
 }
 
 
