@@ -282,6 +282,20 @@ svg.main-svg, svg.main-svg * {
     overflow: visible;
 }
 
+/* -- PC -- */
+@media screen and (min-width: 700px) {
+    /* cnExtra conditional */
+    .plot-parent.extra, .col.extra, #selectColumn .extra {display: none;}
+    .show-cn-extra .plot-parent.extra,
+    .show-cn-extra .col.extra {
+        display: block;
+    }
+    .show-cn-extra .plot-parent.base,
+    .show-cn-extra .col.base {
+        display: none;
+    }
+}
+
 /* -- mobile -- */
 @media screen and (max-width: 700px) {
     .conf {justify-content: left;}
@@ -297,15 +311,23 @@ svg.main-svg, svg.main-svg * {
         font-size: 80%;
         padding: 3px 0;
     }
-    .plot-parent.pr {display: none;}
-    .plot-parent.wr {display: none;}
-    .title-wr {display: none;}
-    .title-pr {display: none;}
 
+    /* cnExtra conditional */
+    .show-cn-extra #selectColumn .base {display: none;}
+    .show-cn-extra #selectColumn .extra {display: block;}
+    #selectColumn .extra {display: none;}
+
+    /* selectColumn conditional */
+    .plot-parent.pr, .plot-parent.wr, .plot-parent.br, .plot-parent.kd,
+    .title-wr, .title-pr, .title-br, .title-kd {display: none;}
     .mobile-show-pr .plot-parent.pr {display: block;}
     .mobile-show-pr .title-pr {display: block;}
     .mobile-show-wr .plot-parent.wr {display: block;}
     .mobile-show-wr .title-wr {display: block;}
+    .mobile-show-kd .plot-parent.kd {display: block;}
+    .mobile-show-kd .title-kd {display: block;}
+    .mobile-show-br .plot-parent.br {display: block;}
+    .mobile-show-br .title-br {display: block;}
 }
 
 @keyframes flash {
@@ -325,7 +347,7 @@ svg.main-svg, svg.main-svg * {
         <li><b>Double click</b> any plot to zoom in/out (toggle own relative scale).</li>
         <li>Starting "<b>All</b>" values represent Competitive total values across all tiers.</li>
         <li><b>Dashed</b> lines represens "expected" value. For winrate it's 50%.
-            For pickrate it's the value that would result if every hero was equally desirable within their role.</li>
+            For pickrate it's the value that would result if every hero was picked equally often within their role.</li>
         <li>Special <b>sorting</b> modes:<ul>
             <li>B / M Diff. – difference between Bronze and Master (slope of the facet line).</li>
             <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).</li>
@@ -379,8 +401,11 @@ svg.main-svg, svg.main-svg * {
             <option value='PC' selected>KB&M</option>
             <option value='Console'>Console</option>
         </select>
-        <label class='toggle-china' title='China'>
+        <label title='China'>
             <input type='checkbox' id='toggleChina'></input>CN
+        </label>
+        <label title='Show KDA/Banrates'>
+            <input type='checkbox' id='toggleCNExtra'></input>More
         </label>
     </div>
     <div class='conf-block'>
@@ -424,11 +449,15 @@ svg.main-svg, svg.main-svg * {
 
 <div class='plots-title'>
     <div class='col title-name' data-sort='name'><span>Hero</span></div>
-    <div class='col title-wr active' data-sort='winrate'><span>Winrate</span></div>
-    <div class='col title-pr' data-sort='pickrate'><span>Pickrate</span></div>
+    <div class='col title-wr base active' data-sort='winrate'><span>Winrate</span></div>
+    <div class='col title-pr base' data-sort='pickrate'><span>Pickrate</span></div>
+    <div class='col title-kd extra' data-sort='kda'><span>KDA</span></div>
+    <div class='col title-br extra' data-sort='banrate'><span>Banrate</span></div>
     <select id='selectColumn'>
-        <option value='wr' selected>Winrate</option>
-        <option value='pr'>Pickrate</option>
+        <option class='base' value='wr' selected>Winrate</option>
+        <option class='base' value='pr'>Pickrate</option>
+        <option class='extra' value='kd'>KDA</option>
+        <option class='extra' value='br'>Banrate</option>
     </select>
 </div>
 
@@ -463,18 +492,7 @@ const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
 }]));
 const xticklabels = TIERS.map(n => `<span style='color: ${tiersInfo[n].color}; font-weight: bold'>${tiersInfo[n].shorthand}</span>`);
 const plotsElem = document.querySelector('#plots');
-const confElems = {
-    facet: document.querySelector('#facet'),
-    filterRole: document.querySelector('#filterRole'),
-    filterPlatform: document.querySelector('#filterPlatform'),
-    filterRegion: document.querySelector('#filterRegion'),
-    sortingMode: document.querySelector('#sortingMode'),
-    sortingRegion: document.querySelector('#sortingRegion'),
-    sortingPlatform: document.querySelector('#sortingPlatform'),
-    sortingGameMode: document.querySelector('#sortingGameMode'),
-    sortingReverse: document.querySelector('#sortingReverse'),
-    toggleChina: document.querySelector('#toggleChina'),
-};
+const confElems = Object.fromEntries([...document.querySelectorAll('*[id]')].map(e => [e.id, e]));
 const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: false};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
@@ -497,6 +515,11 @@ const plotLayout = {
         tickfont: {size: 9},
     },
 };
+const zeroline = {
+    // 0 guideline
+    type: 'line', x0: -1, x1: 10, y0: 0, y1: 0,
+    line: {color: '#0007', width: .5, dash: ''}, layer: 'between',
+};
 const layoutExtra = {
     winrate: {
         yrange: {general: [41, 59]}, selector: '.plot.wr', guideline: {
@@ -506,18 +529,26 @@ const layoutExtra = {
         }
     },
     pickrate: {
-        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: '.plot.pr', guideline: {
-            // 0 guideline
-            type: 'line', x0: -1, x1: 10, y0: 0, y1: 0,
-            line: {color: '#0007', width: .5, dash: ''}, layer: 'between',
-        }, expectedGuideline: {
+        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: '.plot.pr', guideline: zeroline,
+        expectedGuideline: {
             // 'expected' pickrate guideline
             type: 'line', x0: -1, x1: 10, // y0/y1 set depending on role
             line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
         }
-    }
+    },
+    banrate: {
+        yrange: {general: [-1, 30]}, selector: '.plot.br', guideline: zeroline,
+        expectedGuideline: {
+            // 'expected' banrate guideline
+            type: 'line', x0: -1, x1: 10, // y0/y1 set depending on the total roster size
+            line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
+        }
+    },
+    kda: {
+        yrange: {general: [0, 6]}, selector: '.plot.kd', guideline: zeroline,
+    },
 };
-let rawData, dataTs, heroes, allEntries, expectedPr, regionMeans, regionMeansWithCN, lastConf = {};
+let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN, lastConf = {}, expected = {};
 setup();
 
 
@@ -566,9 +597,10 @@ function jsonp(data) {
     [heroes, allEntries] = processRawData(rawData);
     regionMeans = computeRegionMeans(allEntries.filter(e => e.region !== 'China'));
     regionMeansWithCN = computeRegionMeans(allEntries);
-    expectedPr = Object.fromEntries(ROLES.map(role =>
+    expected.pr = Object.fromEntries(ROLES.map(role =>
         [role, (role === 'tank' ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
     ));
+    expected.br = 400 / Object.keys(heroes).length;
     const dataTs = rawData[0]._ts;
     const tsElem = document.querySelector('#datasetTs');
     tsElem.innerHTML = moment(dataTs * 1000).fromNow();
@@ -589,6 +621,10 @@ function processRawData(rawData) {
     // in CN data it is all normalized to sum up to 100%. We stick to main site convention so
     // CN data will be rescaled to it.
 
+    // NOTE: Main site (blog) presented the banrates with a view that sums up to 400%.
+    // https://overwatch.blizzard.com/en-us/news/24205940/weekly-recall-hero-bans/
+    // CN data has it sum up to 100, we rescale it to follow main site convention.
+
     // NOTE: Main site data bundles GM+Champ together, CN data gives Champ as is. We ignore it.
 
     const rqCodes = [...new Set(mainData.map(a => a.selected.rq))];
@@ -602,6 +638,8 @@ function processRawData(rawData) {
                 hero: entry.id,
                 mode: modes[facet.selected.rq],
                 url: facet._url,
+                banrate: -1,
+                kda: -1,
                 ...select(entry.cells, ['winrate', 'pickrate']),
                 ...select(facet.selected, ['map', 'input', 'region', 'tier']),
             });
@@ -635,7 +673,7 @@ function processRawData(rawData) {
                 url: facet._url,
                 winrate: entry.win_ratio,
                 pickrate: Math.round(entry.selection_ratio / totPR * 1000) / 10,
-                banrate: entry.ban_ratio,
+                banrate: entry.ban_ratio * 4,
                 kda: entry.kda,
                 mode: modes[selected.game_mode],
                 // tier: sd2comp[tier] || tier,
@@ -657,11 +695,13 @@ function renderHeroes() {
         hero.elem.innerHTML = `
         <div class='hero-name' title='${hero.name}'>${hero.name}</div>
         <img src='${hero.iconUrl}' title='${hero.name}'>
-        <div class='plot-parent wr'><div class='plot wr'></div><div class='stub'></div></div>
-        <div class='plot-parent pr'><div class='plot pr'></div><div class='stub'></div></div>
+        <div class='plot-parent wr base'><div class='plot wr'></div><div class='stub'></div></div>
+        <div class='plot-parent pr base'><div class='plot pr'></div><div class='stub'></div></div>
+        <div class='plot-parent kd extra'><div class='plot kd'></div><div class='stub'></div></div>
+        <div class='plot-parent br extra'><div class='plot br'></div><div class='stub'></div></div>
         `;
-        // We added an invisible overlay (stub) to prevent plot from stealing mobile drag-scroll.
-        // We hide that scroll on click.
+        // We add invisible overlays (stubs) to prevent plot from stealing mobile drag-scroll.
+        // We hide that overlay on click.
         hero.elem.querySelectorAll('.plot-parent').forEach(
             elem => elem.addEventListener('click', evt => mobileFocusPlot(elem, true, evt))
         );
@@ -694,7 +734,7 @@ function render() {
     const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.hero === n)]));
     names.sort(); // sort alphabetically by default
     if (conf.sortingColumn !== 'name') {
-        const dummy = {winrate: 0, pickrate: 0};
+        const dummy = {winrate: 0, pickrate: 0, banrate: 0, kda: 0};
         const c = conf.sortingColumn;
         names = sortBy(names, name => {
             let entries = name2entries[name].filter(e => e[c] !== -1);
@@ -717,7 +757,7 @@ function render() {
     });
 
     // ==> Update plots
-    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}${conf.chinaOn}`;
+    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}${conf.chinaOn}${conf.cnExtra}`;
     names.forEach((name, idx) => {
         const hero = heroes[name];
         const entryElem = hero.elem;
@@ -726,7 +766,7 @@ function render() {
         entryElem.dataset.lastViewKey = viewKey;
         clearTimeout(hero.renderTimeout);
 
-        ['winrate', 'pickrate'].forEach(valtype => {
+        (!conf.cnExtra ? ['winrate', 'pickrate'] : ['kda', 'banrate']).forEach(valtype => {
             // Line traces
             const traces = conf.facetValues.map(facetValue => {
                 const facetEntries = name2entries[name].filter(e => (
@@ -765,7 +805,11 @@ function render() {
 
             const shapes = [layoutExtra[valtype].guideline];
             if (valtype === 'pickrate')
-                shapes.push({y0: expectedPr[hero.role], y1: expectedPr[hero.role], ...layoutExtra.pickrate.expectedGuideline});
+                shapes.push({y0: expected.pr[hero.role], y1: expected.pr[hero.role], ...layoutExtra.pickrate.expectedGuideline});
+            if (valtype === 'banrate')
+                shapes.push({y0: expected.br, y1: expected.br, ...layoutExtra.pickrate.expectedGuideline});
+            // if (valtype === 'kda')
+            //     traces.push
 
             const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
             const elem = entryElem.querySelector(layoutExtra[valtype].selector);
@@ -885,7 +929,7 @@ function handleConf() {
         if (conf.sortFacetValue === 'China')
             confElems.sortingRegion.value = REGIONS[0];
         if (conf.filterRegion === 'China')
-            confElems.filterRegion.value = REGIONS[0];
+            confElems.filterRegion.value = 'all';
         if (conf.facet === 'mode')
             confElems.facet.value = 'region';
         lastConf.chinaOn = false;
@@ -893,6 +937,24 @@ function handleConf() {
     } else if (conf.chinaOn && !lastConf.chinaOn) {
         // turning on
         if (!lastConf.chinaOn) flash(document.querySelector('.conf .facet-block'), 'flash');
+    }
+
+    // cnExtra state
+    confElems.toggleCNExtra.parentElement.classList.toggle('hidden', !conf.chinaOn);
+    conf.cnExtra = conf.chinaOn && confElems.toggleCNExtra.checked;
+    confElems.toggleCNExtra.checked = conf.cnExtra;
+    document.querySelector('#main').classList.toggle('show-cn-extra', conf.cnExtra);
+    if (conf.cnExtra !== lastConf.cnExtra) {
+        document.querySelector('#selectColumn').value = conf.cnExtra ? 'kd' : 'wr';
+        mobileSelectColumns();
+    }
+    if (conf.cnExtra) {
+        confElems.filterRegion.disabled = true;
+        if (!lastConf.cnExtra) {
+            confElems.filterRegion.value = 'China';
+            lastConf.cnExtra = true;
+            return handleConf();
+        }
     }
 
     // highlight sort column
