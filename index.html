@@ -168,7 +168,7 @@ body {
 }
 
 /* -- column titles -- */
-.plots-title {
+.col-titles {
     display: flex;
     flex-wrap: nowrap;
     font-weight: bold;
@@ -184,41 +184,41 @@ body {
     z-index: 400;
     top: 0;
 }
-.plots-title .col {
+.col-titles .col-title {
     text-align: right;
     text-transform: uppercase;
     width: 300px;
     margin: auto;
 }
-.plots-title .col span {
+.col-titles .col-title span {
     cursor: pointer;
     margin-right: 10px;
     text-wrap: nowrap;
 }
-.plots-title .col.title-name {
+.col-titles .col-title.nm {
     width: 80px;
     cursor: default;
 }
-.plots-title .col.title-name span {
+.col-titles .col-title.nm span {
     margin-right: 0;
 }
 
-.plots-title .col span:before {
+.col-titles .col-title span:before {
     content: '▼ ';
     visibility: hidden;
     opacity: 80%;
 }
-.plots-title .col.active span:before {
+.col-titles .col-title.active span:before {
     content: '▲ ';
 }
-.plots-title.inv .col.active span:before {
+.col-titles.inv .col-title.active span:before {
     content: '▼ ';
 }
-.plots-title .col.active span:before,
-.plots-title.inv .col.active span:before {
+.col-titles .col-title.active span:before,
+.col-titles.inv .col-title.active span:before {
     visibility: visible;
 }
-.plots-title .col span:hover:before {
+.col-titles .col-title span:hover:before {
     visibility: visible;
 }
 
@@ -290,13 +290,13 @@ svg.main-svg, svg.main-svg * {
 /* -- PC -- */
 @media screen and (min-width: 700px) {
     /* cnExtra conditional */
-    .plot-parent.extra, .col.extra, #selectColumn .extra {display: none;}
+    .plot-parent.extra, .col-title.extra, #selectColumn .extra {display: none;}
     .show-cn-extra .plot-parent.extra,
-    .show-cn-extra .col.extra {
+    .show-cn-extra .col-title.extra {
         display: block;
     }
     .show-cn-extra .plot-parent.base,
-    .show-cn-extra .col.base {
+    .show-cn-extra .col-title.base {
         display: none;
     }
 }
@@ -306,12 +306,12 @@ svg.main-svg, svg.main-svg * {
     .conf {justify-content: left;}
     .title {font-size: 100%;}
     .entry img {height: 60px; width: 60px;}
-    .plots-title .col.title-name {width: 60px;}
+    .col-titles .col-title.nm {width: 60px;}
     #selectColumn {display:inline-block;}
     .entry .stub {display: block;}
     .mobile-focused .stub {display: none;}
     .mobile-focused .plot {box-shadow: -5px 0 0 #0004;}
-    .plots-title {
+    .col-titles {
         height: 20px;
         font-size: 80%;
         padding: 3px 0;
@@ -324,15 +324,15 @@ svg.main-svg, svg.main-svg * {
 
     /* selectColumn conditional */
     .plot-parent.pr, .plot-parent.wr, .plot-parent.br, .plot-parent.kd,
-    .title-wr, .title-pr, .title-br, .title-kd {display: none;}
+    .col-title.wr, .col-title.pr, .col-title.br, .col-title.kd {display: none;}
     .mobile-show-pr .plot-parent.pr {display: block;}
-    .mobile-show-pr .title-pr {display: block;}
+    .mobile-show-pr .col-title.pr {display: block;}
     .mobile-show-wr .plot-parent.wr {display: block;}
-    .mobile-show-wr .title-wr {display: block;}
+    .mobile-show-wr .col-title.wr {display: block;}
     .mobile-show-kd .plot-parent.kd {display: block;}
-    .mobile-show-kd .title-kd {display: block;}
+    .mobile-show-kd .col-title.kd {display: block;}
     .mobile-show-br .plot-parent.br {display: block;}
-    .mobile-show-br .title-br {display: block;}
+    .mobile-show-br .col-title.br {display: block;}
 }
 
 @keyframes flash {
@@ -463,12 +463,12 @@ svg.main-svg, svg.main-svg * {
 <div class='warnings hidden'></div>
 </div>
 
-<div class='plots-title'>
-    <div class='col title-name' data-sort='name'><span>Hero</span></div>
-    <div class='col title-wr base active' data-sort='winrate'><span>Winrate</span></div>
-    <div class='col title-pr base' data-sort='pickrate'><span>Pickrate</span></div>
-    <div class='col title-kd extra' data-sort='kda'><span>KDA</span></div>
-    <div class='col title-br extra' data-sort='banrate'><span>Banrate</span></div>
+<div class='col-titles'>
+    <div class='col-title nm' data-sort='name'><span>Hero</span></div>
+    <div class='col-title wr base active' data-sort='winrate'><span>Winrate</span></div>
+    <div class='col-title pr base' data-sort='pickrate'><span>Pickrate</span></div>
+    <div class='col-title kd extra' data-sort='kda'><span>KDA</span></div>
+    <div class='col-title br extra' data-sort='banrate'><span>Banrate</span></div>
     <select id='selectColumn'>
         <option class='base' value='wr' selected>Winrate</option>
         <option class='base' value='pr'>Pickrate</option>
@@ -496,6 +496,8 @@ const LOCAL_JSONP_SRC = 'winrate-data.js';
 const EXTERNAL_JSONP_SRC = 'https://hermit-crab.neocities.org/winrate-data.js?nocache=' + parseInt(Date.now()/1000/60/60);
 const ALL_TIER_IDX = -.5;
 const PRETTY_NAMES = {'PC': 'KB&M', 'mean': '*Average'};
+const VALTYPES = ['name', 'winrate', 'pickrate', 'kda', 'banrate'];
+const VALTYPES_SHORT = ['nm', 'wr', 'pr', 'kd', 'br'];
 const WARNINGS = {
     cn: 'see notes about CN data',
     avg: 'synthetic unweighted *Average',
@@ -545,21 +547,20 @@ const dashedline = {
 };
 const layoutExtra = {
     winrate: {
-        yrange: {general: [41, 59]}, selector: '.plot.wr',
-        guideline: {...dashedline, y0: 50, y1: 50},  // 50% guideline
+        yrange: {general: [41, 59]}
     },
     pickrate: {
-        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: '.plot.pr', guideline: zeroline,
+        yrange: {general: [-1, 40], tank: [-1, 20]}, guideline: zeroline,
     },
     banrate: {
-        yrange: {general: [-1, 30]}, selector: '.plot.br', guideline: zeroline,
+        yrange: {general: [-1, 30]}, guideline: zeroline,
     },
     kda: {
-        yrange: {general: [0, 6]}, selector: '.plot.kd', guideline: zeroline,
+        yrange: {general: [0, 6]}, guideline: zeroline,
     },
 };
 let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN,
-    pressedKeys = new Set(), lastConf = {}, expected = {};
+    pressedKeys = new Set(), lastConf = {}, expectedBase = {};
 setup();
 
 
@@ -586,7 +587,7 @@ function setup() {
             mobileFocusPlot(plot.parentElement, false);
         });
     });
-    document.querySelectorAll('.plots-title .col span').forEach(
+    document.querySelectorAll('.col-title span').forEach(
         elem => elem.addEventListener('click', titleClickSort)
     );
     const tierTitles = [...TIERS.slice(0, TIERS.length-1), 'GM+'];
@@ -611,10 +612,10 @@ function jsonp(data) {
     [heroes, allEntries] = processRawData(rawData);
     regionMeans = computeRegionMeans(allEntries.filter(e => e.region !== 'China'));
     regionMeansWithCN = computeRegionMeans(allEntries);
-    expected.pr = Object.fromEntries(ROLES.map(role =>
+    expectedBase.pr = Object.fromEntries(ROLES.map(role =>
         [role, (role === 'tank' ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
     ));
-    expected.br = 400 / Object.keys(heroes).length;
+    expectedBase.br = 400 / Object.keys(heroes).length;
     const dataTs = rawData[0]._ts;
     UI.datasetTs.innerHTML = moment(dataTs * 1000).fromNow();
     UI.datasetTs.title = moment(dataTs * 1000).toString();
@@ -703,22 +704,31 @@ function processRawData(rawData) {
 function renderHeroes() {
     plotsElem.innerHTML = '';
     Object.entries(heroes).forEach(([id, hero]) => {
-        hero.elem = document.createElement('div');
-        hero.elem.className = `entry role-${hero.role}`;
-        hero.elem.innerHTML = `
+        const main = document.createElement('div');
+        main.className = `entry role-${hero.role}`;
+        main.innerHTML = `
         <div class='hero-name' title='${hero.name}'>${hero.name}</div>
         <img src='${hero.iconUrl}' title='${hero.name}'>
-        <div class='plot-parent wr base'><div class='plot wr'></div><div class='stub'></div></div>
-        <div class='plot-parent pr base'><div class='plot pr'></div><div class='stub'></div></div>
-        <div class='plot-parent kd extra'><div class='plot kd'></div><div class='stub'></div></div>
-        <div class='plot-parent br extra'><div class='plot br'></div><div class='stub'></div></div>
-        `;
+        ${VALTYPES_SHORT.slice(1).map(
+            k => `
+            <div class='plot-parent ${k} ${['wr', 'pr'].includes(k) ? 'base' : 'extra'}'>
+                <div class='plot'></div>
+                <div class='stub'></div>
+            </div>
+            `
+        ).join('')}`;
         // We add invisible overlays (stubs) to prevent plot from stealing mobile drag-scroll.
         // We hide that overlay on click.
-        hero.elem.querySelectorAll('.plot-parent').forEach(
+        main.querySelectorAll('.plot-parent').forEach(
             elem => elem.addEventListener('click', evt => mobileFocusPlot(elem, true, evt))
         );
-        plotsElem.appendChild(hero.elem);
+        plotsElem.appendChild(main);
+        hero.elems = Object.fromEntries(VALTYPES_SHORT.slice(1).map(
+            v => [VALTYPES[VALTYPES_SHORT.indexOf(v)], {
+                plot: main.querySelector(`.plot-parent.${v} .plot`),
+            }]
+        ))
+        hero.elems.main = main;
     });
 }
 
@@ -740,7 +750,8 @@ function render() {
         entries = entries.filter(e => e.region === conf.filterRegion);
 
     // (calc KDA guideline)
-    if (conf.cnExtra) conf.expectedKd = Object.fromEntries(ROLES.map(role => {
+    let expectedKd = {};
+    if (conf.cnExtra) expectedKd = Object.fromEntries(ROLES.map(role => {
         const vals = entries.filter(
             e => heroes[e.hero].role === role && e.tier === 'All' && e.kda !== -1
         ).map(e => e.kda);
@@ -772,29 +783,33 @@ function render() {
     }
     if (conf.sortingReverse) names.reverse();
     Object.entries(heroes).forEach(([name, hero]) => {
-        hero.elem.classList.toggle('hidden', !names.includes(name));
-        hero.elem.style.order = names.indexOf(name);
+        hero.elems.main.classList.toggle('hidden', !names.includes(name));
+        hero.elems.main.style.order = names.indexOf(name);
     });
 
     // ==> Update plots
     const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.cnExtra].join(',');
     names.forEach((name, idx) => {
         const hero = heroes[name];
-        hero.elem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
+        hero.elems.main.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
         if (hero.viewKey === viewKey) return;
         clearTimeout(hero.renderTimeout);
         const cols = !conf.cnExtra ? ['winrate', 'pickrate'] : ['kda', 'banrate'];
+        const expected = {
+            winrate: 50, pickrate: expectedBase.pr[hero.role],
+            kda: expectedKd[hero.role], banrate: expectedBase.br,
+        };
         hero.renderTimeout = setTimeout(_ => {
             // Schedule updates one after another with a minor delay for better UX.
             // (doing all in one go takes .8-1s of stagger, yes I should switch to d3 or charts.js)
             hero.viewKey = viewKey;
-            cols.forEach(valtype => renderTieredPlot(hero, name2entries[name], valtype, conf));
+            cols.forEach(valtype => renderTieredPlot(hero, name2entries[name], valtype, expected[valtype], conf));
         }, 30 * idx);
     });
 }
 
 
-function renderTieredPlot(hero, entries, valtype, conf) {
+function renderTieredPlot(hero, entries, valtype, expected, conf) {
     // Line traces
     const traces = conf.facetValues.map(facetValue => {
         const facetEntries = entries.filter(e => (
@@ -831,16 +846,14 @@ function renderTieredPlot(hero, entries, valtype, conf) {
         };
     });
 
-    const shapes = [layoutExtra[valtype].guideline];
-    if (valtype === 'pickrate')
-        shapes.push({y0: expected.pr[hero.role], y1: expected.pr[hero.role], ...dashedline});
-    if (valtype === 'banrate')
-        shapes.push({y0: expected.br, y1: expected.br, ...dashedline});
-    if (valtype === 'kda')
-        shapes.push({y0: conf.expectedKd[hero.role], y1: conf.expectedKd[hero.role], ...dashedline});
+    const shapes = [];
+    if (layoutExtra[valtype].guideline)
+        shapes.push(layoutExtra[valtype].guideline)
+    if (expected != null)
+        shapes.push({y0: expected, y1: expected, ...dashedline});
 
     const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
-    const plot = hero.elem.querySelector(layoutExtra[valtype].selector);
+    const plot = hero.elems[valtype].plot;
     Plotly.react(plot, traces, {
         ...plotLayout, shapes: shapes,
         yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
@@ -963,8 +976,8 @@ function handleConf() {
     UI.toggleCNExtra.checked = conf.cnExtra;
     document.body.classList.toggle('show-cn-extra', conf.cnExtra);
     if (conf.cnExtra !== lastConf.cnExtra) {
-        UI.selectColumn.value = conf.cnExtra ? 'kd' : 'wr';
         UI.sortingColumn.value = conf.sortingColumn = conf.cnExtra ? 'kda' : 'winrate';
+        UI.selectColumn.value = VALTYPES_SHORT[VALTYPES.indexOf(conf.sortingColumn)];
         mobileSelectColumns();
     }
     if (conf.cnExtra) {
@@ -977,14 +990,14 @@ function handleConf() {
     }
 
     // reflect sort column
-    document.querySelector('.plots-title').classList.toggle('inv', conf.sortingReverse);
-    document.querySelectorAll('.plots-title .col').forEach(el => {
+    document.querySelector('.col-titles').classList.toggle('inv', conf.sortingReverse);
+    document.querySelectorAll('.col-title').forEach(el => {
         el.classList.toggle('active', el.dataset.sort === conf.sortingColumn);
     });
 
     // highlight sort column
     if (lastConf.sortingMode !== conf.sortingMode || lastConf.sortFacetValue !== conf.sortFacetValue)
-        flash(document.querySelector('.plots-title .col.active span'), 'flash');
+        flash(document.querySelector('.col-title.active span'), 'flash');
 
     toggleWarnings(conf);
 
