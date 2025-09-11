@@ -932,12 +932,6 @@ function handleConf() {
         if (conf.sortingMode === 'facets-spread') elem.disabled = true;
     });
 
-    // pick sort column
-    document.querySelector('.plots-title').classList.toggle('inv', conf.sortingReverse);
-    document.querySelectorAll('.plots-title .col').forEach(el => {
-        el.classList.toggle('active', el.dataset.sort === conf.sortingColumn);
-    });
-
     // maintain CN on/off state
     document.querySelectorAll('select option[value="China"]').forEach(elem => elem.disabled = !conf.chinaOn);
     UI.facet.querySelector('option[value="mode"]').disabled = !conf.chinaOn;
@@ -963,6 +957,7 @@ function handleConf() {
     document.body.classList.toggle('show-cn-extra', conf.cnExtra);
     if (conf.cnExtra !== lastConf.cnExtra) {
         UI.selectColumn.value = conf.cnExtra ? 'kd' : 'wr';
+        UI.sortingColumn.value = conf.sortingColumn = conf.cnExtra ? 'kda' : 'winrate';
         mobileSelectColumns();
     }
     if (conf.cnExtra) {
@@ -973,6 +968,12 @@ function handleConf() {
             return handleConf();
         }
     }
+
+    // reflect sort column
+    document.querySelector('.plots-title').classList.toggle('inv', conf.sortingReverse);
+    document.querySelectorAll('.plots-title .col').forEach(el => {
+        el.classList.toggle('active', el.dataset.sort === conf.sortingColumn);
+    });
 
     // highlight sort column
     if (lastConf.sortingMode !== conf.sortingMode || lastConf.sortFacetValue !== conf.sortFacetValue)
