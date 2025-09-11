@@ -699,6 +699,7 @@ function processRawData(rawData) {
 function renderHeroes() {
     plotsElem.innerHTML = '';
     Object.entries(heroes).forEach(([id, hero]) => {
+        hero.renderTimeouts = [];
         hero.elem = document.createElement('div');
         hero.elem.className = `entry role-${hero.role}`;
         hero.elem.innerHTML = `
@@ -781,8 +782,8 @@ function render() {
         const entryElem = hero.elem;
         entryElem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
         if (entryElem.dataset.lastViewKey === viewKey) return;
-        entryElem.dataset.lastViewKey = viewKey;
-        clearTimeout(hero.renderTimeout);
+        hero.renderTimeouts.forEach(t => clearTimeout(t));
+        hero.renderTimeouts = [];
 
         (!conf.cnExtra ? ['winrate', 'pickrate'] : ['kda', 'banrate']).forEach(valtype => {
             // Line traces
@@ -831,7 +832,7 @@ function render() {
 
             const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
             const elem = entryElem.querySelector(layoutExtra[valtype].selector);
-            hero.renderTimeout = setTimeout(() => {
+            hero.renderTimeouts.push(setTimeout(() => {
                 // Schedule updates one after another with a minor delay for better UX.
                 // (doing all in one go takes .8-1s of stagger)
                 Plotly.react(elem, traces, {
@@ -841,7 +842,7 @@ function render() {
                 elem._defaultYrange = yrange.slice();
                 elem.removeAllListeners('plotly_doubleclick');
                 elem.on('plotly_doubleclick', () => plotToggleZoom(elem));
-            }, 30 * idx);
+            }, 30 * idx));
         });
     });
 }
