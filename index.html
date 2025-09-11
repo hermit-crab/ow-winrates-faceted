@@ -88,9 +88,8 @@ body {
     padding-left: 0;
     border-left: none;
 }
-.sorting-reversed {
-    display: none;
-}
+.sorting-reversed,
+.conf #sortingColumn,
 .conf #facet option:disabled {
     display: none;
 }
@@ -212,11 +211,11 @@ body {
 .plots-title .col.active span:before {
     content: '▲ ';
 }
-.plots-title .col.active.inv span:before {
+.plots-title.inv .col.active span:before {
     content: '▼ ';
 }
 .plots-title .col.active span:before,
-.plots-title .col.active.inv span:before {
+.plots-title.inv .col.active span:before {
     visibility: visible;
 }
 .plots-title .col span:hover:before {
@@ -441,6 +440,13 @@ svg.main-svg, svg.main-svg * {
         <select id='sortingGameMode'>
             <option value='Comp' selected>Comp</option>
             <option value='QP'>QP</option>
+        </select>
+        <select id='sortingColumn'>
+            <option value='name'>Name</option>
+            <option value='winrate' selected>Winrate</option>
+            <option value='pickrate'>Pickrate</option>
+            <option value='banrate'>Banrate</option>
+            <option value='kda'>KDA</option>
         </select>
         <label class='sorting-reversed'>
             <input type='checkbox' id='sortingReverse' checked></input>Reversed
@@ -874,6 +880,7 @@ function handleConf() {
         filterRole: UI.filterRole.value,
         filterRegion: UI.filterRegion.value,
         filterPlatform: UI.filterPlatform.value,
+        sortingColumn: UI.sortingColumn.value,
     };
     UI.sortingRegion.disabled = false;
     UI.sortingPlatform.disabled = false;
@@ -926,9 +933,10 @@ function handleConf() {
     });
 
     // pick sort column
-    const columnTitleElem = document.querySelector('.plots-title .active');
-    conf.sortingColumn = columnTitleElem.dataset.sort;
-    columnTitleElem.classList.toggle('inv', conf.sortingReverse);
+    document.querySelector('.plots-title').classList.toggle('inv', conf.sortingReverse);
+    document.querySelectorAll('.plots-title .col').forEach(el => {
+        el.classList.toggle('active', el.dataset.sort === conf.sortingColumn);
+    });
 
     // maintain CN on/off state
     document.querySelectorAll('select option[value="China"]').forEach(elem => elem.disabled = !conf.chinaOn);
@@ -1007,11 +1015,12 @@ function mobileSelectColumns() {
 
 function titleClickSort(evt) {
     const elem = evt.target.parentElement;
-    const active = elem.classList.contains('active');
-    document.querySelectorAll('.plots-title .col').forEach(e => e.classList.remove('active', 'inv'));
-    elem.classList.add('active');
-    if (active) UI.sortingReverse.checked = !UI.sortingReverse.checked;
-    else UI.sortingReverse.checked = true;
+    if (elem.classList.contains('active'))
+        UI.sortingReverse.checked = !UI.sortingReverse.checked;
+    else {
+        UI.sortingColumn.value = elem.dataset.sort;
+        UI.sortingReverse.checked = true;
+    }
     render();
 }
 
