@@ -855,7 +855,7 @@ function render() {
         (e.region === conf.filterRegion || ['all', 'mean'].includes(conf.filterRegion)) &&
         (e.region !== 'China' || conf.chinaOn)
     ));
-    if (conf.filterRegion === 'mean' && conf.facet === 'input')
+    if (conf.filterRegion === 'mean' && conf.facet !== 'region')
         entries = entries.filter(e => e.region === conf.filterRegion);
 
     // (calc KDA guideline)
@@ -901,12 +901,10 @@ function render() {
     });
 
     // ==> Update plots
-    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.cnExtra, conf.viewMode].join(',');
+    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.cnExtra].join(',');
     names.forEach((name, idx) => {
         const hero = heroes[name];
         hero.elems.main.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
-        if (hero.viewKey === viewKey) return;
-        clearTimeout(hero.renderTimeout);
         const cols = !conf.cnExtra ? ['winrate', 'pickrate'] : ['kda', 'banrate'];
         const expected = {
             winrate: 50, pickrate: expectedBase.pr[hero.role],
@@ -916,6 +914,8 @@ function render() {
             cols.forEach(valtype => renderBar(hero, name2entries[name], valtype, expected[valtype], conf));
             return;
         }
+        if (hero.viewKey === viewKey) return;
+        clearTimeout(hero.renderTimeout);
         hero.renderTimeout = setTimeout(_ => {
             // Schedule updates one after another with a minor delay for better UX.
             // (doing all in one go takes .8-1s of stagger, yes I should switch to d3 or charts.js)
