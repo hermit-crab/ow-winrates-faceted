@@ -1123,7 +1123,10 @@ function handleConf() {
         conf.facetColors = REGION_COLORS;
         conf.sortFacet = 'region';
         conf.sortFacetValue = UI.sortingRegion.value;
-        if (conf.filterRegion !== 'all') {
+        if (conf.filterRegion === 'mean') {
+            if (conf.filterRegion !== lastConf.filterRegion)
+                UI.sortingRegion.value = conf.filterRegion;
+        } else if (conf.filterRegion !== 'all') {
             UI.sortingRegion.value = conf.filterRegion;
             UI.sortingRegion.disabled = true;
             conf.sortFacetValue = conf.filterRegion;
