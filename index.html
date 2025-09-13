@@ -869,8 +869,8 @@ function render() {
 
     // ==> Sort heroes
     let names = Object.keys(heroes);
-    // names = names.filter(n => n.includes('wuya'));
-    if (conf.filterRole !== 'all') names = names.filter(name => heroes[name].role == conf.filterRole);
+    // names = names.filter(n => n.includes('rein'));
+    if (conf.filterRole !== 'all') names = names.filter(name => heroes[name].role === conf.filterRole);
     const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.hero === n)]));
     names.sort(); // sort alphabetically by default
     if (conf.sortingColumn !== 'name') {
@@ -881,6 +881,8 @@ function render() {
             if (conf.sortingMode !== 'facets-spread')
                 entries = entries.filter(e => e[conf.sortFacet] === conf.sortFacetValue);
             let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
+            if (conf.viewMode === 'bars')
+                byTier = {[conf.barTier]: entries.filter(e => e.tier === conf.barTier)};
             if (conf.sortingMode === 'facets-spread')
                 return calcMAD(Object.values(byTier).map(lst => pluck(lst, c)));
             Object.entries(byTier).forEach(([k, v]) => {byTier[k] = v[0] || dummy;}); // fill missing data
@@ -1156,6 +1158,11 @@ function handleConf() {
     conf.barTier = lastConf.barTier || 'All';
     if (conf.sortingMode === 'all') conf.barTier = 'All';
     if (conf.sortingMode.includes('tier-')) conf.barTier = conf.sortingMode.slice(5);
+
+    // disallow b-m-delta sorting in barview
+    UI.sortingMode.querySelector('option[value=b-m-delta]').disabled = conf.viewMode === 'bars';
+    if (conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta')
+        UI.sortingMode.value = conf.sortingMode = 'all';
 
     // will only show all regions if faceted by region
     const filterRegionAll = UI.filterRegion.children[0];
