@@ -618,7 +618,6 @@ const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
     idx: idx, shorthand: PRETTY_NAMES[name] || name[0],
 }]));
 const xticklabels = TIERS.map(n => `<span style='color: ${CMAP[n]}; font-weight: bold'>${tiersInfo[n].shorthand}</span>`);
-const plotsElem = document.querySelector('#plots');
 const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: false};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
@@ -810,7 +809,7 @@ function processRawData(rawData) {
 
 
 function renderHeroes() {
-    plotsElem.innerHTML = '';
+    UI.plots.innerHTML = '';
     Object.entries(heroes).forEach(([id, hero]) => {
         const main = document.createElement('div');
         main.className = `entry role-${hero.role}`;
@@ -831,7 +830,7 @@ function renderHeroes() {
         main.querySelectorAll('.plot-parent').forEach(
             elem => elem.addEventListener('click', evt => mobileFocusPlot(elem, true, evt))
         );
-        plotsElem.appendChild(main);
+        UI.plots.appendChild(main);
         hero.elems = Object.fromEntries(VALTYPES_SHORT.slice(1).map(
             v => [VALTYPES[VALTYPES_SHORT.indexOf(v)], {
                 plot: main.querySelector(`.plot-parent.${v} .plot`),
