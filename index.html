@@ -89,8 +89,7 @@ body {
     border-left: none;
 }
 .sorting-reversed,
-.conf #sortingColumn,
-.conf #facet option:disabled {
+.conf #sortingColumn {
     display: none;
 }
 .conf input[type='checkbox'] {
@@ -485,7 +484,7 @@ body {
         <select id='facet'>
             <option value='region' selected>Region</option>
             <option value='input'>Platform</option>
-            <option value='mode' disabled>Mode</option>
+            <option value='mode'>Mode</option>
         </select>
         <select id='viewMode'>
             <option value='plots' selected>Plots</option>
@@ -1109,10 +1108,10 @@ function handleConf() {
         filterPlatform: UI.filterPlatform.value,
         sortingColumn: UI.sortingColumn.value,
     };
-    UI.sortingRegion.disabled = false;
-    UI.sortingPlatform.disabled = false;
-    UI.filterPlatform.disabled = false;
-    UI.filterRegion.disabled = false;
+    [
+        UI.sortingRegion, UI.sortingPlatform, UI.sortingGameMode,
+        UI.filterPlatform, UI.filterRegion,
+    ].forEach(elem => elem.disabled = false);
     if (conf.facet === 'region') {
         if (lastConf.facet !== 'region')
             UI.filterRegion.value = conf.filterRegion = 'all';
@@ -1138,9 +1137,8 @@ function handleConf() {
     } else if (conf.facet === 'mode') {
         conf.sortFacet = 'mode';
         conf.sortFacetValue = UI.sortingGameMode.value;
-        // force only CN for now
-        UI.filterRegion.value = conf.filterRegion = 'China';
-        UI.filterRegion.disabled = true;
+        if (conf.filterRegion === 'all')
+            UI.filterRegion.value = conf.filterRegion = REGIONS[0];
         conf.facetValues = ['Comp', 'QP'];
         conf.facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
     }
@@ -1164,20 +1162,14 @@ function handleConf() {
 
     // maintain CN on/off state
     document.querySelectorAll('select option[value="China"]').forEach(elem => elem.disabled = !conf.chinaOn);
-    UI.facet.querySelector('option[value="mode"]').disabled = !conf.chinaOn;
     if (!conf.chinaOn && lastConf.chinaOn) {
         // turning off
         if (conf.sortFacetValue === 'China')
             UI.sortingRegion.value = REGIONS[0];
         if (conf.filterRegion === 'China')
             UI.filterRegion.value = 'all';
-        if (conf.facet === 'mode')
-            UI.facet.value = 'region';
         lastConf.chinaOn = false;
         return handleConf();
-    } else if (conf.chinaOn && !lastConf.chinaOn) {
-        // turning on
-        if (!lastConf.chinaOn) flash(document.querySelector('.conf .facet-block'), 'flash');
     }
 
     // cnExtra state
