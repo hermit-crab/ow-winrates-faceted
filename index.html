@@ -827,8 +827,8 @@ function renderHeroes() {
         ).join('')}`;
         // We add invisible overlays (stubs) to prevent plot from stealing mobile drag-scroll.
         // We hide that overlay on click.
-        main.querySelectorAll('.plot-parent').forEach(
-            elem => elem.addEventListener('click', evt => mobileFocusPlot(elem, true, evt))
+        main.querySelectorAll('.stub').forEach(
+            elem => elem.addEventListener('click', evt => mobileFocusPlot(elem.parentElement, true, evt))
         );
         UI.plots.appendChild(main);
         hero.elems = Object.fromEntries(VALTYPES_SHORT.slice(1).map(
