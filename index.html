@@ -17,6 +17,7 @@ body {
 }
 .hidden {display: none !important;}
 .flash {animation: flash 0.7s ease;}
+.blink {animation: blink 0.25s steps(1);}
 
 /* -- main box -- */
 #main {
@@ -434,8 +435,11 @@ body {
 
 @keyframes flash {
     0%   {background-color: transparent;}
-    50%  {background-color: rgba(74, 210, 255, 0.518);}
+    50%  {background-color: rgba(74, 210, 255, 0.5);}
     100% {background-color: transparent;}
+}
+@keyframes blink {
+    50% {background-color: rgba(83, 136, 154, 0.12);}
 }
 </style>
 </head>
@@ -619,8 +623,8 @@ const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false, do
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
     showlegend: false,
-    plot_bgcolor: '#fafafa',
-    paper_bgcolor: '#fafafa',
+    plot_bgcolor: '#0000',
+    paper_bgcolor: '#0000',
     hovermode: 'x',
     dragmode: 'pan',
     yaxis: {
@@ -1254,6 +1258,7 @@ function plotToggleZoom(plot) {
     const ctrl = pressedKeys.has('Control');
     if (default_[0] !== cur[0] && default_[1] !== cur[1] && !ctrl) {
         Plotly.relayout(plot, {'yaxis.range': default_.slice()});
+        flash(plot.parentElement, 'blink');
         return;
     }
     let traces = plot._fullData;
