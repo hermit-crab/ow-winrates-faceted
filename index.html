@@ -880,6 +880,8 @@ function render() {
             let entries = name2entries[name].filter(e => e[c] !== -1);
             if (conf.sortingMode !== 'facets-spread')
                 entries = entries.filter(e => e[conf.sortFacet] === conf.sortFacetValue);
+            else if (['mean', 'all'].includes(conf.filterRegion) && conf.facet === 'region')
+                entries = entries.filter(e => e.region !== 'mean');
             let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
             if (conf.viewMode === 'bars')
                 byTier = {[conf.barTier]: entries.filter(e => e.tier === conf.barTier)};
