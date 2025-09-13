@@ -924,8 +924,7 @@ function render() {
 
 
 function renderBar(hero, entries, valtype, expected, conf) {
-    const tier = 'All';
-    entries = entries.filter(e => e.tier === tier && e[valtype] !== -1);
+    entries = entries.filter(e => e.tier === conf.barTier && e[valtype] !== -1);
     const [a, b] = layoutExtra[valtype].bar[hero.role] || layoutExtra[valtype].bar.general;
     const [w, h] = [300, 30];
     const bar = hero.elems[valtype].bar;
@@ -982,8 +981,11 @@ function renderBar(hero, entries, valtype, expected, conf) {
         (conf.filterRegion === 'mean' ? 'est' : '')
     ].join(' ');
     const offset = clamp(s(min), 0, w);
+    const tierBg = conf.barTier !== 'All' ? CMAP[conf.barTier] + '99' : 'unset';
     bar.innerHTML = `
-        <div class='tier'>Rank: ${tier}</div>
+        <div class='tier'>Rank: <span style='background-color:${tierBg};'>
+            ${PRETTY_NAMES[conf.barTier] || conf.barTier}
+        </span></div>
         <div class='total ${classes}' style='left:${offset}px;'>
             <span class='full'>${minA}</span><span class='frac'>.${minB}</span>
             ${min === max ? '' : `
@@ -1147,8 +1149,14 @@ function handleConf() {
         conf.facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
     }
 
+    // viewmodes toggle
     UI.main.classList.remove([...UI.main.classList].filter(c => c.startsWith('viewmode-')));
     UI.main.classList.add('viewmode-' + conf.viewMode);
+
+    // default barview tier selection to which tier is being sorted by
+    conf.barTier = lastConf.barTier || 'All';
+    if (conf.sortingMode === 'all') conf.barTier = 'All';
+    if (conf.sortingMode.includes('tier-')) conf.barTier = conf.sortingMode.slice(5);
 
     // will only show all regions if faceted by region
     const filterRegionAll = UI.filterRegion.children[0];
