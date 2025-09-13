@@ -152,12 +152,6 @@ body {
 .info-popup > ul > li {
     margin-bottom: 3px;
 }
-.info-popup .extra {
-    display: none;
-}
-.show-cn-extra .info-popup .extra {
-    display: list-item;
-}
 #colorTips {
     font-weight: bold;
 }
@@ -455,12 +449,13 @@ body {
         <li><b>Dashed</b> lines represens "expected" value.<ul>
             <li>For winrate it's 50%.</li>
             <li>For pickrate it's the value if every hero was picked equally often within their role.</li>
-            <li class='extra'>For banrate it's the value if every hero was banned equally often.</li>
-            <li class='extra'>For KDA it's mean value for the role (calculated by this page).</li>
+            <li>(CN) For banrate it's the value if every hero was banned equally often.</li>
+            <li>(CN) For KDA it's mean value for the role (calculated by this page).</li>
         </ul></li>
         <li>Special <b>sorting</b> modes:<ul>
             <li>B / M Diff. – difference between Bronze and Master (slope of the facet line).</li>
-            <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).</li>
+            <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).
+                In Bars-view only currently shown tier is considered ("All" or last sorted-by tier).</li>
         </ul></li>
         <li><b>*Average</b> (mean) values are computed by this page (Blizzard does not provide it).
         Since we do not know population sizes (weights) – our mean is only an estimate of true mean.</li>
@@ -515,11 +510,11 @@ body {
             <option value='PC' selected>KB&M</option>
             <option value='Console'>Console</option>
         </select>
-        <label title='China'>
-            <input type='checkbox' id='toggleChina'></input>CN
-        </label>
         <label title='Show KDA/Banrates'>
             <input type='checkbox' id='toggleCNExtra'></input>More
+        </label>
+        <label title='China'>
+            <input type='checkbox' id='toggleChina'></input>CN
         </label>
     </div>
     <div class='conf-block'>
@@ -1190,7 +1185,9 @@ function handleConf() {
             UI.filterRegion.value = 'all';
         lastConf.chinaOn = false;
         return handleConf();
-    }
+    } else if (conf.chinaOn && !lastConf.chinaOn)
+        // turning on
+        flash(UI.toggleCNExtra.parentElement, 'flash');
 
     // cnExtra state
     UI.toggleCNExtra.parentElement.classList.toggle('hidden', !conf.chinaOn);
