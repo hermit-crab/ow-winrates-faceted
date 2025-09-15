@@ -988,7 +988,7 @@ function renderBar(hero, entries, valtype, expected, conf) {
         </div>
         <div class='svg-box'>
         <svg width='${w}' height='${h}' overflow='hidden'>
-            <rect x='0' y='${pad}' width='${baseW}' height='${barh}' fill='rgba(0,0,0,0.3)'/>
+            <rect x='0' y='${pad}' width='${baseW}' height='${barh}' fill='rgba(0,0,0,0.35)'/>
             <rect x='${smin}' y='${pad}' width='${smax - smin}' height='${barh}' fill='rgba(0,0,0,0.2)'/>
             ${entries.map((e) => `
                 <line x1='${s(e.x)}' y1='${pad}' x2='${s(e.x)}' y2='${pad+barh}'
@@ -997,7 +997,7 @@ function renderBar(hero, entries, valtype, expected, conf) {
             `).join('')}
             <line x1='${s(expected)}' y1='0' x2='${s(expected)}' y2='${h}' stroke='black' stroke-width='1'
                 vector-effect='non-scaling-stroke' stroke-dasharray='2,2' stroke-linecap='round'/>
-            <rect x='${smax}' y='${pad}' width='${tailW}' height='${barh}' fill='rgba(0,0,0,0.06)'/>
+            <rect x='${smax}' y='${pad}' width='${tailW}' height='${barh}' fill='rgba(0,0,0,0.05)'/>
         </svg>
         <svg class='hover' width='${w}' height='${h}' overflow='visible'>
             ${[0,1,2].flatMap(i => tooltips.map(layers => layers[i])).join('')}
