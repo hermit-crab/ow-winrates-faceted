@@ -1189,9 +1189,7 @@ class ConfHandler {
             if (conf.filterRegion !== 'all')
                 alter('sortingRegion', conf.filterRegion);
         } else if (key === 'cnExtra') {
-            const valtype = conf.cnExtra ? 'kda' : 'winrate';
-            alter('sortingColumn', valtype);
-            alter('selectColumn', VALTYPES_SHORT[VALTYPES.indexOf(valtype)]);
+            alter('selectColumn', conf.cnExtra ? 'kd' : 'wr');
             if (value) alter('filterRegion', 'China');
         } else if (key === 'viewMode') {
             if (conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta')
