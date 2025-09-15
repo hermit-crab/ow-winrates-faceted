@@ -919,7 +919,7 @@ function render() {
 
 function renderBar(hero, entries, valtype, expected, conf) {
     entries = entries.filter(e => e.tier === conf.barTier && e[valtype] !== -1);
-    const [a, b] = layoutExtra[valtype].bar[hero.role] || layoutExtra[valtype].bar.general;
+    const [a, b] = layoutExtra[valtype].bar[conf.filterRole] || layoutExtra[valtype].bar.general;
     const [w, h] = [300, 30];
     const bar = hero.elems[valtype].bar;
     const s = x => (x-a)/(b-a)*w; // scaler
