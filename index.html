@@ -875,7 +875,7 @@ function render() {
     const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.hero === n)]));
     names.sort(); // sort alphabetically by default
     if (conf.sortingColumn !== 'name') {
-        const dummy = {winrate: 0, pickrate: 0, banrate: 0, kda: 0};
+        const dummy = Object.fromEntries(VALTYPES.map(k => [k, -2]));
         const c = conf.sortingColumn;
         names = sortBy(names, name => {
             let entries = name2entries[name].filter(e => e[c] !== -1);
