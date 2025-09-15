@@ -1297,7 +1297,7 @@ function plotToggleZoom(plot) {
         return;
     }
     let traces = plot._fullData;
-    if (lastConf.filterRegion === 'mean' && lastConf.facet === 'region')
+    if (confHandler.conf.filterRegion === 'mean' && confHandler.conf === 'region')
         // in mean view we only show regional traces for faint reference
         traces = [traces.at(-1)];
     const ys = traces.flatMap(trace => trace.y).filter(v => v != null);
