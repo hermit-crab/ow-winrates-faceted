@@ -1218,7 +1218,7 @@ class ConfHandler {
             UI.sortingRegion.disabled = true;
         if (conf.facet === 'input')
             UI.filterPlatform.disabled = true;
-        UI.sortingMode.querySelector('option[value=all]').disabled = (
+        UI.filterRegion.querySelector('option[value=all]').disabled = (
             conf.facet !== 'region'
         );
         UI.sortingMode.querySelector('option[value=b-m-delta]').disabled = (
