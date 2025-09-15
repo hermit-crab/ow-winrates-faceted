@@ -510,10 +510,10 @@ body {
             <option value='Console'>Console</option>
         </select>
         <label title='Show KDA/Banrates'>
-            <input type='checkbox' id='toggleCNExtra'></input>More
+            <input type='checkbox' id='cnExtra'></input>More
         </label>
         <label title='China'>
-            <input type='checkbox' id='toggleChina'></input>CN
+            <input type='checkbox' id='chinaOn'></input>CN
         </label>
     </div>
     <div class='conf-block'>
@@ -660,14 +660,12 @@ const layoutExtra = {
         bar: {general: [1, 6]},
     },
 };
-let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN,
-    pressedKeys = new Set(), lastConf = {}, expectedBase = {};
-setup();
+let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN, confHandler,
+    pressedKeys = new Set(), expectedBase = {};
 
 
 function setup() {
-    const confElems = document.querySelectorAll('.conf *[id]');
-    confElems.forEach(elem => elem.addEventListener('change', render));
+    confHandler = new ConfHandler();
     UI.selectColumn.addEventListener('change', mobileSelectColumns);
     const infoPopup = document.querySelector('.info-popup');
     UI.infoPopupClose.addEventListener('click',
@@ -837,8 +835,7 @@ function renderHeroes() {
 
 
 function render() {
-    const conf = handleConf();
-
+    const conf = confHandler.frozenConf();
     let entries = [...allEntries, ...(conf.chinaOn ? regionMeansWithCN : regionMeans)];
 
     // ==> Filter entries
@@ -873,7 +870,7 @@ function render() {
         names = sortBy(names, name => {
             let entries = name2entries[name].filter(e => e[c] !== -1);
             if (conf.sortingMode !== 'facets-spread')
-                entries = entries.filter(e => e[conf.sortFacet] === conf.sortFacetValue);
+                entries = entries.filter(e => e[conf.facet] === conf.sortFacetValue);
             else if (['mean', 'all'].includes(conf.filterRegion) && conf.facet === 'region')
                 entries = entries.filter(e => e.region !== 'mean');
             let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
@@ -928,7 +925,7 @@ function renderBar(hero, entries, valtype, expected, conf) {
     const s = x => (x-a)/(b-a)*w; // scaler
     entries = entries.map(e => ({
         ...e, x: e[valtype],
-        clr: conf.facetColors[conf.facetValues.indexOf(e[conf.facet])],
+        clr: conf.facetCmap[e[conf.facet]],
     })).filter(e => e.clr);
     const vals = entries.map(e => e.x);
     let [min, max] = [Math.min(...vals), Math.max(...vals)];
@@ -1029,7 +1026,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
         const points = [...TIERS, null, 'All'].map((t, idx) => {
             if (!t) return {x: TIERS.length-1};
             let entry = facetEntries.filter(e => e.tier === t);
-            if (entry.length > 1) throw Error(`unexpected multiple entries after filter`);
+            if (entry.length > 1) throw new Error('unexpected multiple entries after filter');
             entry = entry[0];
             if (!entry) return;
             if (t === 'All')
@@ -1048,7 +1045,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
             x: pluck(points, 'x'), y: pluck(points, 'y'),
             name: PRETTY_NAMES[facetValue] || facetValue,
             mode: 'lines+markers',
-            line: {color: conf.facetColors[conf.facetValues.indexOf(facetValue)], width: 1.2},
+            line: {color: conf.facetCmap[facetValue], width: 1.2},
             marker: {size: size, symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
             ...extraAttrs,
         };
@@ -1097,134 +1094,157 @@ function computeRegionMeans(entries) {
 }
 
 
-function handleConf() {
-    // XXX: Logic in this is probably getting too hairy,
-    // consider view binding or a different pattern.
-    const conf = {
-        facet: UI.facet.value,
-        viewMode: UI.viewMode.value,
-        chinaOn: UI.toggleChina.checked,
-        sortingMode: UI.sortingMode.value,
-        sortingReverse: UI.sortingReverse.checked,
-        filterRole: UI.filterRole.value,
-        filterRegion: UI.filterRegion.value,
-        filterPlatform: UI.filterPlatform.value,
-        sortingColumn: UI.sortingColumn.value,
-    };
-    [
-        UI.sortingRegion, UI.sortingPlatform, UI.sortingGameMode,
-        UI.filterPlatform, UI.filterRegion,
-    ].forEach(elem => elem.disabled = false);
-    if (conf.facet === 'region') {
-        if (lastConf.facet !== 'region')
-            UI.filterRegion.value = conf.filterRegion = 'all';
-        conf.facetValues = REGIONS;
-        conf.facetColors = REGION_COLORS;
-        conf.sortFacet = 'region';
-        conf.sortFacetValue = UI.sortingRegion.value;
-        if (conf.filterRegion === 'mean') {
-            if (conf.filterRegion !== lastConf.filterRegion)
-                UI.sortingRegion.value = conf.filterRegion;
-        } else if (conf.filterRegion !== 'all') {
-            UI.sortingRegion.value = conf.filterRegion;
-            UI.sortingRegion.disabled = true;
-            conf.sortFacetValue = conf.filterRegion;
-        }
-        if (conf.filterRegion !== 'mean')
-            conf.facetValues = REGIONS.slice(0, -1);
-    } else if (conf.facet === 'input') {
-        conf.sortFacet = 'input';
-        conf.sortFacetValue = UI.sortingPlatform.value;
-        UI.filterPlatform.disabled = true;
-        if (conf.filterRegion === 'all')
-            UI.filterRegion.value = conf.filterRegion = REGIONS[0];
-        conf.facetValues = PLATFORMS;
-        conf.facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.Console];
-    } else if (conf.facet === 'mode') {
-        conf.sortFacet = 'mode';
-        conf.sortFacetValue = UI.sortingGameMode.value;
-        if (conf.filterRegion === 'all')
-            UI.filterRegion.value = conf.filterRegion = REGIONS[0];
-        conf.facetValues = ['Comp', 'QP'];
-        conf.facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
+class ConfHandler {
+    constructor() {
+        this.elems = [...document.querySelectorAll('.conf *[id]')];
+        this.elems.forEach(el => el.addEventListener('change', _ => this.sync()));
+        this.conf = {};
+        this.sync(false);
     }
+    sync(doRender = true) {
+        const conf = this.conf;
+        const oldConf = {...conf};
+        this.elems.forEach(el => conf[el.id] = inputElemValue(el));
+        this._dbgChain = [];
+        if (Object.keys(oldConf).length)
+            this.changeDependant({...oldConf});
+        this.setDisabled();
+        this.highlight(oldConf);
 
-    // viewmodes toggle
-    UI.main.classList.remove([...UI.main.classList].filter(c => c.startsWith('viewmode-')));
-    UI.main.classList.add('viewmode-' + conf.viewMode);
+        this.barTier = this.barTier || 'All';
+        if (conf.sortingMode === 'all') this.barTier = 'All';
+        if (conf.sortingMode.includes('tier-')) this.barTier = conf.sortingMode.slice(5);
 
-    // default barview tier selection to which tier is being sorted by
-    conf.barTier = lastConf.barTier || 'All';
-    if (conf.sortingMode === 'all') conf.barTier = 'All';
-    if (conf.sortingMode.includes('tier-')) conf.barTier = conf.sortingMode.slice(5);
+        this.regionMeanView = (conf.filterRegion === 'mean' && conf.facet === 'region');
 
-    // disallow b-m-delta sorting in barview
-    UI.sortingMode.querySelector('option[value=b-m-delta]').disabled = conf.viewMode === 'bars';
-    if (conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta')
-        UI.sortingMode.value = conf.sortingMode = 'all';
+        UI.main.classList.remove([...UI.main.classList].filter(c => c.startsWith('viewmode-')));
+        UI.main.classList.add('viewmode-' + conf.viewMode);
 
-    // will only show all regions if faceted by region
-    const filterRegionAll = UI.filterRegion.children[0];
-    filterRegionAll.disabled = conf.facet !== 'region';
+        // reflect sort column
+        document.querySelector('.col-titles').classList.toggle('inv', conf.sortingReverse);
+        document.querySelectorAll('.col-title').forEach(el => {
+            el.classList.toggle('active', el.dataset.sort === conf.sortingColumn);
+        });
 
-    // hide non applicable sort facets
-    Object.entries({
-        'region': UI.sortingRegion,
-        'input': UI.sortingPlatform,
-        'mode': UI.sortingGameMode,
-    }).forEach(([f, elem]) => {
-        elem.classList.toggle('hidden', conf.facet !== f);
-        if (conf.sortingMode === 'facets-spread') elem.disabled = true;
-    });
-
-    // maintain CN on/off state
-    document.querySelectorAll('select option[value="China"]').forEach(elem => elem.disabled = !conf.chinaOn);
-    if (!conf.chinaOn && lastConf.chinaOn) {
-        // turning off
-        if (conf.sortFacetValue === 'China')
-            UI.sortingRegion.value = REGIONS[0];
-        if (conf.filterRegion === 'China')
-            UI.filterRegion.value = 'all';
-        lastConf.chinaOn = false;
-        return handleConf();
-    } else if (conf.chinaOn && !lastConf.chinaOn)
-        // turning on
-        flash(UI.toggleCNExtra.parentElement, 'flash');
-
-    // cnExtra state
-    UI.toggleCNExtra.parentElement.classList.toggle('hidden', !conf.chinaOn);
-    conf.cnExtra = conf.chinaOn && UI.toggleCNExtra.checked;
-    UI.toggleCNExtra.checked = conf.cnExtra;
-    document.body.classList.toggle('show-cn-extra', conf.cnExtra);
-    if (conf.cnExtra !== lastConf.cnExtra) {
-        UI.sortingColumn.value = conf.sortingColumn = conf.cnExtra ? 'kda' : 'winrate';
-        UI.selectColumn.value = VALTYPES_SHORT[VALTYPES.indexOf(conf.sortingColumn)];
+        document.body.classList.toggle('show-cn-extra', conf.cnExtra);
         mobileSelectColumns();
+        toggleWarnings(conf);
+
+        if (doRender) render();
     }
-    if (conf.cnExtra) {
-        UI.filterRegion.disabled = true;
-        if (!lastConf.cnExtra) {
-            UI.filterRegion.value = 'China';
-            lastConf.cnExtra = true;
-            return handleConf();
+    highlight(oldConf) {
+        Object.keys(oldConf).forEach(key => {
+            if (oldConf[key] === this.conf[key]) return;
+            if (key === 'chinaOn' && this.conf.chinaOn)
+                flash(UI.cnExtra.parentElement, 'flash');
+            if (key === 'sortingMode' || this.getFacets(this.conf).sortFacetValue !== this.getFacets(oldConf).sortFacetValue)
+                flash(document.querySelector('.col-title.active span'), 'flash');
+        });
+    }
+    changeDependant(oldConf) {
+        const conf = this.conf;
+        const changed = Object.entries(conf).filter(([k, v]) => v !== oldConf[k]);
+        if (!changed.length) return;
+        this._dbgChain.push(changed[0]);
+        if (this._dbgChain.length > 10) throw Error('broken conf state');
+        const [key, value] = changed[0];
+        oldConf[key] = value;
+        const alter = (k, v) => {
+            conf[k] = v;
+            inputElemValue(UI[k], v);
+            this._dbgChain[0].push([k, v]);
+        };
+        // dependencies
+        if (key === 'facet') {
+            if (value === 'region') { // TODO bug
+                alter('filterRegion', 'all');
+            } else {
+                if (conf.filterRegion === 'all')
+                    alter('filterRegion', REGIONS[0]);
+            }
+        } else if (key === 'chinaOn' && !value) {
+            if (conf.sortFacetValue === 'China')
+                alter('sortingRegion', REGIONS[0]);
+            if (conf.filterRegion === 'China')
+                alter('filterRegion', 'all');
+            alter('cnExtra', false);
+        } else if (key === 'filterRegion') {
+            if (conf.filterRegion !== 'all')
+                alter('sortingRegion', conf.filterRegion);
+        } else if (key === 'cnExtra') {
+            const valtype = conf.cnExtra ? 'kda' : 'winrate';
+            alter('sortingColumn', valtype);
+            alter('selectColumn', VALTYPES_SHORT[VALTYPES.indexOf(valtype)]);
+            if (value) alter('filterRegion', 'China');
+        } else if (key === 'viewMode') {
+            if (conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta')
+                alter('sortingMode', 'all');
+        }
+        this.changeDependant(oldConf);
+    }
+    setDisabled() {
+        const conf = this.conf;
+        this.elems.forEach(el => el.disabled = false);
+
+        // non applicable sort facets
+        Object.entries({
+            'region': UI.sortingRegion,
+            'input': UI.sortingPlatform,
+            'mode': UI.sortingGameMode,
+        }).forEach(([f, elem]) => {
+            elem.classList.toggle('hidden', conf.facet !== f);
+            elem.disabled = conf.facet !== f;
+            if (conf.sortingMode === 'facets-spread') elem.disabled = true;
+        });
+
+        if (!['all', 'mean'].includes(conf.filterRegion))
+            UI.sortingRegion.disabled = true;
+        if (conf.facet === 'input')
+            UI.filterPlatform.disabled = true;
+        UI.sortingMode.querySelector('option[value=all]').disabled = (
+            conf.facet !== 'region'
+        );
+        UI.sortingMode.querySelector('option[value=b-m-delta]').disabled = (
+            conf.viewMode === 'bars'
+        );
+        document.querySelectorAll('select option[value="China"]').forEach(
+            elem => elem.disabled = !conf.chinaOn
+        );
+        UI.cnExtra.disabled = !conf.chinaOn;
+        UI.cnExtra.parentElement.classList.toggle('hidden', !conf.chinaOn);
+        if (conf.cnExtra)
+            UI.filterRegion.disabled = true;
+    }
+    getFacets(conf) {
+        let facetColors, facets = {};
+        if (conf.facet === 'region') {
+            facets.facetValues = REGIONS;
+            facetColors = REGION_COLORS;
+            facets.sortFacetValue = conf.sortingRegion;
+            if (conf.filterRegion !== 'mean')
+                facets.facetValues = REGIONS.slice(0, -1);
+        } else if (conf.facet === 'input') {
+            facets.sortFacetValue = conf.sortingPlatform;
+            facets.facetValues = PLATFORMS;
+            facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.Console];
+        } else if (conf.facet === 'mode') {
+            facets.sortFacetValue = conf.sortingGameMode;
+            if (conf.filterRegion === 'all')
+                UI.filterRegion.value = conf.filterRegion = REGIONS[0];
+            facets.facetValues = ['Comp', 'QP'];
+            facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
+        }
+        facets.facetCmap = Object.fromEntries(facets.facetValues.map((v, i) => [v, facetColors[i]]));
+        return facets;
+    }
+    frozenConf() {
+        return {
+            ...this.conf,
+            ...this.getFacets(this.conf),
+            regionMeanView: this.regionMeanView,
+            barTier: this.barTier,
         }
     }
-
-    // reflect sort column
-    document.querySelector('.col-titles').classList.toggle('inv', conf.sortingReverse);
-    document.querySelectorAll('.col-title').forEach(el => {
-        el.classList.toggle('active', el.dataset.sort === conf.sortingColumn);
-    });
-
-    // highlight sort column
-    if (lastConf.sortingMode !== conf.sortingMode || lastConf.sortFacetValue !== conf.sortFacetValue)
-        flash(document.querySelector('.col-title.active span'), 'flash');
-
-    toggleWarnings(conf);
-    conf.regionMeanView = (conf.filterRegion === 'mean' && conf.facet === 'region');
-
-    lastConf = conf;
-    return conf;
 }
 
 
@@ -1263,7 +1283,7 @@ function titleClickSort(evt) {
         UI.sortingColumn.value = elem.dataset.sort;
         UI.sortingReverse.checked = true;
     }
-    render();
+    confHandler.sync();
 }
 
 
@@ -1299,6 +1319,13 @@ function mobileFocusPlot(plotParent, focus = true, evt = null) {
         });
     }
     plotParent.classList.toggle('mobile-focused', focus);
+}
+
+
+function inputElemValue(elem, set) {
+    const attr = elem.type === 'checkbox' ? 'checked' : 'value';
+    if (set != null) elem[attr] = set;
+    return elem[attr];
 }
 
 
@@ -1341,6 +1368,8 @@ function clamp(v, a, b) {
     return v;
 }
 
+
+setup();
 
 </script>
 </body>
