@@ -334,6 +334,9 @@ body {
     opacity: .6;
     font-weight: normal;
 }
+.entry .bar .nodata {
+    opacity: .4;
+}
 .entry .bar .range {
     display: none;
     position: relative;
@@ -934,6 +937,10 @@ function renderBar(hero, entries, valtype, expected, conf) {
         ...e, x: e[valtype],
         clr: conf.facetCmap[e[conf.facet]],
     })).filter(e => e.clr);
+    if (!entries.length) {
+        bar.innerHTML = '<div class="nodata">no data</div>';
+        return;
+    }
     const vals = entries.map(e => e.x);
     let [min, max] = [Math.min(...vals), Math.max(...vals)];
     const [smin, smax] = [s(min), s(max)];
