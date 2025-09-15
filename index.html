@@ -654,6 +654,13 @@ const layoutExtra = {
     banrate: {
         yrange: {general: [-1, 30]}, guideline: zeroline,
         bar: {general: [0, 80]},
+        high: {
+            yrange: [-1, 100], dtick: 30,
+            annotation: {
+                xref: 'paper', yref: 'paper', x: 1, y: 1, text: 'zoomed out',
+                opacity: .45, showarrow: false
+            },
+        },
     },
     kda: {
         yrange: {general: [1, 6]}, guideline: zeroline,
@@ -1057,11 +1064,21 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
     if (expected != null)
         shapes.push({y0: expected, y1: expected, ...dashedline});
 
-    const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
+    let yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
+    let dtick, annotations = [];
+    if (valtype === 'banrate') {
+        const maxAll = Math.max(...entries.filter(e => e.tier === 'All').map(e => e.banrate));
+        if (maxAll > expected) {
+            yrange = layoutExtra.banrate.high.yrange;
+            dtick = layoutExtra.banrate.high.dtick;
+            annotations.push(layoutExtra.banrate.high.annotation);
+        }
+    }
+
     const plot = hero.elems[valtype].plot;
     Plotly.react(plot, traces, {
-        ...plotLayout, shapes: shapes,
-        yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
+        ...plotLayout, shapes: shapes, annotations: annotations,
+        yaxis: {range: yrange.slice(), dtick: dtick, ...plotLayout.yaxis},
     }, plotConf);
     plot._defaultYrange = yrange.slice();
     plot.removeAllListeners('plotly_doubleclick');
