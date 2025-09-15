@@ -1156,7 +1156,7 @@ class ConfHandler {
         };
         // dependencies
         if (key === 'facet') {
-            if (value === 'region') { // TODO bug
+            if (value === 'region' && !conf.cnExtra) {
                 alter('filterRegion', 'all');
             } else {
                 if (conf.filterRegion === 'all')
