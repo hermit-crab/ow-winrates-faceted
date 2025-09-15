@@ -555,7 +555,7 @@ body {
 
 <div class='info'>
     <button class='trigger-info'>legend and info ★</button> ┊
-    dataset refreshed: <span id='datasetTs'></span> ┊
+    data refreshed: <span id='datasetTs'></span> ┊
     <a href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
     <a href='https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog'>report issue</a>
 </div>
@@ -1124,9 +1124,9 @@ class ConfHandler {
         this.elems.forEach(el => conf[el.id] = inputElemValue(el));
         this._dbgChain = [];
         if (Object.keys(oldConf).length)
-            this.changeDependant({...oldConf});
-        this.setDisabled();
-        this.highlight(oldConf);
+            this._changeDependant({...oldConf});
+        this._setDisabled();
+        this._highlight(oldConf);
 
         this.barTier = this.barTier || 'All';
         if (conf.sortingMode === 'all') this.barTier = 'All';
@@ -1149,7 +1149,7 @@ class ConfHandler {
 
         if (doRender) render();
     }
-    highlight(oldConf) {
+    _highlight(oldConf) {
         Object.keys(oldConf).forEach(key => {
             if (oldConf[key] === this.conf[key]) return;
             if (key === 'chinaOn' && this.conf.chinaOn)
@@ -1158,7 +1158,7 @@ class ConfHandler {
                 flash(document.querySelector('.col-title.active span'), 'flash');
         });
     }
-    changeDependant(oldConf) {
+    _changeDependant(oldConf) {
         const conf = this.conf;
         const changed = Object.entries(conf).filter(([k, v]) => v !== oldConf[k]);
         if (!changed.length) return;
@@ -1197,9 +1197,9 @@ class ConfHandler {
             if (conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta')
                 alter('sortingMode', 'all');
         }
-        this.changeDependant(oldConf);
+        this._changeDependant(oldConf);
     }
-    setDisabled() {
+    _setDisabled() {
         const conf = this.conf;
         this.elems.forEach(el => el.disabled = false);
 
