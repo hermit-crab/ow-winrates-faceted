@@ -1134,7 +1134,7 @@ class ConfHandler {
         this.elems.forEach(el => conf[el.id] = inputElemValue(el));
         this._dbgChain = [];
         if (Object.keys(oldConf).length)
-            this._applyRules({...oldConf});
+            this._applyRules(oldConf);
         this._setDisabled();
         this._highlight(oldConf);
 
@@ -1171,11 +1171,8 @@ class ConfHandler {
     _applyRules(oldConf) {
         const alter = (k, v) => { this.conf[k] = v; inputElemValue(UI[k], v); };
         const rules = [
-            // [condition(curConf, changedFields), effect()], ...
             [
-            (conf, changed) => changed.facet && conf.facet === 'region',
-            conf => alter('filterRegion', 'all'),
-            ], [
+            // [condition(conf, oldConf), effect()], ...
             conf => conf.facet !== 'region' && conf.filterRegion === 'all',
             conf => alter('filterRegion', REGIONS[0])
             ], [
@@ -1191,37 +1188,34 @@ class ConfHandler {
             conf => !['all', 'mean'].includes(conf.filterRegion) && conf.sortingRegion !== conf.filterRegion,
             conf => alter('sortingRegion', conf.filterRegion)
             ], [
-            (conf, changed) => changed.filterRegion && conf.filterRegion === 'mean',
-            conf => alter('sortingRegion', conf.filterRegion)
-            ], [
             conf => conf.facet !== 'region' && conf.filterRegion === 'mean' && conf.sortingRegion !== conf.filterRegion,
             conf => alter('sortingRegion', conf.filterRegion)
-            ], [
-            (conf, changed) => changed.cnExtra,
-            conf => alter('selectColumn', conf.cnExtra ? 'kd' : 'wr')
             ], [
             conf => conf.cnExtra && conf.filterRegion !== 'China',
             conf => alter('filterRegion', 'China')
             ], [
             conf => conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta',
             conf => alter('sortingMode', 'all')
-            // ], [
-            // conf => false,
-            // conf => alter('', null)
-            ],
+            ], [
+            // rules that check for changes, should normally go last
+            (conf, last) => last.filterRegion !== conf.filterRegion && conf.filterRegion === 'mean',
+            conf => alter('sortingRegion', conf.filterRegion)
+            ], [
+            (conf, last) => last.facet !== conf.facet && conf.facet === 'region',
+            conf => alter('filterRegion', 'all')
+            ], [
+            (conf, last) => last.cnExtra !== conf.cnExtra,
+            conf => alter('selectColumn', conf.cnExtra ? 'kd' : 'wr')
+            ]
         ];
-
-        let anyChanges, i = 0;
         this._appliedRules = [];
+        let i = 0, anyChanges;
         do {
             if (i > 10) throw Error('broken conf state');
             i++;
             anyChanges = false;
-            const changedFields = Object.fromEntries(
-                Object.entries(this.conf).map(([k, v]) => [k, v !== oldConf[k]])
-            );
             for (const rule of rules) {
-                if (rule[0](this.conf, changedFields)) {
+                if (rule[0](this.conf, oldConf)) {
                     rule[1](this.conf);
                     anyChanges = true;
                     this._appliedRules.push(i + ') ' + rule[0].toString());
