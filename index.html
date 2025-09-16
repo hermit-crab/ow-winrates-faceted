@@ -512,11 +512,11 @@ body {
             <option value='PC' selected>KB&M</option>
             <option value='Console'>Console</option>
         </select>
-        <label title='Show KDA/Banrates'>
-            <input type='checkbox' id='cnExtra'></input>More
-        </label>
         <label title='China'>
             <input type='checkbox' id='chinaOn'></input>CN
+        </label>
+        <label title='Show KDA/Banrates (CN)'>
+            <input type='checkbox' id='cnExtra'></input>More
         </label>
     </div>
     <div class='conf-block'>
@@ -941,6 +941,9 @@ function renderBar(hero, entries, valtype, expected, conf) {
         bar.innerHTML = '<div class="nodata">no data</div>';
         return;
     }
+    const facetValues = pluck(entries, conf.facet);
+    if (facetValues.length != new Set(facetValues).size)
+        throw new Error('multiple values of the same facet after filter');
     const vals = entries.map(e => e.x);
     let [min, max] = [Math.min(...vals), Math.max(...vals)];
     const [smin, smax] = [s(min), s(max)];
@@ -1233,7 +1236,6 @@ class ConfHandler {
             elem => elem.disabled = !conf.chinaOn
         );
         UI.cnExtra.disabled = !conf.chinaOn;
-        UI.cnExtra.parentElement.classList.toggle('hidden', !conf.chinaOn);
         if (conf.cnExtra)
             UI.filterRegion.disabled = true;
     }
