@@ -1050,6 +1050,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
                 return {x: ALL_TIER_IDX, y: entry[valtype], symbol: 'arrow-left', size: 6};
             return {x: idx, y: entry[valtype], symbol: 'circle', size: 4};
         }).filter(e => e);
+        if (points.length === 1) return;
 
         let extraAttrs = {};
         let size = pluck(points, 'size');
@@ -1066,7 +1067,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
             marker: {size: size, symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
             ...extraAttrs,
         };
-    });
+    }).filter(t => t);
 
     const shapes = [];
     if (layoutExtra[valtype].guideline)
@@ -1132,17 +1133,32 @@ class ConfHandler {
         const conf = this.conf;
         const oldConf = {...conf};
         this.elems.forEach(el => conf[el.id] = inputElemValue(el));
-        this._dbgChain = [];
         if (Object.keys(oldConf).length)
             this._applyRules(oldConf);
         this._setDisabled();
-        this._highlight(oldConf);
+        this._applyEffects(oldConf);
 
         this.barTier = this.barTier || 'All';
         if (conf.sortingMode === 'all') this.barTier = 'All';
         if (conf.sortingMode.includes('tier-')) this.barTier = conf.sortingMode.slice(5);
 
         this.regionMeanView = (conf.filterRegion === 'mean' && conf.facet === 'region');
+
+        if (doRender) render();
+    }
+    _applyEffects(oldConf) {
+        // effects that won't mutate the confs
+        const conf = this.conf;
+
+        Object.keys(oldConf).forEach(key => {
+            if (oldConf[key] === conf[key]) return;
+            if (key === 'cnExtra')
+                UI.selectColumn.value = conf.cnExtra ? 'kd' : 'wr';
+            if (key === 'chinaOn' && conf.chinaOn)
+                flash(UI.cnExtra.parentElement, 'flash');
+            if (key === 'sortingMode' || this.getFacets(conf).sortFacetValue !== this.getFacets(oldConf).sortFacetValue)
+                flash(document.querySelector('.col-title.active span'), 'flash');
+        });
 
         UI.main.classList.remove([...UI.main.classList].filter(c => c.startsWith('viewmode-')));
         UI.main.classList.add('viewmode-' + conf.viewMode);
@@ -1156,17 +1172,6 @@ class ConfHandler {
         document.body.classList.toggle('show-cn-extra', conf.cnExtra);
         mobileSelectColumns();
         toggleWarnings(conf);
-
-        if (doRender) render();
-    }
-    _highlight(oldConf) {
-        Object.keys(oldConf).forEach(key => {
-            if (oldConf[key] === this.conf[key]) return;
-            if (key === 'chinaOn' && this.conf.chinaOn)
-                flash(UI.cnExtra.parentElement, 'flash');
-            if (key === 'sortingMode' || this.getFacets(this.conf).sortFacetValue !== this.getFacets(oldConf).sortFacetValue)
-                flash(document.querySelector('.col-title.active span'), 'flash');
-        });
     }
     _applyRules(oldConf) {
         const alter = (k, v) => { this.conf[k] = v; inputElemValue(UI[k], v); };
@@ -1203,9 +1208,6 @@ class ConfHandler {
             ], [
             (conf, last) => last.facet !== conf.facet && conf.facet === 'region',
             conf => alter('filterRegion', 'all')
-            ], [
-            (conf, last) => last.cnExtra !== conf.cnExtra,
-            conf => alter('selectColumn', conf.cnExtra ? 'kd' : 'wr')
             ]
         ];
         this._appliedRules = [];
