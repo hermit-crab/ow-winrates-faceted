@@ -1134,7 +1134,7 @@ class ConfHandler {
         this.elems.forEach(el => conf[el.id] = inputElemValue(el));
         this._dbgChain = [];
         if (Object.keys(oldConf).length)
-            this._changeDependant({...oldConf});
+            this._applyRules({...oldConf});
         this._setDisabled();
         this._highlight(oldConf);
 
@@ -1168,44 +1168,67 @@ class ConfHandler {
                 flash(document.querySelector('.col-title.active span'), 'flash');
         });
     }
-    _changeDependant(oldConf) {
-        const conf = this.conf;
-        const changed = Object.entries(conf).filter(([k, v]) => v !== oldConf[k]);
-        if (!changed.length) return;
-        this._dbgChain.push(changed[0]);
-        if (this._dbgChain.length > 10) throw Error('broken conf state');
-        const [key, value] = changed[0];
-        oldConf[key] = value;
-        const alter = (k, v) => {
-            conf[k] = v;
-            inputElemValue(UI[k], v);
-            this._dbgChain[0].push([k, v]);
-        };
-        // dependencies
-        if (key === 'facet') {
-            if (value === 'region' && !conf.cnExtra) {
-                alter('filterRegion', 'all');
-            } else {
-                if (conf.filterRegion === 'all')
-                    alter('filterRegion', REGIONS[0]);
+    _applyRules(oldConf) {
+        const alter = (k, v) => { this.conf[k] = v; inputElemValue(UI[k], v); };
+        const rules = [
+            // [condition(curConf, changedFields), effect()], ...
+            [
+            (conf, changed) => changed.facet && conf.facet === 'region',
+            conf => alter('filterRegion', 'all'),
+            ], [
+            conf => conf.facet !== 'region' && conf.filterRegion === 'all',
+            conf => alter('filterRegion', REGIONS[0])
+            ], [
+            conf => !conf.chinaOn && conf.sortingRegion === 'China',
+            conf => alter('sortingRegion', REGIONS[0])
+            ], [
+            conf => !conf.chinaOn && conf.filterRegion === 'China',
+            conf => alter('filterRegion', 'all')
+            ], [
+            conf => !conf.chinaOn && conf.cnExtra,
+            conf => alter('cnExtra', false)
+            ], [
+            conf => !['all', 'mean'].includes(conf.filterRegion) && conf.sortingRegion !== conf.filterRegion,
+            conf => alter('sortingRegion', conf.filterRegion)
+            ], [
+            (conf, changed) => changed.filterRegion && conf.filterRegion === 'mean',
+            conf => alter('sortingRegion', conf.filterRegion)
+            ], [
+            conf => conf.facet !== 'region' && conf.filterRegion === 'mean' && conf.sortingRegion !== conf.filterRegion,
+            conf => alter('sortingRegion', conf.filterRegion)
+            ], [
+            (conf, changed) => changed.cnExtra,
+            conf => alter('selectColumn', conf.cnExtra ? 'kd' : 'wr')
+            ], [
+            conf => conf.cnExtra && conf.filterRegion !== 'China',
+            conf => alter('filterRegion', 'China')
+            ], [
+            conf => conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta',
+            conf => alter('sortingMode', 'all')
+            // ], [
+            // conf => false,
+            // conf => alter('', null)
+            ],
+        ];
+
+        let anyChanges, i = 0;
+        this._appliedRules = [];
+        do {
+            if (i > 10) throw Error('broken conf state');
+            i++;
+            anyChanges = false;
+            const changedFields = Object.fromEntries(
+                Object.entries(this.conf).map(([k, v]) => [k, v !== oldConf[k]])
+            );
+            for (const rule of rules) {
+                if (rule[0](this.conf, changedFields)) {
+                    rule[1](this.conf);
+                    anyChanges = true;
+                    this._appliedRules.push(i + ') ' + rule[0].toString());
+                }
             }
-        } else if (key === 'chinaOn' && !value) {
-            if (conf.sortFacetValue === 'China')
-                alter('sortingRegion', REGIONS[0]);
-            if (conf.filterRegion === 'China')
-                alter('filterRegion', 'all');
-            alter('cnExtra', false);
-        } else if (key === 'filterRegion') {
-            if (conf.filterRegion !== 'all')
-                alter('sortingRegion', conf.filterRegion);
-        } else if (key === 'cnExtra') {
-            alter('selectColumn', conf.cnExtra ? 'kd' : 'wr');
-            if (value) alter('filterRegion', 'China');
-        } else if (key === 'viewMode') {
-            if (conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta')
-                alter('sortingMode', 'all');
-        }
-        this._changeDependant(oldConf);
+            oldConf = {...this.conf};
+        } while (anyChanges);
     }
     _setDisabled() {
         const conf = this.conf;
