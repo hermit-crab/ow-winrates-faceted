@@ -1126,11 +1126,11 @@ class ConfHandler {
     constructor() {
         this.elems = [...document.querySelectorAll('.conf *[id]')];
         this.elems.forEach(el => el.addEventListener('change', _ => this.sync()));
-        this.conf = {};
+        this._conf = {};
         this.sync(false);
     }
     sync(doRender = true) {
-        const conf = this.conf;
+        const conf = this._conf;
         const oldConf = {...conf};
         this.elems.forEach(el => conf[el.id] = inputElemValue(el));
         if (Object.keys(oldConf).length)
@@ -1148,7 +1148,7 @@ class ConfHandler {
     }
     _applyEffects(oldConf) {
         // effects that won't mutate the confs
-        const conf = this.conf;
+        const conf = this._conf;
 
         Object.keys(oldConf).forEach(key => {
             if (oldConf[key] === conf[key]) return;
@@ -1171,10 +1171,10 @@ class ConfHandler {
 
         document.body.classList.toggle('show-cn-extra', conf.cnExtra);
         mobileSelectColumns();
-        toggleWarnings(conf);
+        toggleWarnings(this.frozenConf());
     }
     _applyRules(oldConf) {
-        const alter = (k, v) => { this.conf[k] = v; inputElemValue(UI[k], v); };
+        const alter = (k, v) => { this._conf[k] = v; inputElemValue(UI[k], v); };
         const rules = [
             [
             // [condition(conf, oldConf), effect()], ...
@@ -1217,17 +1217,17 @@ class ConfHandler {
             i++;
             anyChanges = false;
             for (const rule of rules) {
-                if (rule[0](this.conf, oldConf)) {
-                    rule[1](this.conf);
+                if (rule[0](this._conf, oldConf)) {
+                    rule[1](this._conf);
                     anyChanges = true;
                     this._appliedRules.push(i + ') ' + rule[0].toString());
                 }
             }
-            oldConf = {...this.conf};
+            oldConf = {...this._conf};
         } while (anyChanges);
     }
     _setDisabled() {
-        const conf = this.conf;
+        const conf = this._conf;
         this.elems.forEach(el => el.disabled = false);
 
         // non applicable sort facets
@@ -1259,6 +1259,7 @@ class ConfHandler {
             UI.filterRegion.disabled = true;
     }
     getFacets(conf) {
+        conf = conf || this._conf;
         let facetColors, facets = {};
         if (conf.facet === 'region') {
             facets.facetValues = REGIONS;
@@ -1282,8 +1283,8 @@ class ConfHandler {
     }
     frozenConf() {
         return {
-            ...this.conf,
-            ...this.getFacets(this.conf),
+            ...this._conf,
+            ...this.getFacets(),
             regionMeanView: this.regionMeanView,
             barTier: this.barTier,
         }
@@ -1340,8 +1341,9 @@ function plotToggleZoom(plot) {
         return;
     }
     let traces = plot._fullData;
-    if (confHandler.conf.filterRegion === 'mean' && confHandler.conf === 'region')
-        // in mean view we only show regional traces for faint reference
+    const conf = confHandler.frozenConf();
+    if (conf.filterRegion === 'mean' && conf.facet === 'region')
+        // in mean view we only show regional traces for faint reference so ignore them
         traces = [traces.at(-1)];
     const ys = traces.flatMap(trace => trace.y).filter(v => v != null);
     let a = Math.min(...ys), b = Math.max(...ys);
