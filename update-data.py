@@ -52,13 +52,12 @@ def crawl_main_site():
             selects['rq']['Quick Play - Role Queue'],
             selects['rq']['Competitive - Role Queue']
         ]
-        print(f'Modes: {modes}')
-    except Exception:
-        print('==x HTML parse failure')
-        traceback.print_exc()
         # Sometimes Comp is on 1 for a few days. At first both 1 and 2 were available (
         # with 2 having seemingly older data and 1 having new season data).
-        modes = ['0', '2'] # 0=QP; 2=Comp;
+        print(f'Modes: {modes}') # 0=QP; 2(or 1)=Comp;
+    except Exception:
+        print('==x HTML parse failure')
+        raise
 
     params = {
         'map': ['all-maps'],
@@ -91,6 +90,7 @@ def crawl_main_site():
         reported = sorted(data['selected'].items())
         if expected != reported:
             print(f'\n==x unexpected selection reported, expected:\n{expected}\ngot:\n{reported}')
+            raise Exception
         data['_url'] = url
         data['_ts'] = ts
         facets.append((combo, data))
@@ -133,6 +133,7 @@ def crawl_cn_site():
             print('\n==x no data', url, data)
         data['_url'] = url
         data['_ts'] = ts
+        data['_season'] = season
         facets.append((combo, data))
 
     print(f'\nCache hits: {cache_hits}/{len(rqs)}')
@@ -146,7 +147,7 @@ def main():
         print('==> CN site')
         facets.extend(crawl_cn_site())
     except Exception:
-        print('==x cn crawl failure')
+        print('==x CN crawl failure')
         traceback.print_exc()
 
     with open('winrate-data.js', 'w', encoding='utf8') as f:
