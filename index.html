@@ -675,6 +675,8 @@ let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN, confHan
 
 
 function setup() {
+    if (window.matchMedia('(max-width: 700px)').matches)
+        UI.viewMode.value = 'bars';
     confHandler = new ConfHandler();
     UI.selectColumn.addEventListener('change', mobileSelectColumns);
     const infoPopup = document.querySelector('.info-popup');
