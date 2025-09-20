@@ -17,7 +17,6 @@ body {
 }
 .hidden {display: none !important;}
 .flash {animation: flash 0.7s ease;}
-.blink {animation: blink 0.25s steps(1);}
 
 /* -- main box -- */
 #main {
@@ -264,6 +263,9 @@ body {
 .entry .plot-parent {
     position: relative;
 }
+.entry .plot-parent.blink {
+    background-color: #0001;
+}
 
 /* plots */
 .entry .plot {
@@ -434,9 +436,6 @@ body {
     0%   {background-color: transparent;}
     50%  {background-color: rgba(74, 210, 255, 0.5);}
     100% {background-color: transparent;}
-}
-@keyframes blink {
-    50% {background-color: rgba(83, 136, 154, 0.12);}
 }
 </style>
 </head>
@@ -1338,7 +1337,7 @@ function plotToggleZoom(plot) {
     const ctrl = pressedKeys.has('Control');
     if (default_[0] !== cur[0] && default_[1] !== cur[1] && !ctrl) {
         Plotly.relayout(plot, {'yaxis.range': default_.slice()});
-        flash(plot.parentElement, 'blink');
+        flash(plot.parentElement, 'blink', 200);
         return;
     }
     let traces = plot._fullData;
@@ -1397,9 +1396,10 @@ function calcMAD(bins) {
 }
 
 
-function flash(elem, className) {
+function flash(elem, className, timeout) {
     elem.classList.remove(className);
     setTimeout(() => elem.classList.add(className), 0);
+    setTimeout(() => elem.classList.remove(className), timeout || 1000);
 }
 
 
