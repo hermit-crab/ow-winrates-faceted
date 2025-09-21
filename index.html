@@ -87,14 +87,25 @@ body {
     user-select: none;
 }
 .conf-block {
-    display: inline-block;
+    display: block;
     padding: 0 6px;
     text-wrap: nowrap;
     border-left: 1px solid rgba(0, 0, 0, 0.271);
 }
+.conf-block .conf-title {
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #777;
+    letter-spacing: 1px;
+    font-size: 80%;
+    margin-bottom: 1px;
+}
 .conf-block:first-child {
     padding-left: 0;
     border-left: none;
+}
+.conf-block .conf-viewmode {
+    text-wrap: wrap;
 }
 .sorting-reversed,
 .conf #sortingColumn {
@@ -102,6 +113,9 @@ body {
 }
 .conf input[type='checkbox'] {
     vertical-align: bottom;
+}
+.conf label:first-of-type input[type='checkbox'] {
+    margin-left: 0;
 }
 
 /* -- info line -- */
@@ -474,7 +488,7 @@ body {
             <li>There is no PC/Console separation (is it even available on Consoles there).</li>
             <li>It provides QP data broken down by ranks (huh!), so you can also facet by Game Mode.</li>
             <li>It provides independant Champ data (main site bundles it with GM), this page ignores it.</li>
-            <li>Winrates/banrates numbers are scaled to conform with main website convention.</li>
+            <li>Winrates/banrates numbers are scaled to conform to main website convention.</li>
         </ul></li>
     </ul>
 </div>
@@ -488,20 +502,23 @@ body {
 
 <div class='scroller'>
 <div class='conf'>
+    <div class='conf-block conf-viewmode'>
+        <div class='conf-title'>View</div>
+        <select id='viewMode'>
+            <option value='plots' selected>Curves</option>
+            <option value='bars'>Bars</option>
+        </select>
+    </div>
     <div class='conf-block facet-block'>
-        Facet
+        <div class='conf-title'>Facet</div>
         <select id='facet'>
             <option value='region' selected>Region</option>
             <option value='input'>Platform</option>
             <option value='mode'>Mode</option>
         </select>
-        <select id='viewMode'>
-            <option value='plots' selected>Plots</option>
-            <option value='bars'>Bars</option>
-        </select>
     </div>
     <div class='conf-block'>
-        Select
+        <div class='conf-title'>Select</div>
         <select id='filterRole'>
             <option value='all' selected>Role</option>
             <option value='support'>Support</option>
@@ -520,22 +537,24 @@ body {
             <option value='PC' selected>KB&M</option>
             <option value='Console'>Console</option>
         </select>
-        <label title='China'>
-            <input type='checkbox' id='chinaOn'></input>CN
+    </div>
+    <div class='conf-block'>
+        <div class='conf-title'>China</div>
+        <label>
+            <input type='checkbox' id='chinaOn'></input>On
         </label>
-        <label title='Show KDA/Banrates (CN)'>
+        <label title='Show KDA/Banrates'>
             <input type='checkbox' id='cnExtra'></input>More
         </label>
     </div>
     <div class='conf-block'>
-        Sort mode
+        <div class='conf-title'>Sort mode</div>
         <select id='sortingMode'>
             <option value='all' selected>All Ranks</option>
             <option id='sortTiers'>...replaced via JS</option>
             <option value='b-m-delta'>B / M Diff.</option>
             <option value='facets-spread'>Facet Diff.</option>
         </select>
-        in facet
         <select id='sortingRegion'>
             <option value='Americas' selected>Americas</option>
             <option value='Asia'>Asia</option>
