@@ -607,7 +607,7 @@ body {
     </select>
 </div>
 
-<div id='plots'></div>
+<div id='plots'>Loading...</div>
 
 </div>
 
@@ -747,6 +747,9 @@ function loadData(jsonpSrc) {
     const script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = jsonpSrc;
+    script.addEventListener('error', () => {
+        UI.plots.innerHTML = `Failed loading data from ${jsonpSrc}.`;
+    });
     document.body.appendChild(script);
 }
 
