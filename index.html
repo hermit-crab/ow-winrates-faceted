@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
+<meta charset='utf-8' />
 <title>Overwatch 2 Winrates & Pickrates – Faceted</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
-<script src="https://momentjs.com/downloads/moment.min.js"></script>
+<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+<script src='https://cdn.plot.ly/plotly-3.1.0.min.js'></script>
+<script src='https://momentjs.com/downloads/moment.min.js'></script>
 <!-- basic analytics, just for me to know if page has any visitors and I need to maintain it -->
-<script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+<script async src='https://scripts.simpleanalyticscdn.com/latest.js'></script>
 <style>
 
 body {
@@ -16,14 +16,14 @@ body {
     margin: 0;
 }
 .hidden {display: none !important;}
-.shown {display: unset !important;}
+.flash {animation: flash 0.7s ease;}
 
 /* -- main box -- */
 #main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 15px;
+    margin-top: 10px;
     width: 100%;
 }
 #main > * {
@@ -58,6 +58,14 @@ body {
     margin-right: 5px;
 }
 
+/* -- footer -- */
+.footer {
+    font-size: 11px;
+    opacity: .5;
+    text-align: center;
+    line-height: 120%;
+}
+
 /* -- conf+info box -- */
 .scroller {
     display: flex;
@@ -65,37 +73,56 @@ body {
     align-items: center;
     overflow-x: auto;
     width: 100%;
-    margin-bottom: 5px !important;
     padding-bottom: 5px;
 }
 
 /* -- conf -- */
 .conf {
-    margin: 10px auto !important;
+    margin: 10px auto;
+    margin-bottom: 5px;
     font-size: 90%;
     display: flex;
     flex-wrap: nowrap;
     justify-content: center;
     align-items: baseline;
+    user-select: none;
 }
 .conf-block {
-    display: inline-block;
+    display: block;
     padding: 0 6px;
     text-wrap: nowrap;
     border-left: 1px solid rgba(0, 0, 0, 0.271);
+}
+.conf-block .conf-title {
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #777;
+    letter-spacing: 1px;
+    font-size: 80%;
+    margin-bottom: 1px;
 }
 .conf-block:first-child {
     padding-left: 0;
     border-left: none;
 }
-.sorting-reversed {
+.conf-block .conf-viewmode {
+    text-wrap: wrap;
+}
+.sorting-reversed,
+.conf #sortingColumn {
     display: none;
+}
+.conf input[type='checkbox'] {
+    vertical-align: bottom;
+}
+.conf label:first-of-type input[type='checkbox'] {
+    margin-left: 0;
 }
 
 /* -- info line -- */
-.info {
+.info, .warnings {
     font-size: 80%;
-    opacity: 40%;
+    opacity: 50%;
     text-wrap: nowrap;
     margin: 0 auto;
 }
@@ -106,21 +133,30 @@ body {
 .info a:hover {
     text-decoration: underline;
 }
-#infoBtn {
+.warnings > *:last-child::after {
+    content: '┊';
+    opacity: 0;
+}
+.warnings > * {
+    color: #871818;
+}
+.info .trigger-info,
+.warnings .trigger-info {
     background: none;
     border: none;
     padding: 0;
     font: inherit;
     cursor: pointer;
 }
-#infoBtn:hover {
+.info .trigger-info:hover,
+.warnings .trigger-info:hover {
     text-decoration: underline dotted;
 }
 
 /* -- info popup -- */
 .info-popup {
-    display: none;
-    position: fixed;
+    position: absolute;
+    font-size: 90%;
     top: 10px;
     left: 10px;
     margin-right: 10px;
@@ -133,14 +169,22 @@ body {
 }
 .info-popup ul {
     margin: 0;
-    padding-left: 20px;
+    padding-left: 15px;
+}
+.info-popup > ul > li {
+    margin-bottom: 3px;
 }
 #colorTips {
     font-weight: bold;
 }
+#infoPopupClose {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
 
 /* -- column titles -- */
-.plots-title {
+.col-titles {
     display: flex;
     flex-wrap: nowrap;
     font-weight: bold;
@@ -149,46 +193,48 @@ body {
     font-size: 60%;
     gap: 10px;
     user-select: none;
-    position: relative;
+    padding-top: 5px;
+    padding-bottom: 3px;
+    background-color: #fafafa;
+    position: sticky;
+    z-index: 400;
+    top: 0;
 }
-.plots-title .col {
+.col-titles .col-title {
     text-align: right;
     text-transform: uppercase;
     width: 300px;
     margin: auto;
 }
-.plots-title .col span {
+.col-titles .col-title span {
     cursor: pointer;
     margin-right: 10px;
     text-wrap: nowrap;
 }
-.plots-title .col.title-name {
+.col-titles .col-title.nm {
     width: 80px;
     cursor: default;
 }
-.plots-title .col.title-name.flash {
-    animation: red-flash 0.5s ease;
-}
-.plots-title .col.title-name span {
+.col-titles .col-title.nm span {
     margin-right: 0;
 }
 
-.plots-title .col span:before {
-    content: "▼ ";
+.col-titles .col-title span:before {
+    content: '▼ ';
     visibility: hidden;
     opacity: 80%;
 }
-.plots-title .col.active span:before {
-    content: "▲ ";
+.col-titles .col-title.active span:before {
+    content: '▲ ';
 }
-.plots-title .col.active.inv span:before {
-    content: "▼ ";
+.col-titles.inv .col-title.active span:before {
+    content: '▼ ';
 }
-.plots-title .col.active span:before,
-.plots-title .col.active.inv span:before {
+.col-titles .col-title.active span:before,
+.col-titles.inv .col-title.active span:before {
     visibility: visible;
 }
-.plots-title .col span:hover:before {
+.col-titles .col-title span:hover:before {
     visibility: visible;
 }
 
@@ -237,13 +283,140 @@ body {
     border-radius: 50%;
     align-self: center;
 }
+.entry .plot-parent {
+    position: relative;
+}
+.entry .plot-parent.blink {
+    background-color: #0001;
+}
+
+/* plots */
 .entry .plot {
     height: 100px;
     width: 300px;
+    display: none;
 }
-svg.main-svg, svg.main-svg * {
-    /* allow xtick tooltipx overflow */
+.entry .stub {
+    height: 100px;
+    width: 300px;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.plot svg.main-svg, .plot svg.main-svg * {
+    /* allow xtick tooltip overflow */
     overflow: visible;
+}
+
+/* bars */
+.entry .bar {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    width: 300px;
+    height: 100px;
+    font-size: 80%;
+}
+.entry .bar .tier {
+    font-size: 90%;
+    opacity: .5;
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: none;
+}
+.entry .bar:hover .tier {
+    display: block;
+}
+.entry .bar .total {
+    width: fit-content;
+}
+.entry .bar .total.aleft::before,
+.entry .bar .total.aright::after {
+    font-size: 80%;
+    vertical-align: top;
+    opacity: .6;
+}
+.entry .bar .total.aleft::before {content: '◄';}
+.entry .bar .total.aright::after {content: '►';}
+.entry .bar .total {
+    position: relative;
+    opacity: .6;
+}
+.entry .bar .total.est .full:first-child::before {
+    content: '~ ';
+    opacity: .6;
+}
+.entry .bar .total .full {
+    font-weight: bold;
+}
+.entry .bar .total .prefix {
+    font-weight: bold;
+    opacity: .6;
+}
+.entry .bar .total .frac {
+    opacity: .6;
+    font-weight: normal;
+}
+.entry .bar .nodata {
+    opacity: .4;
+}
+.entry .bar .range {
+    display: none;
+    position: relative;
+    font-size: 80%;
+    opacity: .5;
+}
+.entry .bar:hover .range {
+    display: block;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+.entry .bar .range div {
+    position: absolute;
+    bottom: 0;
+}
+.entry .bar .svg-box {
+    position: relative;
+    display: flex;
+}
+.entry .bar svg {
+    display: block;
+}
+.entry .bar svg.cmp {
+    opacity: .7;
+}
+.entry .bar svg.hover {
+    display: none;
+    position: absolute;
+    user-select: none;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+}
+.entry .bar .svg-box:hover svg.hover {
+    display: block;
+    z-index: 500;
+}
+
+/* viewmode conditional */
+.viewmode-bars .entry .bar {display: flex;}
+.viewmode-plots .entry .plot {display: block;}
+
+/* -- PC -- */
+@media screen and (min-width: 700px) {
+    /* cnExtra conditional */
+    .plot-parent.extra, .col-title.extra, #selectColumn .extra {display: none;}
+    .show-cn-extra .plot-parent.extra,
+    .show-cn-extra .col-title.extra {
+        display: block;
+    }
+    .show-cn-extra .plot-parent.base,
+    .show-cn-extra .col-title.base {
+        display: none;
+    }
 }
 
 /* -- mobile -- */
@@ -251,173 +424,238 @@ svg.main-svg, svg.main-svg * {
     .conf {justify-content: left;}
     .title {font-size: 100%;}
     .entry img {height: 60px; width: 60px;}
-    .plots-title .col.title-name {width: 60px;}
+    .col-titles .col-title.nm {width: 60px;}
     #selectColumn {display:inline-block;}
-    .plots-title {
-        background-color: #fafafa;
+    .entry .stub {display: block;}
+    .viewmode-plots .entry .stub {display: block;}
+    .viewmode-bars .entry .stub {display: none;}
+    .mobile-focused .stub {display: none !important;}
+    .mobile-focused .plot {box-shadow: -5px 0 0 #0004;}
+    .col-titles {
         height: 20px;
         font-size: 80%;
         padding: 3px 0;
-        position: sticky;
-        z-index: 400;
-        top: 0;
     }
-    .plot-pr {display: none;}
-    .plot-wr {display: none;}
-    .title-wr {display: none;}
-    .title-pr {display: none;}
 
-    .mobile-show-pr .plot-pr {display: block;}
-    .mobile-show-pr .title-pr {display: block;}
-    .mobile-show-wr .plot-wr {display: block;}
-    .mobile-show-wr .title-wr {display: block;}
+    /* cnExtra conditional */
+    .show-cn-extra #selectColumn .base {display: none;}
+    .show-cn-extra #selectColumn .extra {display: block;}
+    #selectColumn .extra {display: none;}
+
+    /* selectColumn conditional */
+    .plot-parent.pr, .plot-parent.wr, .plot-parent.br, .plot-parent.kd,
+    .col-title.wr, .col-title.pr, .col-title.br, .col-title.kd {display: none;}
+    .mobile-show-pr .plot-parent.pr {display: block;}
+    .mobile-show-pr .col-title.pr {display: block;}
+    .mobile-show-wr .plot-parent.wr {display: block;}
+    .mobile-show-wr .col-title.wr {display: block;}
+    .mobile-show-kd .plot-parent.kd {display: block;}
+    .mobile-show-kd .col-title.kd {display: block;}
+    .mobile-show-br .plot-parent.br {display: block;}
+    .mobile-show-br .col-title.br {display: block;}
 }
 
-@keyframes red-flash {
+@keyframes flash {
     0%   {background-color: transparent;}
-    50%  {background-color: #f008;}
+    50%  {background-color: rgba(74, 210, 255, 0.5);}
     100% {background-color: transparent;}
 }
 </style>
 </head>
 <body>
 
-<div class="info-popup">
+<div class='info-popup hidden'>
+    <button id='infoPopupClose'>x</button>
     <ul>
-        <li>Line colors: <span id="colorTips"></span>.</li>
+        <li>Line colors: <span id='colorTips'></span>.</li>
         <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
+        <li><b>Double click</b> any plot to zoom in/out (toggle relative scale). Hold Ctrl to include zeroline.</li>
         <li>Starting "<b>All</b>" values represent Competitive total values across all tiers.</li>
-        <li><b>Dashed</b> lines represens "expected" value. For winrate it's 50%. For pickrate it's the value that would result if every hero in the role was equally desirable.</li>
-        <li><b>Double click</b> any plot to zoom in/out (toggle own relative scale).</li>
+        <li><b>Dashed</b> lines represens "expected" value.<ul>
+            <li>For winrate it's 50%.</li>
+            <li>For pickrate it's the value if every hero was picked equally often within their role.</li>
+            <li>(CN) For banrate it's the value if every hero was banned equally often.</li>
+            <li>(CN) For KDA it's mean value for the role (calculated by this page).</li>
+        </ul></li>
         <li>Special <b>sorting</b> modes:<ul>
             <li>B / M Diff. – difference between Bronze and Master (slope of the facet line).</li>
-            <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).</li>
+            <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).
+                In Bars-view only currently shown tier is considered ("All" or last sorted-by tier).</li>
+        </ul></li>
+        <li><b>*Average</b> (mean) values are computed by this page (Blizzard does not provide it).
+        Since we do not know population sizes (weights) – our mean is only an estimate of true mean.</li>
+        <li><b>Chinese</b> data comes from a <a href='https://ow.blizzard.cn/herolist/'>separate official source</a>.
+            I do not know if the numbers are calculated in the exact same manner as on the main site.<ul>
+            <li>There is no PC/Console separation (is it even available on Consoles there).</li>
+            <li>It provides QP data broken down by ranks (huh!), so you can also facet by Game Mode.</li>
+            <li>It provides independant Champ data (main site bundles it with GM), this page ignores it.</li>
+            <li>Winrates/banrates numbers are scaled to conform to main website convention.</li>
         </ul></li>
     </ul>
 </div>
 
-<div id="main" class="mobile-show-wr">
+<div id='main' class='mobile-show-wr viewmode-plots'>
 
-<div class="title">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" aria-labelledby="blz-icon-title-overwatch-2-dark" viewBox="0 0 48 48" part="icon"><title id="blz-icon-title-overwatch-2-dark">Overwatch 2</title><path fill="#ED6516" d="M13.9 13.901a14.284 14.284 0 0 1 20.2 0l4.043-4.042a20 20 0 0 0-28.286 0z"></path><path fill="#333E48" d="m39.312 11.135-4.063 4.062a14.29 14.29 0 0 1 .995 16.159L28.891 24l-4.006-9.413h-.02V27.31l7.938 7.938a14.29 14.29 0 0 1-17.606 0l7.939-7.938V14.636l-4.027 9.365-7.355 7.355a14.29 14.29 0 0 1 .997-16.159l-4.063-4.062a20.001 20.001 0 1 0 30.624 0"></path></svg>
+<div class='title'>
+    <svg xmlns='http://www.w3.org/2000/svg' fill='none' aria-labelledby='blz-icon-title-overwatch-2-dark' viewBox='0 0 48 48' part='icon'><title id='blz-icon-title-overwatch-2-dark'>Overwatch 2</title><path fill='#ED6516' d='M13.9 13.901a14.284 14.284 0 0 1 20.2 0l4.043-4.042a20 20 0 0 0-28.286 0z'></path><path fill='#333E48' d='m39.312 11.135-4.063 4.062a14.29 14.29 0 0 1 .995 16.159L28.891 24l-4.006-9.413h-.02V27.31l7.938 7.938a14.29 14.29 0 0 1-17.606 0l7.939-7.938V14.636l-4.027 9.365-7.355 7.355a14.29 14.29 0 0 1 .997-16.159l-4.063-4.062a20.001 20.001 0 1 0 30.624 0'></path></svg>
     <span>Overwatch 2 Winrates & Pickrates – Faceted</span>
 </div>
 
-<div class="scroller">
-<div class="conf">
-    <div class="conf-block">
-        Facet
-        <select id="facet">
-            <option value="region" selected>Region</option>
-            <option value="input">Platform</option>
+<div class='scroller'>
+<div class='conf'>
+    <div class='conf-block conf-viewmode'>
+        <div class='conf-title'>View</div>
+        <select id='viewMode'>
+            <option value='plots' selected>Curves</option>
+            <option value='bars'>Bars</option>
         </select>
     </div>
-    <div class="conf-block">
-        Select
-        <select id="filterRole">
-            <option value="all" selected>Role</option>
-            <option value="support">Support</option>
-            <option value="tank">Tank</option>
-            <option value="damage">Damage</option>
-        </select>
-        <select id="filterRegion">
-            <option value="all" selected>Region</option>
-            <option value="Americas">Americas</option>
-            <option value="Asia">Asia</option>
-            <option value="Europe">Europe</option>
-        </select>
-        <select id="filterPlatform">
-            <option value="PC" selected>KB&M</option>
-            <option value="Console">Console</option>
+    <div class='conf-block facet-block'>
+        <div class='conf-title'>Facet</div>
+        <select id='facet'>
+            <option value='region' selected>Region</option>
+            <option value='input'>Platform</option>
+            <option value='mode'>Mode</option>
         </select>
     </div>
-    <div class="conf-block">
-        Sort mode
-        <select id="sortingMode">
-            <option value="all" selected>All Ranks</option>
-            <option id="sortTiers">...replaced via JS</option>
-            <option value="b-m-delta">B / M Diff.</option>
-            <option value="facets-spread">Facet Diff.</option>
+    <div class='conf-block'>
+        <div class='conf-title'>Select</div>
+        <select id='filterRole'>
+            <option value='all' selected>Role</option>
+            <option value='support'>Support</option>
+            <option value='tank'>Tank</option>
+            <option value='damage'>Damage</option>
         </select>
-        in facet
-        <select id="sortingRegion">
-            <option value="Americas" selected>Americas</option>
-            <option value="Asia">Asia</option>
-            <option value="Europe">Europe</option>
+        <select id='filterRegion'>
+            <option value='all' selected>Region</option>
+            <option value='Americas'>Americas</option>
+            <option value='Asia'>Asia</option>
+            <option value='Europe'>Europe</option>
+            <option value='China'>China</option>
+            <option value='mean'>*Average</option>
         </select>
-        <select id="sortingPlatform">
-            <option value="PC" selected>KB&M</option>
-            <option value="Console">Console</option>
+        <select id='filterPlatform'>
+            <option value='PC' selected>KB&M</option>
+            <option value='Console'>Console</option>
         </select>
-        <label class="sorting-reversed">
-            <input type="checkbox" id="sortingReverse" checked></input>
-            Reversed
+    </div>
+    <div class='conf-block'>
+        <div class='conf-title'>China</div>
+        <label>
+            <input type='checkbox' id='chinaOn'></input>On
+        </label>
+        <label title='Show KDA/Banrates'>
+            <input type='checkbox' id='cnExtra'></input>More
+        </label>
+    </div>
+    <div class='conf-block'>
+        <div class='conf-title'>Sort mode</div>
+        <select id='sortingMode'>
+            <option value='all' selected>All Ranks</option>
+            <option id='sortTiers'>...replaced via JS</option>
+            <option value='b-m-delta'>B / M Diff.</option>
+            <option value='facets-spread'>Facet Diff.</option>
+        </select>
+        <select id='sortingRegion'>
+            <option value='Americas' selected>Americas</option>
+            <option value='Asia'>Asia</option>
+            <option value='Europe'>Europe</option>
+            <option value='China'>China</option>
+            <option value='mean'>*Average</option>
+        </select>
+        <select id='sortingPlatform'>
+            <option value='PC' selected>KB&M</option>
+            <option value='Console'>Console</option>
+        </select>
+        <select id='sortingGameMode'>
+            <option value='Comp' selected>Comp</option>
+            <option value='QP'>QP</option>
+        </select>
+        <select id='sortingColumn'>
+            <option value='name'>Name</option>
+            <option value='winrate' selected>Winrate</option>
+            <option value='pickrate'>Pickrate</option>
+            <option value='banrate'>Banrate</option>
+            <option value='kda'>KDA</option>
+        </select>
+        <label class='sorting-reversed'>
+            <input type='checkbox' id='sortingReverse' checked></input>Reversed
         </label>
     </div>
 </div>
 
-<div class="info">
-    dataset refreshed: <span id="datasetTs"></span> ┊
-    <button id="infoBtn">legend and tips</button> ┊
-    <a href="https://overwatch.blizzard.com/en-us/rates/">official source</a> ┊
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog">report issue</a>
+<div class='info'>
+    <button class='trigger-info'>legend and info ★</button> ┊
+    data refreshed: <span id='datasetTs'></span> ┊
+    <a href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
+    <a href='https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog'>report issue</a>
 </div>
+<div class='warnings hidden'></div>
 </div>
 
-<div class="plots-title">
-    <div class="col title-name" data-sort="name"><span>Hero</span></div>
-    <div class="col title-wr active" data-sort="winrate"><span>Winrate</span></div>
-    <div class="col title-pr" data-sort="pickrate"><span>Pickrate</span></div>
-    <select id="selectColumn">
-        <option value="wr" selected>Winrate</option>
-        <option value="pr">Pickrate</option>
+<div class='col-titles'>
+    <div class='col-title nm' data-sort='name'><span>Hero</span></div>
+    <div class='col-title wr base active' data-sort='winrate'><span>Winrate</span></div>
+    <div class='col-title pr base' data-sort='pickrate'><span>Pickrate</span></div>
+    <div class='col-title kd extra' data-sort='kda'><span>KDA</span></div>
+    <div class='col-title br extra' data-sort='banrate'><span>Banrate</span></div>
+    <select id='selectColumn'>
+        <option class='base' value='wr' selected>Winrate</option>
+        <option class='base' value='pr'>Pickrate</option>
+        <option class='extra' value='kd'>KDA</option>
+        <option class='extra' value='br'>Banrate</option>
     </select>
 </div>
 
-<div id="plots"></div>
+<div id='plots'>Loading...</div>
 
 </div>
 
+<div class='footer'>
+This page is not affiliated with Overwatch or Blizzard Entertainment.<br/>
+Overwatch is a trademark of Blizzard Entertainment, Inc., in the U.S. and/or other countries.
+</div>
+
 <script>
-"use strict";
+'use strict';
 
-const TIERS = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"];
-const TIER_COLORS = ["#cd7850", "#c4c6c8", "#d8a43d", "#98d8b9", "#5f9ff0", "#8ae960", "#8d71fe"];
-const REGIONS = ["Americas", "Asia", "Europe"];
-const REGION_COLORS = ["#f14141", "#ffac00", "#3c90ff"];
-const PLATFORMS = ["PC", "Console"];
-const CONSOLE_COLOR = "gray";
-const ROLES = ["tank", "support", "damage"];
-const LOCAL_JSONP_SRC = "winrate-data.js";
-const EXTERNAL_JSONP_SRC = "https://hermit-crab.neocities.org/winrate-data.js?nocache=" + parseInt(Date.now()/1000/60/60);
+const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'];
+// const SD_TIERS = ['Rookie', 'Novice', 'Contender', 'Elite', 'Pro', 'AllStar', 'Legend'];
+const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8ae960', '#8d71fe'];
+const REGIONS = ['Americas', 'Asia', 'Europe', 'China', 'mean'];
+const REGION_COLORS = ['#f14141', '#ffac00', '#3c90ff', '#58d986', 'black'];
+const PLATFORMS = ['PC', 'Console'];
+const EXTRA_COLORS = {Console: '#999', QP: '#afafa5ff'};
+const ROLES = ['tank', 'support', 'damage'];
+const LOCAL_JSONP_SRC = 'winrate-data.js';
+const EXTERNAL_JSONP_SRC = 'https://hermit-crab.neocities.org/winrate-data.js?nocache=' + parseInt(Date.now()/1000/60/60);
 const ALL_TIER_IDX = -.5;
-
-const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
-    idx: idx,
-    color: TIER_COLORS[idx],
-    shorthand: name !== "Grandmaster" ? name[0] : "GM+",
-}]));
-const xticklabels = TIERS.map(n => `<span style="color: ${tiersInfo[n].color}; font-weight: bold">${tiersInfo[n].shorthand}</span>`);
-const plotsElem = document.getElementById("plots");
-const tsElem = document.getElementById("datasetTs");
-const confElems = {
-    facet: document.getElementById("facet"),
-    filterRole: document.getElementById("filterRole"),
-    filterPlatform: document.getElementById("filterPlatform"),
-    filterRegion: document.getElementById("filterRegion"),
-    sortingMode: document.getElementById("sortingMode"),
-    sortingRegion: document.getElementById("sortingRegion"),
-    sortingPlatform: document.getElementById("sortingPlatform"),
-    sortingReverse: document.getElementById("sortingReverse"),
+const PRETTY_NAMES = {'PC': 'KB&M', 'mean': '*Average', 'Grandmaster': 'GM+'};
+const VALTYPES = ['name', 'winrate', 'pickrate', 'kda', 'banrate'];
+const VALTYPES_SHORT = ['nm', 'wr', 'pr', 'kd', 'br'];
+const WARNINGS = {
+    cn: 'see notes about CN data',
+    avg: 'synthetic unweighted *Average',
 };
-const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false};
+
+const UI = Object.fromEntries([...document.querySelectorAll('*[id]')].map(e => [e.id, e]));
+const CMAP = Object.fromEntries([
+    ...TIERS.map((k, i) => [k, TIER_COLORS[i]]),
+    ...REGIONS.map((k, i) => [k, REGION_COLORS[i]]),
+    ...Object.entries(EXTRA_COLORS),
+]);
+const tiersInfo = Object.fromEntries(TIERS.map((name, idx) => [name, {
+    idx: idx, shorthand: PRETTY_NAMES[name] || name[0],
+}]));
+const xticklabels = TIERS.map(n => `<span style='color: ${CMAP[n]}; font-weight: bold'>${tiersInfo[n].shorthand}</span>`);
+const plotConf = {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: false};
 const plotLayout = {
     margin: { l: 20, r: 0, t: 0, b: 15 },
     showlegend: false,
-    plot_bgcolor: "#fafafa",
-    paper_bgcolor: "#fafafa",
-    hovermode: "x",
-    dragmode: "pan",
+    plot_bgcolor: '#0000',
+    paper_bgcolor: '#0000',
+    hovermode: 'x',
+    dragmode: 'pan',
     yaxis: {
         zeroline: false,
         tickfont: {size: 10},
@@ -428,197 +666,751 @@ const plotLayout = {
         fixedrange: true,
         zeroline: false,
         tickvals: [...TIERS.map((_, idx) => idx), ALL_TIER_IDX],
-        ticktext: [...xticklabels, `<span style="color:#fafafa;">All</span>`],
+        ticktext: [...xticklabels, `<span style='color:#fafafa;'>All</span>`],
         tickfont: {size: 9},
     },
 };
+const zeroline = {
+    type: 'line', x0: -1, x1: 10, y0: 0, y1: 0,
+    line: {color: '#0007', width: .5, dash: ''}, layer: 'between',
+};
+const dashedline = {
+    type: 'line', x0: -1, x1: 10,
+    line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
+};
 const layoutExtra = {
     winrate: {
-        yrange: {general: [41, 60]}, selector: ".plot-wr", guideline: {
-            // 50% guideline
-            type: "line", x0: -1, x1: 10, y0: 50, y1: 50,
-            line: {color: "black", width: .5, dash: "dot"}, layer: "between",
-        }
+        yrange: {general: [41, 59]},
+        bar: {general: [40, 60]},
     },
     pickrate: {
-        yrange: {general: [-1, 40], tank: [-1, 20]}, selector: ".plot-pr", guideline: {
-            // 0 guideline
-            type: "line", x0: -1, x1: 10, y0: 0, y1: 0,
-            line: {color: "#0007", width: .5, dash: ""}, layer: "between",
-        }, expectedGuideline: {
-            // "expected" pickrate guideline
-            type: "line", x0: -1, x1: 10, // y0/y1 set depending on role
-            line: {color: "black", width: .5, dash: "dot"}, layer: "between",
-        }
-    }
+        yrange: {general: [-1, 40], tank: [-1, 20]}, guideline: zeroline,
+        bar: {general: [0, 40], tank: [0, 20]},
+    },
+    banrate: {
+        yrange: {general: [-1, 30]}, guideline: zeroline,
+        bar: {general: [0, 90]},
+        high: {
+            yrange: [-1, 100], dtick: 30,
+            annotation: {
+                xref: 'paper', yref: 'paper', x: 1, y: 1, text: 'zoomed out',
+                opacity: .45, showarrow: false
+            },
+        },
+    },
+    kda: {
+        yrange: {general: [1, 6]}, guideline: zeroline,
+        bar: {general: [1.5, 6], damage: [1.5, 4]},
+    },
 };
-let rawData, dataTs, heroes, allEntries, compCode, expectedPr, prevConf = {};
+let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN, confHandler,
+    pressedKeys = new Set(), expectedBase = {};
 
-function processRawData(rawData) {
-    const rows = [];
-    for (const facet of rawData) {
-        for (const entry of facet["rates"])
-            rows.push({...entry.cells, ...facet.selected, url: facet._url});
-    }
-    const heroes = Object.fromEntries(rawData[0]["rates"].map(e =>
-        [e.hero.name, {
-            role: e.hero.role.toLowerCase(),
-            iconUrl: e.hero.portrait,
-            roleIconUrl: e.hero.roleIcon,
-        }]
-    ));
-    return [heroes, rows];
-}
 
 function setup() {
-    Object.entries(confElems).forEach(([k, elem]) => elem.addEventListener("change", render));
-    document.querySelector("#selectColumn").addEventListener("change", mobileSelectColumns);
-    const infoPopup = document.querySelector(".info-popup");
-    document.getElementById("infoBtn").addEventListener("click",
-        () => infoPopup.classList.add("shown")
+    if (window.matchMedia('(max-width: 700px)').matches)
+        UI.viewMode.value = 'bars';
+    confHandler = new ConfHandler();
+    UI.selectColumn.addEventListener('change', mobileSelectColumns);
+    const infoPopup = document.querySelector('.info-popup');
+    UI.infoPopupClose.addEventListener('click',
+        () => infoPopup.classList.add('hidden')
     );
-    document.addEventListener("click", function(e) {
-        if (e.target.id !== "infoBtn" && !infoPopup.contains(e.target))
-            infoPopup.classList.remove("shown");
-        // for phones: unhover plot if clicked off it
-        [...document.querySelectorAll(".plot")].forEach(elem => {
-            if (elem.contains(e.target) || !elem.className.includes("plotly")) return;
-            Plotly.Fx.unhover(elem);
+    document.addEventListener('keydown', e => pressedKeys.add(e.key));
+    document.addEventListener('keyup', e => pressedKeys.delete(e.key));
+    document.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('trigger-info') && !infoPopup.contains(e.target))
+            infoPopup.classList.add('hidden');
+        else if (e.target.classList.contains('trigger-info'))
+            infoPopup.classList.remove('hidden');
+        // for phones: unhover/unfocus plot if clicked off it
+        document.querySelectorAll('.plot.js-plotly-plot').forEach(plot => {
+            if (e.target.classList.contains('stub') && e.target.parentElement.contains(plot)) return;
+            if (plot.contains(e.target)) return;
+            Plotly.Fx.unhover(plot);
+            mobileFocusPlot(plot.parentElement, false);
         });
     });
-    document.querySelectorAll(".plots-title .col span").forEach(
-        elem => elem.addEventListener("click", titleClickSort)
+    document.querySelectorAll('.col-title span').forEach(
+        elem => elem.addEventListener('click', titleClickSort)
     );
-    const tierTitles = [...TIERS.slice(0, TIERS.length-1), "GM+"];
-    document.getElementById("sortTiers").outerHTML = TIERS.map((v, i) =>
-        `<option value="tier-${v}">:${tierTitles[i]}</option>`
-    ).join("\n");
+    const tierTitles = [...TIERS.slice(0, TIERS.length-1), 'GM+'];
+    UI.sortTiers.outerHTML = TIERS.map((v, i) =>
+        `<option value='tier-${v}'>:${tierTitles[i]}</option>`
+    ).join('\n');
     setupColorTips();
     loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
 }
 
-function setupColorTips() {
-    const vals = [...REGIONS, "Console"];
-    const colr = [...REGION_COLORS, CONSOLE_COLOR];
-    document.getElementById("colorTips").innerHTML = vals.map((val, i) => {
-        return `<span style="color:${colr[i]}">${val}</span>`
-    }).join(", ");
-}
-
-function mobileSelectColumns() {
-    const mainDiv = document.getElementById("main");
-    mainDiv.classList.remove([...mainDiv.classList].filter(c => c.startsWith("mobile-show-")));
-    mainDiv.classList.add("mobile-show-" + document.getElementById("selectColumn").value)
-}
-
-function titleClickSort(evt) {
-    const elem = evt.target.parentElement;
-    const active = elem.classList.contains("active");
-    document.querySelectorAll(".plots-title .col").forEach(e => e.classList.remove("active", "inv"));
-    elem.classList.add("active");
-    if (active) confElems.sortingReverse.checked = !confElems.sortingReverse.checked;
-    else confElems.sortingReverse.checked = true;
-    render();
-}
 
 function loadData(jsonpSrc) {
-    // DATA is the original API data put into a list
-    const script = document.createElement("script");
-    script.type = "text/javascript";
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
     script.src = jsonpSrc;
+    script.addEventListener('error', () => {
+        UI.plots.innerHTML = `Failed loading data from ${jsonpSrc}.`;
+    });
     document.body.appendChild(script);
 }
+
 
 function jsonp(data) {
     rawData = data;
     [heroes, allEntries] = processRawData(rawData);
-    const rqCodes = [...new Set(rawData.map(a => a.selected.rq))];
-    rqCodes.sort();
-    compCode = rqCodes.at(-1);
-    expectedPr = Object.fromEntries(ROLES.map(role =>
-        [role, (role === "tank" ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
+    regionMeans = computeRegionMeans(allEntries.filter(e => e.region !== 'China'));
+    regionMeansWithCN = computeRegionMeans(allEntries);
+    expectedBase.pr = Object.fromEntries(ROLES.map(role =>
+        [role, (role === 'tank' ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
     ));
+    expectedBase.br = 400 / Object.keys(heroes).length;
     const dataTs = rawData[0]._ts;
-    tsElem.innerHTML = moment(dataTs * 1000).fromNow();
-    tsElem.title = moment(dataTs * 1000).toString();
+    UI.datasetTs.innerHTML = moment(dataTs * 1000).fromNow();
+    UI.datasetTs.title = moment(dataTs * 1000).toString();
     renderHeroes();
     render();
 }
 
-function handleConf() {
-    const conf = {
-        facet: confElems.facet.value,
-        sortingMode: confElems.sortingMode.value,
-        sortingReverse: confElems.sortingReverse.checked,
-        filterRole: confElems.filterRole.value,
-        filterRegion: confElems.filterRegion.value,
-        filterPlatform: confElems.filterPlatform.value,
-    };
-    confElems.sortingRegion.disabled = false;
-    confElems.sortingPlatform.disabled = false;
-    confElems.filterRegion.children[0].disabled = false;
-    confElems.filterPlatform.disabled = false;
-    if (conf.facet === "region") {
-        if (prevConf.facet !== "region")
-            confElems.filterRegion.value = conf.filterRegion = "all";
-        conf.facetValues = REGIONS;
-        conf.facetColors = REGION_COLORS;
-        conf.sortFacet = "region";
-        conf.sortFacetValue = confElems.sortingRegion.value;
-        if (conf.filterRegion !== "all") {
-            confElems.sortingRegion.value = conf.filterRegion;
-            confElems.sortingRegion.disabled = true;
-            conf.sortFacetValue = conf.filterRegion;
+
+function processRawData(rawData) {
+    const mainData = rawData.filter(o => o._url.includes('blizzard.com'));
+    const cnData = rawData.filter(o => o._url.includes('blizzard.cn'));
+    const rows = [];
+
+    const select = (o, keys) => Object.fromEntries(keys.map(k => [k, o[k]]));
+
+    // NOTE: On main site pickrates data sum up to 500% [sum(tank)=100 + sum(support)=200 + sum(damage)=200]
+    // in CN data it is all normalized to sum up to 100%. We stick to main site convention so
+    // CN data will be rescaled to it.
+
+    // NOTE: Main site (blog) presented the banrates with a view that sums up to 400%.
+    // https://overwatch.blizzard.com/en-us/news/24205940/weekly-recall-hero-bans/
+    // CN data has it sum up to 100, we rescale it to follow main site convention.
+
+    // NOTE: Main site data bundles GM+Champ together, CN data gives Champ as is. We ignore it.
+
+    const rqCodes = [...new Set(mainData.map(a => a.selected.rq))];
+    rqCodes.sort();
+    if (rqCodes.length !== 2)
+        console.error('unexpected amount of rqCodes (expected 2)', rqCodes);
+    let modes = Object.fromEntries([[rqCodes[0], 'QP'], [rqCodes[1], 'Comp']])
+    for (const facet of mainData) {
+        for (const entry of facet['rates'])
+            rows.push({
+                hero: entry.id,
+                mode: modes[facet.selected.rq],
+                url: facet._url,
+                banrate: -1,
+                kda: -1,
+                ...select(entry.cells, ['winrate', 'pickrate']),
+                ...select(facet.selected, ['map', 'input', 'region', 'tier']),
+            });
+    }
+
+    const heroes = Object.fromEntries(mainData[0]['rates'].map(e =>
+        [e.id, {
+            name: e.hero.name,
+            role: e.hero.role.toLowerCase(),
+            color: e.hero.color,
+            iconUrl: e.hero.portrait,
+            roleIconUrl: e.hero.roleIcon,
+        }]
+    ));
+
+    // const sd2comp = Object.fromEntries(TIERS.map((t, i) => [SD_TIERS[i], t]));
+    modes = {kuaisu: 'QP', jingji: 'Comp', juedou: 'Stadium'};
+    for (const facet of cnData) {
+        const selected = Object.fromEntries(new URL(facet._url).searchParams);
+        const rolesTotalPR = Object.fromEntries(ROLES.map(r => [r, facet.data.filter(
+            e => heroes[e.hero_id].role === r
+        ).map(e => e.selection_ratio).reduce(sum, 0)]));
+        for (const entry of facet['data']) {
+            if (selected.mmr === 'Champion') continue;
+            if (modes[selected.game_mode] === 'Stadium') continue;
+            let tier = selected.mmr === '-127' ? 'All' : selected.mmr;
+            const role = heroes[entry.hero_id].role;
+            const totPR = rolesTotalPR[role] / (role === 'tank' ? 1 : 2);
+            rows.push({
+                hero: entry.hero_id,
+                url: facet._url,
+                winrate: entry.win_ratio,
+                pickrate: Math.round(entry.selection_ratio / totPR * 1000) / 10,
+                banrate: entry.ban_ratio * 4,
+                kda: entry.kda,
+                mode: modes[selected.game_mode],
+                // tier: sd2comp[tier] || tier,
+                tier: tier,
+                map: 'all-maps', input: 'PC', region: 'China'
+            });
         }
-    } else if (conf.facet === "input") {
-        conf.sortFacet = "input";
-        conf.sortFacetValue = confElems.sortingPlatform.value;
-        confElems.filterRegion.children[0].disabled = true;
-        confElems.filterPlatform.disabled = true;
-        if (conf.filterRegion === "all")
-            confElems.filterRegion.value = conf.filterRegion = REGIONS[0];
-        conf.facetValues = PLATFORMS;
-        conf.facetColors = [REGION_COLORS[REGIONS.indexOf(conf.filterRegion)], CONSOLE_COLOR];
     }
 
-    confElems.sortingRegion.classList.toggle("hidden", conf.facet === "input");
-    confElems.sortingPlatform.classList.toggle("hidden", conf.facet === "region");
-
-    if (conf.sortingMode === "facets-spread") {
-        confElems.sortingRegion.disabled = true;
-        confElems.sortingPlatform.disabled = true;
-    }
-
-    const columnTitleElem = document.querySelector(".plots-title .active");
-    conf.sortingColumn = columnTitleElem.dataset.sort;
-    columnTitleElem.classList.toggle("inv", conf.sortingReverse);
-
-    if (conf.sortingColumn === "name") {
-        if (prevConf.sortingMode !== conf.sortingMode || prevConf.sortFacetValue !== conf.sortFacetValue) {
-            const elem = document.querySelector(".plots-title .col.title-name");
-            elem.classList.remove("flash");
-            setTimeout(() => elem.classList.add("flash"), 0);
-        }
-    }
-
-    prevConf = conf;
-    return conf;
+    return [heroes, rows];
 }
+
 
 function renderHeroes() {
-    plotsElem.innerHTML = "";
-    Object.entries(heroes).forEach(([name, hero]) => {
-        hero.elem = document.createElement("div");
-        hero.elem.className = `entry role-${hero.role}`;
-        hero.elem.innerHTML = `
-        <div class="hero-name" title="${name}">${name}</div>
-        <img src="${hero.iconUrl}" title="${name}">
-        <div class="plot plot-wr"></div>
-        <div class="plot plot-pr"></div>
-        `;
-        plotsElem.appendChild(hero.elem);
+    UI.plots.innerHTML = '';
+    Object.entries(heroes).forEach(([id, hero]) => {
+        const main = document.createElement('div');
+        main.className = `entry role-${hero.role}`;
+        main.innerHTML = `
+        <div class='hero-name' title='${hero.name}'>${hero.name}</div>
+        <img src='${hero.iconUrl}' title='${hero.name}'>
+        ${VALTYPES_SHORT.slice(1).map(
+            k => `
+            <div class='plot-parent ${k} ${['wr', 'pr'].includes(k) ? 'base' : 'extra'}'>
+                <div class='plot'></div>
+                <div class='stub'></div>
+                <div class='bar'></div>
+            </div>
+            `
+        ).join('')}`;
+        // We add invisible overlays (stubs) to prevent plot from stealing mobile drag-scroll.
+        // We hide that overlay on click.
+        main.querySelectorAll('.stub').forEach(
+            elem => elem.addEventListener('click', evt => mobileFocusPlot(elem.parentElement, true, evt))
+        );
+        UI.plots.appendChild(main);
+        hero.elems = Object.fromEntries(VALTYPES_SHORT.slice(1).map(
+            v => [VALTYPES[VALTYPES_SHORT.indexOf(v)], {
+                plot: main.querySelector(`.plot-parent.${v} .plot`),
+                bar: main.querySelector(`.plot-parent.${v} .bar`),
+            }]
+        ))
+        hero.elems.main = main;
     });
 }
+
+
+function render() {
+    const conf = confHandler.frozenConf();
+    let entries = [...allEntries, ...(conf.chinaOn ? regionMeansWithCN : regionMeans)];
+
+    // ==> Filter entries
+    entries = entries.filter(e => (
+        e.map === 'all-maps' &&
+        (e.mode === 'Comp' || conf.facet === 'mode') &&
+        (e.input === conf.filterPlatform || conf.facet === 'input') &&
+        (e.region === conf.filterRegion || ['all', 'mean'].includes(conf.filterRegion)) &&
+        (e.region !== 'China' || conf.chinaOn)
+    ));
+    if (conf.filterRegion === 'mean' && conf.facet !== 'region')
+        entries = entries.filter(e => e.region === conf.filterRegion);
+
+    // (calc KDA guideline)
+    let expectedKd = {};
+    if (conf.cnExtra) expectedKd = Object.fromEntries(ROLES.map(role => {
+        const vals = entries.filter(
+            e => heroes[e.hero].role === role && e.tier === 'All' && e.kda !== -1
+        ).map(e => e.kda);
+        return [role, vals.reduce(sum, 0) / vals.length];
+    }));
+
+    // ==> Sort heroes
+    let names = Object.keys(heroes);
+    // names = names.filter(n => n.includes('rein'));
+    if (conf.filterRole !== 'all') names = names.filter(name => heroes[name].role === conf.filterRole);
+    const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.hero === n)]));
+    names.sort(); // sort alphabetically by default
+    if (conf.sortingColumn !== 'name') {
+        const dummy = Object.fromEntries(VALTYPES.map(k => [k, -2]));
+        const c = conf.sortingColumn;
+        names = sortBy(names, name => {
+            let entries = name2entries[name].filter(e => e[c] !== -1);
+            if (conf.sortingMode !== 'facets-spread')
+                entries = entries.filter(e => e[conf.facet] === conf.sortFacetValue);
+            else if (['mean', 'all'].includes(conf.filterRegion) && conf.facet === 'region')
+                entries = entries.filter(e => e.region !== 'mean');
+            let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
+            if (conf.viewMode === 'bars')
+                byTier = {[conf.barTier]: entries.filter(e => e.tier === conf.barTier)};
+            if (conf.sortingMode === 'facets-spread')
+                return calcMAD(Object.values(byTier).map(lst => pluck(lst, c)));
+            Object.entries(byTier).forEach(([k, v]) => {byTier[k] = v[0] || dummy;}); // fill missing data
+            const eAll = entries.filter(e => e.tier === 'All')[0] || dummy;
+            if (conf.sortingMode === 'all') return eAll[c];
+            if (conf.sortingMode === 'b-m-delta') return byTier.Master[c] - byTier.Bronze[c];
+            if (conf.sortingMode.startsWith('tier-')) return byTier[conf.sortingMode.slice(5)][c];
+        });
+    }
+    if (conf.sortingReverse) names.reverse();
+    Object.entries(heroes).forEach(([name, hero]) => {
+        hero.elems.main.classList.toggle('hidden', !names.includes(name));
+        hero.elems.main.style.order = names.indexOf(name);
+    });
+
+    // ==> Update plots
+    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.cnExtra].join(',');
+    names.forEach((name, idx) => {
+        const hero = heroes[name];
+        hero.elems.main.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
+        const cols = !conf.cnExtra ? ['winrate', 'pickrate'] : ['kda', 'banrate'];
+        const expected = {
+            winrate: 50, pickrate: expectedBase.pr[hero.role],
+            kda: expectedKd[hero.role], banrate: expectedBase.br,
+        };
+        if (conf.viewMode === 'bars') {
+            cols.forEach(valtype => renderBar(hero, name2entries[name], valtype, expected[valtype], conf));
+            return;
+        }
+        if (hero.viewKey === viewKey) return;
+        clearTimeout(hero.renderTimeout);
+        hero.renderTimeout = setTimeout(_ => {
+            // Schedule updates one after another with a minor delay for better UX.
+            // (doing all in one go takes .8-1s of stagger, yes I should switch to d3 or charts.js)
+            hero.viewKey = viewKey;
+            cols.forEach(valtype => renderTieredPlot(hero, name2entries[name], valtype, expected[valtype], conf));
+        }, 30 * idx);
+    });
+}
+
+
+function renderBar(hero, entries, valtype, expected, conf) {
+    entries = entries.filter(e => e.tier === conf.barTier && e[valtype] !== -1);
+    const [a, b] = layoutExtra[valtype].bar[conf.filterRole] || layoutExtra[valtype].bar.general;
+    const [w, h] = [300, 30];
+    const bar = hero.elems[valtype].bar;
+    const s = x => (x-a)/(b-a)*w; // scaler
+    entries = entries.map(e => ({
+        ...e, x: e[valtype],
+        clr: conf.facetCmap[e[conf.facet]],
+    })).filter(e => e.clr);
+    if (!entries.length) {
+        bar.innerHTML = '<div class="nodata">no data</div>';
+        return;
+    }
+    const facetValues = pluck(entries, conf.facet);
+    if (facetValues.length != new Set(facetValues).size)
+        throw new Error('multiple values of the same facet after filter');
+    const vals = entries.map(e => e.x);
+    let [min, max] = [Math.min(...vals), Math.max(...vals)];
+    const [smin, smax] = [s(min), s(max)];
+    const baseW = clamp(smin, 0);
+    const tailW = clamp(w - smax, 0);
+    const pad = 5;
+    const barh = h - pad*2;
+    const th = 12;
+    const tooltips = entries.filter(
+        e => !conf.regionMeanView || e[conf.facet] !== 'mean'
+    ).map((e, i) => {
+        const name = PRETTY_NAMES[e[conf.facet]] || e[conf.facet];
+        const [texta, textb] = [`${name}`, `${e.x}`];
+        const [twa, twb] = [texta.length * 7, textb.length * 7];
+        let x = clamp(s(e.x), 0, w);
+        const padR = 2;
+        let [rectxa, rectxb]  = [x-twa-padR*2, x];
+        const [offA, offB] = [8, (Math.floor(i / 2) % 2)*(th+padR*2)];
+        let y = -offB - offA - padR + pad;
+        let [l1, l2] = [y, pad];
+        if (i%2) {
+            y = -y + th + barh + pad;
+            [l1, l2] = [y-th, pad+barh];
+        }
+        return [
+        `<line x1='${x}' y1='${l1}' x2='${x}' y2='${l2}' stroke='${e.clr}' stroke-width='2' stroke-linecap='butt'
+            vector-effect='non-scaling-stroke'/>
+        `,`
+        <rect x='${rectxa}' y='${y-th}' width='${twa+padR*2}' height='${th+padR*2}' fill='${e.clr}'/>
+        <rect x='${rectxa}' y='${y-th}' width='${twa+padR*2}' height='${th+padR*2}' fill='#fff5'/>
+        <rect x='${rectxb}' y='${y-th}' width='${twb+padR*2+2}' height='${th+padR*2}' fill='${e.clr}'/>
+        <rect x='${rectxb}' y='${y-th}' width='${twb+padR*2+2}' height='${th+padR*2}' fill='#fffc'/>
+        `,`
+        <text x='${rectxa+padR}' y='${y}' font-size='${th}' fill='black' textLength='${twa}'
+            text-anchor='start' dominant-baseline='text-top'>${texta}</text>
+        <text x='${rectxb+padR+2}' y='${y}' font-size='${th}' fill='black' textLength='${twb}'
+            text-anchor='start' dominant-baseline='text-top'>${textb}</text>
+        `,
+        ];
+    });
+    if (conf.regionMeanView)
+        min = max = entries.filter(e => e[conf.facet] === 'mean')[0]?.x || -1;
+    const [minA, minB, maxA, maxB] = [min, max].flatMap(v => v.toFixed(1).split('.'));
+    const classes = [
+        (min < a ? 'aleft ' : ''), (max > b ? 'aright' : ''),
+        (conf.filterRegion === 'mean' ? 'est' : '')
+    ].join(' ');
+    const offset = clamp(s(min), 0, w);
+    const tierBg = conf.barTier !== 'All' ? CMAP[conf.barTier] + '99' : 'unset';
+    bar.innerHTML = `
+        <div class='tier'>Rank: <span style='background-color:${tierBg};'>
+            ${PRETTY_NAMES[conf.barTier] || conf.barTier}
+        </span></div>
+        <div class='total ${classes}' style='left:${offset}px;'>
+            <span class='full'>${minA}</span><span class='frac'>.${minB}</span>
+            ${min === max ? '' : `
+                – <span class='full'>${maxA}</span><span class='frac'>.${maxB}</span>
+            `}
+        </div>
+        <div class='svg-box'>
+        <svg width='${w}' height='${h}' overflow='hidden'>
+            <rect x='0' y='${pad}' width='${baseW}' height='${barh}' fill='rgba(0,0,0,0.35)'/>
+            <rect x='${smin}' y='${pad}' width='${smax - smin}' height='${barh}' fill='rgba(0,0,0,0.2)'/>
+            ${entries.map((e) => `
+                <line x1='${s(e.x)}' y1='${pad}' x2='${s(e.x)}' y2='${pad+barh}'
+                stroke='${e.clr}' stroke-width='2' stroke-linecap='butt'
+                vector-effect='non-scaling-stroke'/>
+            `).join('')}
+            <line x1='${s(expected)}' y1='0' x2='${s(expected)}' y2='${h}' stroke='black' stroke-width='1'
+                vector-effect='non-scaling-stroke' stroke-dasharray='2,2' stroke-linecap='round'/>
+            <rect x='${smax}' y='${pad}' width='${tailW}' height='${barh}' fill='rgba(0,0,0,0.05)'/>
+        </svg>
+        <svg class='hover' width='${w}' height='${h}' overflow='visible'>
+            ${[0,1,2].flatMap(i => tooltips.map(layers => layers[i])).join('')}
+        </svg>
+        </div>
+        <div class='range'><div style="left:0px;">${a}</div><div style="right:0px;">${b}</div></div>
+    `;
+    setTimeout(_ => {
+        const elem = bar.querySelector('.total');
+        const bbox = elem.getBoundingClientRect();
+        if (bbox.right > elem.parentElement.getBoundingClientRect().right)
+            elem.style.left = `${w - bbox.width}px`;
+    }, 0);
+}
+
+
+function renderTieredPlot(hero, entries, valtype, expected, conf) {
+    // Line traces
+    const traces = conf.facetValues.map(facetValue => {
+        const facetEntries = entries.filter(e => (
+            e[conf.facet] === facetValue && e[valtype] !== -1
+        ));
+
+        // Insert total points at the end.
+        // Dud in front breaks the line so All is disconnected from GM.
+        const points = [...TIERS, null, 'All'].map((t, idx) => {
+            if (!t) return {x: TIERS.length-1};
+            let entry = facetEntries.filter(e => e.tier === t);
+            if (entry.length > 1) throw new Error('unexpected multiple entries after filter');
+            entry = entry[0];
+            if (!entry) return;
+            if (t === 'All')
+                return {x: ALL_TIER_IDX, y: entry[valtype], symbol: 'arrow-left', size: 6};
+            return {x: idx, y: entry[valtype], symbol: 'circle', size: 4};
+        }).filter(e => e);
+        if (points.length === 1) return;
+
+        let extraAttrs = {};
+        let size = pluck(points, 'size');
+        if (conf.regionMeanView && facetValue !== 'mean') {
+            extraAttrs = {hoverinfo: 'skip', opacity: .45};
+            size = [...size.slice(0, -1).map(_ => 0), size.at(-1)];
+        }
+
+        return {
+            x: pluck(points, 'x'), y: pluck(points, 'y'),
+            name: PRETTY_NAMES[facetValue] || facetValue,
+            mode: 'lines+markers',
+            line: {color: conf.facetCmap[facetValue], width: 1.2},
+            marker: {size: size, symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
+            ...extraAttrs,
+        };
+    }).filter(t => t);
+
+    const shapes = [];
+    if (layoutExtra[valtype].guideline)
+        shapes.push(layoutExtra[valtype].guideline)
+    if (expected != null)
+        shapes.push({y0: expected, y1: expected, ...dashedline});
+
+    let yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
+    let dtick, annotations = [];
+    if (valtype === 'banrate') {
+        const maxAll = Math.max(...entries.filter(e => e.tier === 'All').map(e => e.banrate));
+        if (maxAll > expected) {
+            yrange = layoutExtra.banrate.high.yrange;
+            dtick = layoutExtra.banrate.high.dtick;
+            annotations.push(layoutExtra.banrate.high.annotation);
+        }
+    }
+
+    const plot = hero.elems[valtype].plot;
+    Plotly.react(plot, traces, {
+        ...plotLayout, shapes: shapes, annotations: annotations,
+        yaxis: {range: yrange.slice(), dtick: dtick, ...plotLayout.yaxis},
+    }, plotConf);
+    plot._defaultYrange = yrange.slice();
+    plot.removeAllListeners('plotly_doubleclick');
+    plot.on('plotly_doubleclick', () => plotToggleZoom(plot));
+}
+
+
+function computeRegionMeans(entries) {
+    const staticFields = ['hero', 'mode', 'map', 'input', 'tier'];
+    const computeFor = ['winrate', 'pickrate'];
+    const calcMean = (objs, k) => {
+        const vals = objs.map(o => o[k]).filter(v => v !== -1);
+        if (!vals.length) return -1;
+        return Math.round(vals.reduce(sum, 0) / vals.length * 10) / 10;
+    };
+    const groups = {};
+    entries.forEach(e => {
+        const key = staticFields.map(k => e[k]).join(',');
+        if (!groups[key]) groups[key] = [Object.fromEntries(staticFields.map(k => [k, e[k]]))];
+        groups[key].push(e);
+    });
+    return Object.values(groups).map(group => {
+        const copy = group.shift();
+        return {
+            region: 'mean',
+            ...copy,
+            ...Object.fromEntries(computeFor.map(k => [k, calcMean(group, k)])),
+        }
+    });
+}
+
+
+class ConfHandler {
+    constructor() {
+        this.elems = [...document.querySelectorAll('.conf *[id]')];
+        this.elems.forEach(el => el.addEventListener('change', _ => this.sync()));
+        this._conf = {};
+        this.sync(false);
+    }
+    sync(doRender = true) {
+        const conf = this._conf;
+        const oldConf = {...conf};
+        this.elems.forEach(el => conf[el.id] = inputElemValue(el));
+        if (Object.keys(oldConf).length)
+            this._applyRules(oldConf);
+        this._setDisabled();
+        this._applyEffects(oldConf);
+
+        this.barTier = this.barTier || 'All';
+        if (conf.sortingMode === 'all') this.barTier = 'All';
+        if (conf.sortingMode.includes('tier-')) this.barTier = conf.sortingMode.slice(5);
+
+        this.regionMeanView = (conf.filterRegion === 'mean' && conf.facet === 'region');
+
+        if (doRender) render();
+    }
+    _applyEffects(oldConf) {
+        // effects that won't mutate the confs
+        const conf = this._conf;
+
+        Object.keys(oldConf).forEach(key => {
+            if (oldConf[key] === conf[key]) return;
+            if (key === 'cnExtra')
+                UI.selectColumn.value = conf.cnExtra ? 'kd' : 'wr';
+            if (key === 'chinaOn' && conf.chinaOn)
+                flash(UI.cnExtra.parentElement, 'flash');
+            if (key === 'sortingMode' || this.getFacets(conf).sortFacetValue !== this.getFacets(oldConf).sortFacetValue)
+                flash(document.querySelector('.col-title.active span'), 'flash');
+        });
+
+        UI.main.classList.remove([...UI.main.classList].filter(c => c.startsWith('viewmode-')));
+        UI.main.classList.add('viewmode-' + conf.viewMode);
+
+        // reflect sort column
+        document.querySelector('.col-titles').classList.toggle('inv', conf.sortingReverse);
+        document.querySelectorAll('.col-title').forEach(el => {
+            el.classList.toggle('active', el.dataset.sort === conf.sortingColumn);
+        });
+
+        document.body.classList.toggle('show-cn-extra', conf.cnExtra);
+        mobileSelectColumns();
+        toggleWarnings(this.frozenConf());
+    }
+    _applyRules(oldConf) {
+        const alter = (k, v) => { this._conf[k] = v; inputElemValue(UI[k], v); };
+        const rules = [
+            [
+            // [condition(conf, oldConf), effect()], ...
+            conf => conf.facet !== 'region' && conf.filterRegion === 'all',
+            conf => alter('filterRegion', REGIONS[0])
+            ], [
+            conf => !conf.chinaOn && conf.sortingRegion === 'China',
+            conf => alter('sortingRegion', REGIONS[0])
+            ], [
+            conf => !conf.chinaOn && conf.filterRegion === 'China',
+            conf => alter('filterRegion', 'all')
+            ], [
+            conf => !conf.chinaOn && conf.cnExtra,
+            conf => alter('cnExtra', false)
+            ], [
+            conf => !['all', 'mean'].includes(conf.filterRegion) && conf.sortingRegion !== conf.filterRegion,
+            conf => alter('sortingRegion', conf.filterRegion)
+            ], [
+            conf => conf.facet !== 'region' && conf.filterRegion === 'mean' && conf.sortingRegion !== conf.filterRegion,
+            conf => alter('sortingRegion', conf.filterRegion)
+            ], [
+            conf => conf.cnExtra && conf.filterRegion !== 'China',
+            conf => alter('filterRegion', 'China')
+            ], [
+            conf => conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta',
+            conf => alter('sortingMode', 'all')
+            ], [
+            // rules that check for changes, should normally go last
+            (conf, last) => last.filterRegion !== conf.filterRegion && conf.filterRegion === 'mean',
+            conf => alter('sortingRegion', conf.filterRegion)
+            ], [
+            (conf, last) => last.facet !== conf.facet && conf.facet === 'region',
+            conf => alter('filterRegion', 'all')
+            ]
+        ];
+        this._appliedRules = [];
+        let i = 0, anyChanges;
+        do {
+            if (i > 10) throw Error('broken conf state');
+            i++;
+            anyChanges = false;
+            for (const rule of rules) {
+                if (rule[0](this._conf, oldConf)) {
+                    rule[1](this._conf);
+                    anyChanges = true;
+                    this._appliedRules.push(i + ') ' + rule[0].toString());
+                }
+            }
+            oldConf = {...this._conf};
+        } while (anyChanges);
+    }
+    _setDisabled() {
+        const conf = this._conf;
+        this.elems.forEach(el => el.disabled = false);
+
+        // non applicable sort facets
+        Object.entries({
+            'region': UI.sortingRegion,
+            'input': UI.sortingPlatform,
+            'mode': UI.sortingGameMode,
+        }).forEach(([f, elem]) => {
+            elem.classList.toggle('hidden', conf.facet !== f);
+            elem.disabled = conf.facet !== f;
+            if (conf.sortingMode === 'facets-spread') elem.disabled = true;
+        });
+
+        if (!['all', 'mean'].includes(conf.filterRegion))
+            UI.sortingRegion.disabled = true;
+        if (conf.facet === 'input')
+            UI.filterPlatform.disabled = true;
+        UI.filterRegion.querySelector('option[value=all]').disabled = (
+            conf.facet !== 'region'
+        );
+        UI.sortingMode.querySelector('option[value=b-m-delta]').disabled = (
+            conf.viewMode === 'bars'
+        );
+        document.querySelectorAll('select option[value="China"]').forEach(
+            elem => elem.disabled = !conf.chinaOn
+        );
+        UI.cnExtra.disabled = !conf.chinaOn;
+        if (conf.cnExtra)
+            UI.filterRegion.disabled = true;
+    }
+    getFacets(conf) {
+        conf = conf || this._conf;
+        let facetColors, facets = {};
+        if (conf.facet === 'region') {
+            facets.facetValues = REGIONS;
+            facetColors = REGION_COLORS;
+            facets.sortFacetValue = conf.sortingRegion;
+            if (conf.filterRegion !== 'mean')
+                facets.facetValues = REGIONS.slice(0, -1);
+        } else if (conf.facet === 'input') {
+            facets.sortFacetValue = conf.sortingPlatform;
+            facets.facetValues = PLATFORMS;
+            facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.Console];
+        } else if (conf.facet === 'mode') {
+            facets.sortFacetValue = conf.sortingGameMode;
+            if (conf.filterRegion === 'all')
+                UI.filterRegion.value = conf.filterRegion = REGIONS[0];
+            facets.facetValues = ['Comp', 'QP'];
+            facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
+        }
+        facets.facetCmap = Object.fromEntries(facets.facetValues.map((v, i) => [v, facetColors[i]]));
+        return facets;
+    }
+    frozenConf() {
+        return {
+            ...this._conf,
+            ...this.getFacets(),
+            regionMeanView: this.regionMeanView,
+            barTier: this.barTier,
+        }
+    }
+}
+
+
+function toggleWarnings(conf) {
+    const html = [
+        [WARNINGS.cn, conf.chinaOn],
+        [WARNINGS.avg, conf.filterRegion === 'mean' || conf.sortFacetValue === 'mean'],
+    ].map(
+        ([text, cond]) => cond ? `<span class="trigger-info">${text}</span>` : null
+    ).filter(t => t).join(' ┊ ');
+    const warnElem = document.querySelector('.warnings')
+    warnElem.classList.toggle('hidden', !html);
+    warnElem.innerHTML = html;
+}
+
+
+function setupColorTips() {
+    const vals = [...REGIONS.slice(0, -1), 'Console'];
+    UI.colorTips.innerHTML = vals.map(v => {
+        return `<span style='color:${CMAP[v]}'>${v}</span>`
+    }).join(', ');
+}
+
+
+function mobileSelectColumns() {
+    UI.main.classList.remove([...UI.main.classList].filter(c => c.startsWith('mobile-show-')));
+    UI.main.classList.add('mobile-show-' + UI.selectColumn.value);
+}
+
+
+function titleClickSort(evt) {
+    const elem = evt.target.parentElement;
+    if (elem.classList.contains('active'))
+        UI.sortingReverse.checked = !UI.sortingReverse.checked;
+    else {
+        UI.sortingColumn.value = elem.dataset.sort;
+        UI.sortingReverse.checked = true;
+    }
+    confHandler.sync();
+}
+
+
+function plotToggleZoom(plot) {
+    const default_ = plot._defaultYrange;
+    const cur = plot._fullLayout.yaxis.range;
+    const ctrl = pressedKeys.has('Control');
+    if (default_[0] !== cur[0] && default_[1] !== cur[1] && !ctrl) {
+        Plotly.relayout(plot, {'yaxis.range': default_.slice()});
+        flash(plot.parentElement, 'blink', 200);
+        return;
+    }
+    let traces = plot._fullData;
+    const conf = confHandler.frozenConf();
+    if (conf.filterRegion === 'mean' && conf.facet === 'region')
+        // in mean view we only show regional traces for faint reference so ignore them
+        traces = [traces.at(-1)];
+    const ys = traces.flatMap(trace => trace.y).filter(v => v != null);
+    let a = Math.min(...ys), b = Math.max(...ys);
+    if (ctrl) a = 0;
+    const margin = (b - a)*.1;
+    Plotly.relayout(plot, {'yaxis.range': [a-margin, b+margin]});
+}
+
+
+function mobileFocusPlot(plotParent, focus = true, evt = null) {
+    if (focus && !plotParent.classList.contains('mobile-focused')) {
+        // the stub will be hidden, now propagate hover into the plot itself
+        const plot = plotParent.querySelector('.plot');
+        const rect = plotParent.getBoundingClientRect();
+        Plotly.Fx.hover(plot, {
+            xpx: evt.clientX - rect.left - plot._fullLayout.margin.l,
+            ypx: evt.clientY - rect.top,
+        });
+    }
+    plotParent.classList.toggle('mobile-focused', focus);
+}
+
+
+function inputElemValue(elem, set) {
+    const attr = elem.type === 'checkbox' ? 'checked' : 'value';
+    if (set != null) elem[attr] = set;
+    return elem[attr];
+}
+
 
 function sortBy(values, key) {
     const decorated = values.map(v => [v, key(v)]);
@@ -626,115 +1418,40 @@ function sortBy(values, key) {
     return decorated.map(v => v[0]);
 }
 
+
 function pluck(objArr, key) {
     return objArr.map(e => e[key]);
 }
 
-function calcMAD(lines) {
-    const totPoints = lines.flatMap(vals => vals.length).reduce((s, v) => s + v, 0);
-    return lines.map(vals => {
+
+function calcMAD(bins) {
+    const totPoints = bins.flatMap(vals => vals.length).reduce(sum, 0);
+    return bins.map(vals => {
         if (vals.length <= 1) return 0;
-        const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
-        return vals.map(v => Math.abs(v-mean)).reduce((s, v) => s + v, 0)
-    }).reduce((s, v) => s + v, 0) / totPoints;
+        const mean = vals.reduce(sum, 0) / vals.length;
+        return vals.map(v => Math.abs(v-mean)).reduce(sum, 0)
+    }).reduce(sum, 0) / totPoints;
 }
 
-function render() {
-    const conf = handleConf();
 
-    // ==> Filter entries
-    let entries = allEntries.filter(e => (
-        e.rq === compCode &&
-        e.role === "All" &&
-        e.map === "all-maps" &&
-        (e.input === conf.filterPlatform || conf.facet === "input") &&
-        (e.region === conf.filterRegion || conf.filterRegion === "all")
-    ));
-
-    // ==> Sort heroes
-    let names = Object.keys(heroes);
-    // names = names.filter(n => n.toLowerCase().includes("wuya"));
-    if (conf.filterRole !== "all") names = names.filter(name => heroes[name].role == conf.filterRole);
-    const name2entries = Object.fromEntries(names.map(n => [n, entries.filter(e => e.name === n)]));
-    names.sort(); // sort alphabetically by default
-    if (conf.sortingColumn !== "name") {
-        const dummy = {winrate: 0, pickrate: 0};
-        const c = conf.sortingColumn;
-        names = sortBy(names, name => {
-            let entries = name2entries[name].filter(e => e[c] !== -1);
-            if (conf.sortingMode !== "facets-spread")
-                entries = entries.filter(e => e[conf.sortFacet] === conf.sortFacetValue);
-            let byTier = Object.fromEntries(TIERS.map(t => [t, entries.filter(e => e.tier === t)]));
-            if (conf.sortingMode === "facets-spread")
-                return calcMAD(Object.values(byTier).map(lst => pluck(lst, c)));
-            Object.entries(byTier).forEach(([k, v]) => {byTier[k] = v[0] || dummy;}); // fill missing data
-            const eAll = entries.filter(e => e.tier === "All")[0] || dummy;
-            if (conf.sortingMode === "all") return eAll[c];
-            if (conf.sortingMode === "b-m-delta") return byTier.Master[c] - byTier.Bronze[c];
-            if (conf.sortingMode.startsWith("tier-")) return byTier[conf.sortingMode.slice(5)][c];
-        });
-    }
-    if (conf.sortingReverse) names.reverse();
-    Object.entries(heroes).forEach(([name, hero]) => {
-        hero.elem.classList.toggle("hidden", !names.includes(name));
-        hero.elem.style.order = names.indexOf(name);
-    });
-
-    // ==> Update plots
-    const viewKey = `${conf.facet}${conf.filterRegion}${conf.filterPlatform}`
-    names.forEach((name, idx) => {
-        const hero = heroes[name];
-        const entryElem = hero.elem;
-        entryElem.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
-        if (entryElem.dataset.lastViewKey === viewKey) return;
-        entryElem.dataset.lastViewKey = viewKey;
-        clearTimeout(hero.renderTimeout);
-
-        ["winrate", "pickrate"].forEach(valtype => {
-            // Line traces
-            const traces = conf.facetValues.map(value => {
-                const valueName = value == "PC" ? "KB&M" : value;
-                const facetEntries = name2entries[name].filter(e => (
-                    e[conf.facet] === value &&
-                    e[valtype] !== -1
-                ));
-                let facetEntriesTiered = facetEntries.filter(e => e.tier !== "All");
-                facetEntriesTiered = sortBy(facetEntriesTiered, e => tiersInfo[e.tier].idx);
-                let points = facetEntriesTiered.map(e => ({
-                    x: tiersInfo[e.tier].idx, y: e[valtype], size: 4, symbol: "circle"
-                }));
-                let facetEntriesTot = facetEntries.filter(e => e.tier === "All");
-                if (facetEntriesTot.length) {
-                    // Insert total points at the end.
-                    // Dud in front breaks the line so All is disconnected from GM.
-                    points = [...points, {x: TIERS.length-1}, {
-                        x: ALL_TIER_IDX, y: facetEntriesTot[0][valtype], symbol: "arrow-left", size: 6,
-                    }];
-                }
-                return {
-                    x: pluck(points, "x"), y: pluck(points, "y"), mode: "lines+markers", name: valueName,
-                    line: {color: conf.facetColors[conf.facetValues.indexOf(value)], width: 1.2},
-                    marker: {size: pluck(points, "size"), symbol: pluck(points, "symbol"), line: {width: 0}, opacity: 1},
-                };
-            });
-
-            const shapes = [layoutExtra[valtype].guideline];
-            if (valtype === "pickrate")
-                shapes.push({y0: expectedPr[hero.role], y1: expectedPr[hero.role], ...layoutExtra.pickrate.expectedGuideline});
-
-            const yrange = layoutExtra[valtype].yrange[hero.role] || layoutExtra[valtype].yrange.general;
-            const elem = entryElem.querySelector(layoutExtra[valtype].selector);
-            hero.renderTimeout = setTimeout(() => {
-                // Schedule updates one after another with a minor delay for better UX.
-                // (doing all in one go takes .8-1s of stagger)
-                Plotly.react(elem, traces, {
-                    ...plotLayout, shapes: shapes,
-                    yaxis: {range: yrange.slice(), ...plotLayout.yaxis},
-                }, plotConf);
-            }, 30 * idx);
-        });
-    });
+function flash(elem, className, timeout) {
+    elem.classList.remove(className);
+    setTimeout(() => elem.classList.add(className), 0);
+    setTimeout(() => elem.classList.remove(className), timeout || 1000);
 }
+
+
+function sum(a, b) {return a+b;}
+
+
+function clamp(v, a, b) {
+    if (a != null && v < a)
+        return a;
+    if (b != null && v > b)
+        return b;
+    return v;
+}
+
 
 setup();
 
