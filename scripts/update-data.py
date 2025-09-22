@@ -150,7 +150,7 @@ def main():
         print('==x CN crawl failure')
         traceback.print_exc()
 
-    with open('winrate-data.js', 'w', encoding='utf8') as f:
+    with open('../winrate-data.js', 'w', encoding='utf8') as f:
         f.write('jsonp(' + json.dumps([facet[1] for facet in facets]) + ')')
 
 
