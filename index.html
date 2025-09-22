@@ -739,7 +739,11 @@ function setup() {
         `<option value='tier-${v}'>:${tierTitles[i]}</option>`
     ).join('\n');
     setupColorTips();
-    loadData(localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC);
+    let datasetUrl = localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('dataset'))
+        datasetUrl = datasetUrl.replace('winrate-data', urlParams.get('dataset'));
+    loadData(datasetUrl);
 }
 
 
@@ -755,6 +759,11 @@ function loadData(jsonpSrc) {
 
 
 function jsonp(data) {
+    receiveRawData(data);
+}
+
+
+function receiveRawData(data) {
     rawData = data;
     [heroes, allEntries] = processRawData(rawData);
     regionMeans = computeRegionMeans(allEntries.filter(e => e.region !== 'China'));
