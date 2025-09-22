@@ -1,6 +1,6 @@
+#!/usr/bin/env python3
 import re
 import time
-import traceback
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright

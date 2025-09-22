@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
 import hashlib
 import json
 import os
+import sys
 import traceback
 from itertools import chain, product
 
@@ -150,7 +152,8 @@ def main():
         print('==x CN crawl failure')
         traceback.print_exc()
 
-    with open('../winrate-data.js', 'w', encoding='utf8') as f:
+    dest = sys.argv[1] if sys.argv[1:] else 'winrates-data.js'
+    with open(dest, 'w', encoding='utf8') as f:
         f.write('jsonp(' + json.dumps([facet[1] for facet in facets]) + ')')
 
 
