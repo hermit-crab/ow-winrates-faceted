@@ -764,10 +764,11 @@ function processRawData(rawData) {
     const rows = [];
 
     const select = (o, keys) => Object.fromEntries(keys.map(k => [k, o[k]]));
+    const pct1f = (v) => Math.round(v*1000)/10;
 
     // NOTE: On main site pickrates data sum up to 500% [sum(tank)=100 + sum(support)=200 + sum(damage)=200]
     // in CN data it is all normalized to sum up to 100%. We stick to main site convention so
-    // CN data will be rescaled to it.
+    // CN data will be rescaled to same proportions and total.
 
     // NOTE: Main site (blog) presented the banrates with a view that sums up to 400%.
     // https://overwatch.blizzard.com/en-us/news/24205940/weekly-recall-hero-bans/
@@ -815,12 +816,12 @@ function processRawData(rawData) {
             if (modes[selected.game_mode] === 'Stadium') continue;
             let tier = selected.mmr === '-127' ? 'All' : selected.mmr;
             const role = heroes[entry.hero_id].role;
-            const totPR = rolesTotalPR[role] / (role === 'tank' ? 1 : 2);
+            const roleSlots = role === 'tank' ? 1 : 2;
             rows.push({
                 hero: entry.hero_id,
                 url: facet._url,
                 winrate: entry.win_ratio,
-                pickrate: Math.round(entry.selection_ratio / totPR * 1000) / 10,
+                pickrate: pct1f((entry.selection_ratio / rolesTotalPR[role]) * roleSlots),
                 banrate: entry.ban_ratio * 4,
                 kda: entry.kda,
                 mode: modes[selected.game_mode],
