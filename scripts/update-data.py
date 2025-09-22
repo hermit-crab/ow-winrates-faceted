@@ -4,17 +4,24 @@ import json
 import os
 import sys
 import traceback
+from http.cookiejar import DefaultCookiePolicy
 from itertools import chain, product
 
 import lxml.html
-import urllib3
+import requests
+from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 BASE_URL =  'https://overwatch.blizzard.com/en-us/rates'
 BASE_URL_CN = 'https://webapi.blizzard.cn/ow-armory-server'
 CACHE_DIR = 'cache'
 os.makedirs(CACHE_DIR, exist_ok=True)
-http = urllib3.PoolManager(retries=Retry(5, backoff_factor=1, backoff_jitter=1, status_forcelist=[429, 500, 502, 503, 504]))
+
+session = requests.Session()
+session.cookies.set_policy(DefaultCookiePolicy(allowed_domains=[]))
+adapter = HTTPAdapter(max_retries=Retry(5, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504]))
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 
 def get(url, cache_name):
@@ -23,9 +30,9 @@ def get(url, cache_name):
         with open(cache_fpath, encoding='utf8') as f:
             return f.read(), os.stat(cache_fpath).st_mtime, True
     else:
-        rp = http.request('GET', url)
-        assert rp.status == 200, f'bad status {rp}'
-        text = rp.data.decode('utf8')
+        rp = session.get(url)
+        rp.raise_for_status()
+        text = rp.text
         assert text, f'empty body at {rp}'
         with open(cache_fpath, 'w', encoding='utf8') as f:
             f.write(text)
