@@ -710,35 +710,13 @@ let rawData, dataTs, heroes, allEntries, regionMeans, regionMeansWithCN, confHan
 function setup() {
     if (window.matchMedia('(max-width: 700px)').matches)
         UI.viewMode.value = 'bars';
+
     confHandler = new ConfHandler();
-    UI.selectColumn.addEventListener('change', mobileSelectColumns);
-    const infoPopup = document.querySelector('.info-popup');
-    UI.infoPopupClose.addEventListener('click',
-        () => infoPopup.classList.add('hidden')
-    );
-    document.addEventListener('keydown', e => pressedKeys.add(e.key));
-    document.addEventListener('keyup', e => pressedKeys.delete(e.key));
-    document.addEventListener('click', function(e) {
-        if (!e.target.classList.contains('trigger-info') && !infoPopup.contains(e.target))
-            infoPopup.classList.add('hidden');
-        else if (e.target.classList.contains('trigger-info'))
-            infoPopup.classList.remove('hidden');
-        // for phones: unhover/unfocus plot if clicked off it
-        document.querySelectorAll('.plot.js-plotly-plot').forEach(plot => {
-            if (e.target.classList.contains('stub') && e.target.parentElement.contains(plot)) return;
-            if (plot.contains(e.target)) return;
-            Plotly.Fx.unhover(plot);
-            mobileFocusPlot(plot.parentElement, false);
-        });
-    });
-    document.querySelectorAll('.col-title span').forEach(
-        elem => elem.addEventListener('click', titleClickSort)
-    );
-    const tierTitles = [...TIERS.slice(0, TIERS.length-1), 'GM+'];
-    UI.sortTiers.outerHTML = TIERS.map((v, i) =>
-        `<option value='tier-${v}'>:${tierTitles[i]}</option>`
-    ).join('\n');
+
+    setupEventHandlers();
+    setupSortTiers();
     setupColorTips();
+
     let datasetUrl = localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC;
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('dataset'))
@@ -1336,6 +1314,41 @@ class ConfHandler {
             barTier: this.barTier,
         }
     }
+}
+
+
+function setupEventHandlers() {
+    UI.selectColumn.addEventListener('change', mobileSelectColumns);
+    const infoPopup = document.querySelector('.info-popup');
+    UI.infoPopupClose.addEventListener('click',
+        () => infoPopup.classList.add('hidden')
+    );
+    document.addEventListener('keydown', e => pressedKeys.add(e.key));
+    document.addEventListener('keyup', e => pressedKeys.delete(e.key));
+    document.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('trigger-info') && !infoPopup.contains(e.target))
+            infoPopup.classList.add('hidden');
+        else if (e.target.classList.contains('trigger-info'))
+            infoPopup.classList.remove('hidden');
+        // for phones: unhover/unfocus plot if clicked off it
+        document.querySelectorAll('.plot.js-plotly-plot').forEach(plot => {
+            if (e.target.classList.contains('stub') && e.target.parentElement.contains(plot)) return;
+            if (plot.contains(e.target)) return;
+            Plotly.Fx.unhover(plot);
+            mobileFocusPlot(plot.parentElement, false);
+        });
+    });
+    document.querySelectorAll('.col-title span').forEach(
+        elem => elem.addEventListener('click', titleClickSort)
+    );
+}
+
+
+function setupSortTiers() {
+    const tierTitles = [...TIERS.slice(0, TIERS.length-1), 'GM+'];
+    UI.sortTiers.outerHTML = TIERS.map((v, i) =>
+        `<option value='tier-${v}'>:${tierTitles[i]}</option>`
+    ).join('\n');
 }
 
 
