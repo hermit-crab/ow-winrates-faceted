@@ -182,6 +182,24 @@ body {
     top: 5px;
     right: 5px;
 }
+.info-popup .spoiler .clicker {
+    cursor: pointer;
+    padding: 0 5px;
+    background-color: #0001;
+}
+.info-popup .spoiler .clicker::after {
+    content: ' ▸';
+}
+.info-popup .spoiler.open .clicker::after {
+    content: ' ▾';
+}
+.info-popup .spoiler.open .spoiler-body {
+    display: inline;
+}
+.info-popup .spoiler .spoiler-body {
+    display: none;
+}
+
 
 /* -- column titles -- */
 .col-titles {
@@ -468,29 +486,52 @@ body {
     <button id='infoPopupClose'>x</button>
     <ul>
         <li>Line colors: <span id='colorTips'></span>.</li>
+
         <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
+
         <li><b>Double click</b> any plot to zoom in/out (toggle relative scale). Hold Ctrl to include zeroline.</li>
+
         <li>Starting "<b>All</b>" values represent Competitive total values across all tiers (Curves-view).</li>
+
         <li><b>Dashed</b> lines represens "expected" value.<ul>
             <li>For winrate it's 50%.</li>
             <li>For pickrate it's the value if every hero was picked equally often within their role.</li>
             <li>(CN) For banrate it's the value if every hero was banned equally often.</li>
             <li>(CN) For KDA it's mean value for the role (calculated by this page).</li>
         </ul></li>
+
         <li>Special <b>sorting</b> modes:<ul>
             <li>B / M Diff. – difference between Bronze and Master (slope of the facet line).</li>
             <li>Facet Diff. – variance between facet lines (calculated as MAD from mean line).
                 In Bars-view only currently shown tier is considered ("All" or last sorted-by tier).</li>
         </ul></li>
+
         <li><b>*Average</b> (mean) values are computed by this page (Blizzard does not provide it).
         Since we do not know population sizes (weights) – our mean is only an estimate of true mean.</li>
-        <li><b>Chinese</b> data comes from a <a href='https://ow.blizzard.cn/herolist/'>separate official source</a>.
+
+        <li class='spoiler'><span class='clicker'><b>Chinese</b> data</span><span class='spoiler-body'>
+            comes from a <a href='https://ow.blizzard.cn/herolist/'>separate official source</a>.
             I do not know if the numbers are calculated in the exact same manner as on the main site.<ul>
             <li>There is no PC/Console separation (is it even available on Consoles there).</li>
             <li>It provides QP data broken down by ranks (huh!), so you can also facet by Game Mode.</li>
             <li>It provides independant Champ data (main site bundles it with GM), this page ignores it.</li>
             <li>Pickrate/banrate numbers are scaled to conform to main website convention.</li>
-        </ul></li>
+        </ul></span></li>
+
+        <li class='spoiler'><span class='clicker'><b>Dataset</b> & About</span><span class='spoiler-body'><ul>
+            <li>This is a static page with no own backing server. <a href='https://github.com/hermit-crab/ow-winrates-faceted'>On GitHub</a>.</li>
+            <li>Currently loaded dataset file is located <a id='datasetLink' href=''>here</a> (includes CN data).</li>
+            <li>Corresponding global variable: <code>rawData</code></li>
+            <li>Nicer post-processed long form variable: <code>allEntries</code></li>
+        </ul></span></li>
+
+        <!-- <li class='spoiler'><span class='clicker'><b>Archive</b></span><span class='spoiler-body'><ul>
+            <li>Archived view:
+                <a href=''>S18mid (TODO)</a>,
+                <a href=''>S17* (TODO)</a> (stats feature release)
+            </li>
+        </ul></span></li> -->
+
     </ul>
 </div>
 
@@ -720,6 +761,7 @@ function setup() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('dataset'))
         datasetUrl = datasetUrl.replace('winrate-data', urlParams.get('dataset'));
+    UI.datasetLink.href = datasetUrl;
     loadData(datasetUrl);
 }
 
@@ -1366,6 +1408,9 @@ function setupEventHandlers() {
     });
     document.querySelectorAll('.col-title span').forEach(
         elem => elem.addEventListener('click', titleClickSort)
+    );
+    document.querySelectorAll('.info-popup .spoiler .clicker').forEach(
+        elem => elem.addEventListener('click', () => elem.parentElement.classList.toggle('open'))
     );
 }
 
