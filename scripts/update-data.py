@@ -104,7 +104,7 @@ def crawl_main_site():
             raise Exception
         data['_url'] = url
         data['_ts'] = ts
-        facets.append((combo, data))
+        facets.append(data)
 
     print(f'\nCache hits: {cache_hits}/{len(rqs)}')
     return facets
@@ -145,7 +145,7 @@ def crawl_cn_site():
         data['_url'] = url
         data['_ts'] = ts
         data['_season'] = season
-        facets.append((combo, data))
+        facets.append(data)
 
     print(f'\nCache hits: {cache_hits}/{len(rqs)}')
     return facets
@@ -163,7 +163,7 @@ def main():
 
     dest = sys.argv[1] if sys.argv[1:] else 'winrates-data.js'
     with open(dest, 'w', encoding='utf8') as f:
-        f.write('jsonp(' + json.dumps([facet[1] for facet in facets]) + ')')
+        f.write('jsonp(' + json.dumps(facets) + ')')
 
 
 if __name__ == '__main__':
