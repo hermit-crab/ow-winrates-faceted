@@ -711,10 +711,9 @@ function setup() {
     if (window.matchMedia('(max-width: 700px)').matches)
         UI.viewMode.value = 'bars';
 
-    confHandler = new ConfHandler();
-
-    setupEventHandlers();
     setupSortTiers();
+    confHandler = new ConfHandler();
+    setupEventHandlers();
     setupColorTips();
 
     let datasetUrl = localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC;
@@ -1153,16 +1152,23 @@ class ConfHandler {
         this.elems = [...document.querySelectorAll('.conf *[id]')];
         this.elems.forEach(el => el.addEventListener('change', _ => this.sync()));
         this._conf = {};
+        this._defaultConf = {};
+        this._firstSync = true;
         this.sync(false);
+        delete this._firstSync;
     }
     sync(doRender = true) {
         const conf = this._conf;
-        const oldConf = {...conf};
+        let oldConf = {...conf};
         this.elems.forEach(el => conf[el.id] = inputElemValue(el));
-        if (Object.keys(oldConf).length)
-            this._applyRules(oldConf);
+        if (this._firstSync) {
+            this._defaultConf = oldConf = {...conf};
+            this._loadUrlHash();
+        }
+        this._applyRules(oldConf);
         this._setDisabled();
         this._applyEffects(oldConf);
+        this._setUrlHash();
 
         this.barTier = this.barTier || 'All';
         if (conf.sortingMode === 'all') this.barTier = 'All';
@@ -1172,6 +1178,24 @@ class ConfHandler {
 
         if (doRender) render();
     }
+    _setUrlHash() {
+        let kvs = Object.entries(this._conf).filter(([k, v]) =>
+            v !== this._defaultConf[k] && !UI[k]?.disabled
+        );
+        const order = this.elems.map(e => e.id);
+        kvs = sortBy(kvs, kv => order.indexOf(kv[0]));
+        history.replaceState(null, '', '#' + kvs.map(kv => kv.join('=')).join('&'));
+        // remove lone trailing #
+        if (!location.hash) history.replaceState(null, '', location.pathname + location.search);
+    }
+    _loadUrlHash() {
+        (new URLSearchParams(location.hash.slice(1))).forEach((v, k) => {
+            if (k === 'dataset') this._conf.dataset = this.dataset = v;
+            if (!UI[k]) return;
+            if (UI[k].type === 'checkbox') v = {'true': true, 'false': false}[v];
+            this._conf[k] = inputElemValue(UI[k], v);
+        });
+    }
     _applyEffects(oldConf) {
         // effects that won't mutate the confs
         const conf = this._conf;
@@ -1180,6 +1204,7 @@ class ConfHandler {
             if (oldConf[key] === conf[key]) return;
             if (key === 'cnExtra')
                 UI.selectColumn.value = conf.cnExtra ? 'kd' : 'wr';
+            if (this._firstSync) return;
             if (key === 'chinaOn' && conf.chinaOn)
                 flash(UI.cnExtra.parentElement, 'flash');
             if (key === 'sortingMode' || this.getFacets(conf).sortFacetValue !== this.getFacets(oldConf).sortFacetValue)
