@@ -526,12 +526,13 @@ body {
         </ul></span></li>
 
         <li class='spoiler'><span class='clicker'><b>Archive</b></span><span class='spoiler-body'><ul>
+            <li>Last <a href='?dataset=winrate-data.bak'>backup view</a> (typically previous day).</li>
             <li>Archived view:
                 <a href='?dataset=archive/owwr/winrate-data.s18-mid'>S18-mid*</a>,
                 <a href='?dataset=archive/owwr/winrate-data.initial'>Initial*</a>
             </li>
-            <li>S18-mid: (no QP, no Console).</li>
-            <li>Initial: (no QP) stats initial release, some span of S17.</li>
+            <li>*S18-mid: (no QP, no Console).</li>
+            <li>*Initial: (no QP) stats initial release, some span of S17.</li>
         </ul></span></li>
 
     </ul>
@@ -771,6 +772,7 @@ function setup() {
 function loadData(jsonpSrc) {
     const script = document.createElement('script');
     script.type = 'text/javascript';
+    // allow retrieval from cache only within an hour
     script.src = jsonpSrc + '?nocache=' + parseInt(Date.now()/1000/60/60);
     script.addEventListener('error', () => {
         UI.plots.innerHTML = `Failed loading data from ${jsonpSrc}.`;
