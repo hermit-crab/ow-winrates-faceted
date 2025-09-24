@@ -821,7 +821,7 @@ function processRawData(rawData) {
     rqCodes.sort();
     if (rqCodes.length !== 2)
         console.error('unexpected amount of rqCodes (expected 2)', rqCodes);
-    let modes = Object.fromEntries([[rqCodes[0], 'QP'], [rqCodes[1], 'Comp']])
+    let modes = Object.fromEntries([['0', 'QP'], [rqCodes.at(-1), 'Comp']]);
     for (const facet of mainData) {
         for (const entry of facet['rates'])
             rows.push({
