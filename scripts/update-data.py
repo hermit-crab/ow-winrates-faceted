@@ -113,6 +113,8 @@ def crawl_main_site():
 def crawl_cn_site():
     index = json.loads(get(BASE_URL_CN + '/index', 'index-cn.json')[0])
     season = index['data']['seasons'][0]['id']
+    print(f'Season: {season}')
+    assert int(season) == max(int(s['id']) for s in index['data']['seasons'])
     params = {
         'game_mode': ['kuaisu', 'jingji'], # qp, comp
         'season': [season],
