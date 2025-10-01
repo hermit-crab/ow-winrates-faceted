@@ -1349,11 +1349,16 @@ function renderPlanePlot(name2entries, conf) {
             opacity: .3, showarrow: false, font: {size: 12, weight: 600},
         }))],
     }, {displayModeBar: false, doubleClick: 'reset'});
-    UI.planeplot.removeAllListeners('plotly_hover');
-    UI.planeplot.on('plotly_hover', data => {
-        const p = data.points[0];
-        Plotly.Fx.hover(UI.planeplot, p.data.x.map((_, i) => ({curveNumber: p.curveNumber, pointNumber: i})));
-    });
+
+    if (!UI.planeplot._hoverBound) {
+        UI.planeplot._hoverBound = true;
+        const fn = data => {
+            const p = data.points[0];
+            Plotly.Fx.hover(UI.planeplot, p.data.x.map((_, i) => ({curveNumber: p.curveNumber, pointNumber: i})));
+        };
+        UI.planeplot.on('plotly_hover', fn);
+        UI.planeplot.on('plotly_click', fn);
+    }
 }
 
 
