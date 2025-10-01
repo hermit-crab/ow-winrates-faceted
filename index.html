@@ -602,21 +602,15 @@ body {
         <div class='conf-title'>Select</div>
         <select id='filterRole'>
             <option value='all' selected>Role</option>
-            <option value='support'>Support</option>
-            <option value='tank'>Tank</option>
-            <option value='damage'>Damage</option>
+            <option class='fillRoles'>...replaced via JS</option>
         </select>
         <select id='filterRegion'>
             <option value='all' selected>Region</option>
-            <option value='Americas'>Americas</option>
-            <option value='Asia'>Asia</option>
-            <option value='Europe'>Europe</option>
-            <option value='China'>China</option>
+            <option class='fillRegions'>...replaced via JS</option>
             <option value='mean'>*Average</option>
         </select>
         <select id='filterPlatform'>
-            <option value='PC' selected>KB&M</option>
-            <option value='Console'>Console</option>
+            <option class='fillPlatforms'>...replaced via JS</option>
         </select>
     </div>
     <div class='conf-block'>
@@ -632,24 +626,19 @@ body {
         <div class='conf-title'>Sort mode</div>
         <select id='sortingMode'>
             <option value='all' selected>All Ranks</option>
-            <option id='sortTiers'>...replaced via JS</option>
+            <option class='fillTiers'>...replaced via JS</option>
             <option value='b-m-delta'>B / M Diff.</option>
             <option value='facets-spread'>Facet Diff.</option>
         </select>
         <select id='sortingRegion'>
-            <option value='Americas' selected>Americas</option>
-            <option value='Asia'>Asia</option>
-            <option value='Europe'>Europe</option>
-            <option value='China'>China</option>
+            <option class='fillRegions'>...replaced via JS</option>
             <option value='mean'>*Average</option>
         </select>
         <select id='sortingPlatform'>
-            <option value='PC' selected>KB&M</option>
-            <option value='Console'>Console</option>
+            <option class='fillPlatforms'>...replaced via JS</option>
         </select>
         <select id='sortingGameMode'>
-            <option value='Comp' selected>Comp</option>
-            <option value='QP'>QP</option>
+            <option class='fillModes'>...replaced via JS</option>
         </select>
         <select id='sortingColumn'>
             <option value='name'>Name</option>
@@ -706,8 +695,9 @@ const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8a
 const REGIONS = ['Americas', 'Asia', 'Europe', 'China', 'mean'];
 const REGION_COLORS = ['#f14141', '#ffac00', '#3c90ff', '#58d986', 'black'];
 const PLATFORMS = ['PC', 'Console'];
+const GAMEMODES = ['Comp', 'QP'];
 const EXTRA_COLORS = {Console: '#999', QP: '#afafa5ff', mercy: '#beb144', zenyatta: '#e2d008'};
-const ROLES = ['tank', 'support', 'damage'];
+const ROLES = ['support', 'tank', 'damage'];
 const LOCAL_JSONP_SRC = 'winrate-data.js';
 const EXTERNAL_JSONP_SRC = 'https://hermit-crab.neocities.org/winrate-data.js';
 const ALL_TIER_IDX = -.5;
@@ -756,7 +746,6 @@ function setup() {
     if (window.matchMedia('(max-width: 700px)').matches)
         UI.viewMode.value = 'bars';
 
-    setupSortTiers();
     confHandler = new ConfHandler();
     setupEventHandlers();
     setupColorTips();
@@ -1395,6 +1384,7 @@ function computeRegionMeans(entries) {
 
 class ConfHandler {
     constructor() {
+        this._fillFacetOptions();
         this.elems = [...document.querySelectorAll('.conf *[id]')];
         this.elems.forEach(el => el.addEventListener('change', _ => this.sync()));
         this._conf = {};
@@ -1423,6 +1413,19 @@ class ConfHandler {
         this.regionMeanView = (conf.filterRegion === 'mean' && conf.facet === 'region');
 
         if (doRender) render();
+    }
+    _fillFacetOptions() {
+        const sel = s => document.querySelectorAll(`option.${s}`);
+        const capit = v => v.charAt(0).toUpperCase() + v.slice(1);
+        const toHtml = vals => vals.map(v => `<option value='${v}'>${ALT_NAMES[v] || v}</option>`).join('\n');
+        [
+            ['fillRegions', toHtml(REGIONS.slice(0, REGIONS.length-1))],
+            ['fillPlatforms', toHtml(PLATFORMS)],
+            ['fillModes', toHtml(GAMEMODES)],
+            ['fillRoles', ROLES.map(v => `<option value='${v}'>${capit(v)}</option>`).join('\n')],
+            ['fillTiers', TIERS.map((v, i) => `<option value='tier-${v}'>:${ALT_NAMES[v] || v}</option>`).join('\n')]
+        ].forEach(([s, html]) => sel(s).forEach(e => e.outerHTML = html));
+        UI.sortingRegion.value = REGIONS[0];
     }
     _setUrlHash() {
         let kvs = Object.entries(this._conf).filter(([k, v]) =>
@@ -1572,7 +1575,7 @@ class ConfHandler {
             facets.sortFacetValue = conf.sortingGameMode;
             if (conf.filterRegion === 'all')
                 UI.filterRegion.value = conf.filterRegion = REGIONS[0];
-            facets.facetValues = ['Comp', 'QP'];
+            facets.facetValues = GAMEMODES;
             facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
         }
         facets.facetCmap = Object.fromEntries(facets.facetValues.map((v, i) => [v, facetColors[i]]));
@@ -1616,14 +1619,6 @@ function setupEventHandlers() {
     document.querySelectorAll('.info-popup .spoiler .clicker').forEach(
         elem => elem.addEventListener('click', () => elem.parentElement.classList.toggle('open'))
     );
-}
-
-
-function setupSortTiers() {
-    const tierTitles = [...TIERS.slice(0, TIERS.length-1), 'GM+'];
-    UI.sortTiers.outerHTML = TIERS.map((v, i) =>
-        `<option value='tier-${v}'>:${tierTitles[i]}</option>`
-    ).join('\n');
 }
 
 
