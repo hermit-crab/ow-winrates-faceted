@@ -1650,8 +1650,6 @@ class ConfHandler {
             facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.Console];
         } else if (conf.facet === 'mode') {
             facets.sortFacetValue = conf.sortingGameMode;
-            if (conf.filterRegion === 'all')
-                UI.filterRegion.value = conf.filterRegion = REGIONS[0];
             facets.facetValues = GAMEMODES;
             facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
         }
