@@ -462,7 +462,8 @@ body {
 .viewmode-bars .entry .bar {display: flex;}
 .viewmode-plots .entry .plot {display: block;}
 .viewmode-plane #plots, .viewmode-plane .col-titles {display: none;}
-.viewmode-plane #plane, .viewmode-plane .plane-conf {display: block;}
+.viewmode-plane #plane {display: block;}
+.viewmode-plane .plane-conf {display: flex;}
 
 /* -- PC -- */
 @media screen and (min-width: 700px) {
@@ -686,13 +687,18 @@ body {
 <div id='plots'>Loading...</div>
 
 <div class='conf plane-conf'>
-    <div class='checkboxes' id='selectedRegions'>
-        <checkbox class='fillRegions'>...replaced via JS</checkbox>
-        <label><input type='checkbox' value='mean' checked/>*Avarage</label>
+    <div class='conf-block'>
+        <div class='checkboxes' id='selectedRegions'>
+            <checkbox class='fillRegions'>...replaced via JS</checkbox>
+            <label><input type='checkbox' value='mean'/>*Avarage</label>
+        </div>
+        <div class='checkboxes' id='selectedPlatforms'><checkbox class='fillPlatforms'>...replaced via JS</checkbox></div>
+        <div class='checkboxes' id='selectedGameModes'><checkbox class='fillModes'>...replaced via JS</checkbox></div>
+        <!-- <div class='checkboxes' id='selectedTiers'><checkbox class='fillTiers'>...replaced via JS</checkbox></div> -->
     </div>
-    <div class='checkboxes' id='selectedPlatforms'><checkbox class='fillPlatforms'>...replaced via JS</checkbox></div>
-    <div class='checkboxes' id='selectedGameModes'><checkbox class='fillModes'>...replaced via JS</checkbox></div>
-    <!-- <div class='checkboxes' id='selectedTiers'><checkbox class='fillTiers'>...replaced via JS</checkbox></div> -->
+    <div class='conf-block'>
+        <label><input id='planeMarkerColor' type='checkbox'/>Dot Color</label>
+    </div>
 </div>
 <div id='plane'><div class='border'></div><div id='planeplot'>Loading...</div></div>
 
@@ -1254,7 +1260,8 @@ function renderPlanePlot(name2entries, conf) {
             xt: clamped[0], yt: clamped[1],
             name: hero.name,
             color: color,
-            color2: color + '66',
+            colorFade: color + '66',
+            colorFacet: pluck(points, 'fc'),
             symbol: 'circle',
             mainIdx: mainIdx,
             size: points.map((_, i) => (i === mainIdx) ? 6 : 4),
@@ -1294,11 +1301,15 @@ function renderPlanePlot(name2entries, conf) {
             // Main line: facet connection line and dots
             x: l.x, y: l.y,
             mode: 'lines+markers',
-            line: {color: l.color2, dash: 'solid', simplify: false},
+            line: {color: l.colorFade, dash: 'solid', simplify: false},
             hovertemplate: l.hover,
             name: l.name,
-            hoverlabel: {bgcolor: 'white', font: {color: '#666'}, bordercolor: l.color2},
-            marker: {color: l.color, size: l.size, symbol: l.symbol, line: {width: 0, color: l.color}, opacity: 1},
+            hoverlabel: {bgcolor: 'white', font: {color: '#666'}, bordercolor: l.colorFade},
+            marker: {
+                size: l.size, symbol: l.symbol, opacity: 1,
+                color: conf.planeMarkerColor ?  l.colorFacet : l.color,
+                line: {width: conf.planeMarkerColor ? 1.5 : 0, color: l.colorFade}
+            },
         }, {
             // Text annotation
             x: [l.xt], y: [l.yt],
