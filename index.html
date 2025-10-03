@@ -449,12 +449,20 @@ body {
     /* allow xtick tooltip overflow */
     overflow: visible;
 }
+.plane-conf {
+    display: none;
+    margin-top: 0;
+    margin-bottom: 0 !important;
+    color: #333;
+    opacity: .7;
+    transform: scale(.9);
+}
 
 /* viewmode conditional */
 .viewmode-bars .entry .bar {display: flex;}
 .viewmode-plots .entry .plot {display: block;}
 .viewmode-plane #plots, .viewmode-plane .col-titles {display: none;}
-.viewmode-plane #plane {display: block;}
+.viewmode-plane #plane, .viewmode-plane .plane-conf {display: block;}
 
 /* -- PC -- */
 @media screen and (min-width: 700px) {
@@ -675,8 +683,17 @@ body {
         <option class='extra' value='br'>Banrate</option>
     </select>
 </div>
-
 <div id='plots'>Loading...</div>
+
+<div class='conf plane-conf'>
+    <div class='checkboxes' id='selectedRegions'>
+        <checkbox class='fillRegions'>...replaced via JS</checkbox>
+        <label><input type='checkbox' value='mean' checked/>*Avarage</label>
+    </div>
+    <div class='checkboxes' id='selectedPlatforms'><checkbox class='fillPlatforms'>...replaced via JS</checkbox></div>
+    <div class='checkboxes' id='selectedGameModes'><checkbox class='fillModes'>...replaced via JS</checkbox></div>
+    <!-- <div class='checkboxes' id='selectedTiers'><checkbox class='fillTiers'>...replaced via JS</checkbox></div> -->
+</div>
 <div id='plane'><div class='border'></div><div id='planeplot'>Loading...</div></div>
 
 </div>
@@ -692,11 +709,11 @@ Overwatch is a trademark of Blizzard Entertainment, Inc., in the U.S. and/or oth
 const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'];
 // const SD_TIERS = ['Rookie', 'Novice', 'Contender', 'Elite', 'Pro', 'AllStar', 'Legend'];
 const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8ae960', '#8d71fe'];
-const REGIONS = ['Americas', 'Europe', 'Asia', 'China', 'mean'];
+const REGIONS = ['Americas', 'Europe', 'Asia', 'China'];
 const REGION_COLORS = ['#f14141', '#3c90ff', '#ffac00', '#58d986', 'black'];
 const PLATFORMS = ['PC', 'Console'];
 const GAMEMODES = ['Comp', 'QP'];
-const EXTRA_COLORS = {Console: '#999', QP: '#afafa5ff', mercy: '#beb144', zenyatta: '#e2d008'};
+const EXTRA_COLORS = {Console: '#999', QP: '#afafa5ff', mercy: '#beb144', zenyatta: '#e2d008', mean: 'black'};
 const ROLES = ['support', 'tank', 'damage'];
 const LOCAL_JSONP_SRC = 'winrate-data.js';
 const EXTERNAL_JSONP_SRC = 'https://hermit-crab.neocities.org/winrate-data.js';
@@ -707,6 +724,7 @@ const VALTYPES_SHORT = ['nm', 'wr', 'pr', 'kd', 'br'];
 const WARNINGS = {
     cn: 'see notes about CN data',
     avg: 'synthetic unweighted *Average',
+    planekda: 'Unsupported in Plane-view.',
 };
 
 const UI = Object.fromEntries([...document.querySelectorAll('*[id]')].map(e => [e.id, e]));
@@ -1212,6 +1230,7 @@ function renderPlanePlot(name2entries, conf) {
         const hero = heroes[name];
         const color = CMAP[name] || hero.color;
         const points = conf.facetValues.map(facetValue => {
+            if (!conf.facetValuesSelected.has(facetValue)) return;
             const selected = entries.filter(e => e[conf.facet] === facetValue && e.tier === conf.lastTier);
             if (selected.length > 1) throw Error('unexpected multiple entries after filter');
             const entry = selected[0];
@@ -1240,7 +1259,7 @@ function renderPlanePlot(name2entries, conf) {
             mainIdx: mainIdx,
             size: points.map((_, i) => (i === mainIdx) ? 6 : 4),
             hover: points.map(p =>
-                `<extra><b style='color:#666'>${hero.name}</b> <b style='color:${p.fc}'>${p.fname}</b></extra>` +
+                `<extra><b style='color:#666'>${hero.name}</b> <b style='color:${p.fc}'>${ALT_NAMES[p.fname] || p.fname}</b></extra>` +
                 `Wr <b>${p.x}</b>%  Pr <b>${p.pr}</b>%(${round1p(p.y)} Avg.)`
             ),
         };
@@ -1394,6 +1413,11 @@ class ConfHandler {
         this.elems.forEach(el => el.addEventListener('change', _ => this.sync()));
         this._conf = {};
         this._defaultConf = {};
+        this._sortElems = {
+            'region': UI.sortingRegion,
+            'input': UI.sortingPlatform,
+            'mode': UI.sortingGameMode
+        };
         this._firstSync = true;
         this.sync(false);
         delete this._firstSync;
@@ -1420,21 +1444,29 @@ class ConfHandler {
         if (doRender) render();
     }
     _fillFacetOptions() {
-        const sel = s => document.querySelectorAll(`option.${s}`);
         const capit = v => v.charAt(0).toUpperCase() + v.slice(1);
-        const toHtml = vals => vals.map(v => `<option value='${v}'>${ALT_NAMES[v] || v}</option>`).join('\n');
+        const toOptions = vals => vals.map(v => `<option value='${v}'>${ALT_NAMES[v] || v}</option>`).join('\n');
+        const toChboxes = vals => vals.map(v =>
+            `<label><input type='checkbox' value='${v}' checked/>${ALT_NAMES[v] || v}</label>`
+        ).join('\n');
         [
-            ['fillRegions', toHtml(REGIONS.slice(0, REGIONS.length-1))],
-            ['fillPlatforms', toHtml(PLATFORMS)],
-            ['fillModes', toHtml(GAMEMODES)],
-            ['fillRoles', ROLES.map(v => `<option value='${v}'>${capit(v)}</option>`).join('\n')],
-            ['fillTiers', TIERS.map((v, i) => `<option value='tier-${v}'>:${ALT_NAMES[v] || v}</option>`).join('\n')]
-        ].forEach(([s, html]) => sel(s).forEach(e => e.outerHTML = html));
+            ['option.fillRegions', toOptions(REGIONS)],
+            ['option.fillPlatforms', toOptions(PLATFORMS)],
+            ['option.fillModes', toOptions(GAMEMODES)],
+            ['option.fillRoles', ROLES.map(v => `<option value='${v}'>${capit(v)}</option>`).join('\n')],
+            ['option.fillTiers', TIERS.map((v, i) => `<option value='tier-${v}'>:${ALT_NAMES[v] || v}</option>`).join('\n')],
+            ['checkbox.fillRegions', toChboxes(REGIONS)],
+            ['checkbox.fillPlatforms', toChboxes(PLATFORMS)],
+            ['checkbox.fillModes', toChboxes(GAMEMODES)],
+            ['checkbox.fillTiers', toChboxes(TIERS)],
+        ].forEach(([s, html]) => document.querySelectorAll(s).forEach(e => e.outerHTML = html));
         UI.sortingRegion.value = REGIONS[0];
+        inputElemValue(UI.selectedRegions, ['Americas', 'Asia']);
     }
     _setUrlHash() {
-        let kvs = Object.entries(this._conf).filter(([k, v]) =>
-            v !== this._defaultConf[k] && !UI[k]?.disabled
+        const simple = (v) => v instanceof Set ? [...v].sort().join(',') : v;
+        let kvs = Object.entries(this._conf).map(([k, v]) => [k, simple(v)]).filter(([k, v]) =>
+            v !== simple(this._defaultConf[k]) && !UI[k]?.disabled
         );
         const order = this.elems.map(e => e.id);
         kvs = sortBy(kvs, kv => order.indexOf(kv[0]));
@@ -1444,8 +1476,8 @@ class ConfHandler {
     }
     _loadUrlHash() {
         (new URLSearchParams(location.hash.slice(1))).forEach((v, k) => {
-            if (k === 'dataset') this._conf.dataset = this.dataset = v;
             if (!UI[k]) return;
+            if (UI[k].classList.contains('checkboxes')) v = new Set(v.split(','));
             if (UI[k].type === 'checkbox') v = {'true': true, 'false': false}[v];
             this._conf[k] = inputElemValue(UI[k], v);
         });
@@ -1483,6 +1515,7 @@ class ConfHandler {
         const rules = [
             [
             // [condition(conf, oldConf), effect()], ...
+            // Rules that compare with oldConf are generally "soft" rules.
             conf => conf.facet !== 'region' && conf.filterRegion === 'all',
             conf => alter('filterRegion', REGIONS[0])
             ], [
@@ -1491,6 +1524,9 @@ class ConfHandler {
             ], [
             conf => !conf.chinaOn && conf.filterRegion === 'China',
             conf => alter('filterRegion', 'all')
+            ], [
+            conf => !conf.chinaOn && conf.selectedRegions.has('China'),
+            conf => {conf.selectedRegions.delete('China'); alter('selectedRegions', conf.selectedRegions)}
             ], [
             conf => !conf.chinaOn && conf.cnExtra,
             conf => alter('cnExtra', false)
@@ -1507,9 +1543,27 @@ class ConfHandler {
             conf => conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta',
             conf => alter('sortingMode', 'all')
             ], [
-            // rules that check for changes, should normally go last
+            conf => conf.viewMode === 'plane' && conf.facet === 'region' && conf.filterRegion !== 'all',
+            conf => alter('filterRegion', 'all')
+            ], [
+            (conf, last) => last.cnExtra !== conf.cnExtra && conf.viewMode === 'plane' && conf.cnExtra,
+            conf => alert(WARNINGS.planekda)
+            ], [
+            conf => conf.viewMode === 'plane' && conf.cnExtra,
+            conf => alter('cnExtra', false)
+            ], [
+            conf => {
+                const fasets = this.getFacets(conf);
+                const selected = fasets.facetValuesSelected;
+                return conf.viewMode === 'plane' && selected.size && !selected.has(fasets.sortFacetValue)
+            },
+            conf => alter(this._sortElems[conf.facet].id, [...this.getFacets(conf).facetValuesSelected][0])
+            ], [
             (conf, last) => last.filterRegion !== conf.filterRegion && conf.filterRegion === 'mean',
             conf => alter('sortingRegion', conf.filterRegion)
+            ], [
+            (conf, last) => last.viewMode !== conf.viewMode && conf.viewMode === 'plane' && conf.filterRole === 'all',
+            conf => alter('filterRole', ROLES[0])
             ], [
             (conf, last) => last.facet !== conf.facet && conf.facet === 'region',
             conf => alter('filterRegion', 'all')
@@ -1535,28 +1589,35 @@ class ConfHandler {
         const conf = this._conf;
         this.elems.forEach(el => el.disabled = false);
 
-        // non applicable sort facets
         Object.entries({
-            'region': UI.sortingRegion,
-            'input': UI.sortingPlatform,
-            'mode': UI.sortingGameMode,
-        }).forEach(([f, elem]) => {
-            elem.classList.toggle('hidden', conf.facet !== f);
-            elem.disabled = conf.facet !== f;
-            if (conf.sortingMode === 'facets-spread') elem.disabled = true;
+            'region': [UI.sortingRegion, UI.selectedRegions],
+            'input': [UI.sortingPlatform, UI.selectedPlatforms],
+            'mode': [UI.sortingGameMode, UI.selectedGameModes],
+            // 'tier': [UI.selectedTiers],
+        }).forEach(([f, elems]) => {
+            elems.forEach(el => {
+                el.classList.toggle('hidden', conf.facet !== f);
+                el.disabled = conf.facet !== f;
+                if (el.id.startsWith('sorting') && conf.sortingMode === 'facets-spread')
+                    el.disabled = true;
+                if (el.id.startsWith('selected') && conf.viewMode !== 'plane')
+                    el.disabled = true;
+            });
         });
 
         if (!['all', 'mean'].includes(conf.filterRegion))
             UI.sortingRegion.disabled = true;
         if (conf.facet === 'input')
             UI.filterPlatform.disabled = true;
+        if (conf.facet === 'region' && conf.viewMode === 'plane')
+            UI.filterRegion.disabled = true;
         UI.filterRegion.querySelector('option[value=all]').disabled = (
             conf.facet !== 'region'
         );
         UI.sortingMode.querySelector('option[value=b-m-delta]').disabled = (
             conf.viewMode === 'bars'
         );
-        document.querySelectorAll('select option[value="China"]').forEach(
+        document.querySelectorAll('select option[value="China"], input[value="China"]').forEach(
             elem => elem.disabled = !conf.chinaOn
         );
         UI.cnExtra.disabled = !conf.chinaOn;
@@ -1570,8 +1631,8 @@ class ConfHandler {
             facets.facetValues = REGIONS;
             facetColors = REGION_COLORS;
             facets.sortFacetValue = conf.sortingRegion;
-            if (conf.filterRegion !== 'mean')
-                facets.facetValues = REGIONS.slice(0, -1);
+            if (conf.filterRegion === 'mean' || conf.viewMode === 'plane')
+                facets.facetValues = [...REGIONS, 'mean'];
         } else if (conf.facet === 'input') {
             facets.sortFacetValue = conf.sortingPlatform;
             facets.facetValues = PLATFORMS;
@@ -1583,6 +1644,11 @@ class ConfHandler {
             facets.facetValues = GAMEMODES;
             facetColors = [CMAP[conf.filterRegion], EXTRA_COLORS.QP];
         }
+        facets.facetValuesSelected = {
+            'mode': conf.selectedGameModes,
+            'region': conf.selectedRegions,
+            'input': conf.selectedPlatforms,
+        }[conf.facet];
         facets.facetCmap = Object.fromEntries(facets.facetValues.map((v, i) => [v, facetColors[i]]));
         return facets;
     }
@@ -1630,7 +1696,11 @@ function setupEventHandlers() {
 function toggleWarnings(conf) {
     const html = [
         [WARNINGS.cn, conf.chinaOn],
-        [WARNINGS.avg, conf.filterRegion === 'mean' || conf.sortFacetValue === 'mean'],
+        [WARNINGS.avg, (
+            conf.filterRegion === 'mean' ||
+            conf.sortFacetValue === 'mean' ||
+            conf.facetValuesSelected.has('mean')
+        )],
     ].map(
         ([text, cond]) => cond ? `<span class="trigger-info">${text}</span>` : null
     ).filter(t => t).join(' ┊ ');
@@ -1641,7 +1711,7 @@ function toggleWarnings(conf) {
 
 
 function setupColorTips() {
-    const vals = [...REGIONS.slice(0, -1), 'Console'];
+    const vals = [...REGIONS, 'Console'];
     UI.colorTips.innerHTML = vals.map(v => {
         return `<span style='color:${CMAP[v]}'>${v}</span>`
     }).join(', ');
@@ -1703,6 +1773,13 @@ function mobileFocusPlot(plotParent, focus = true, evt = null) {
 
 
 function inputElemValue(elem, set) {
+    if (elem.classList.contains('checkboxes')) {
+        const current = () => new Set([...elem.querySelectorAll('input[type=checkbox]:checked')].map(e => e.value));
+        if (set == null) return current();
+        set = new Set(set)
+        elem.querySelectorAll('input[type=checkbox]').forEach(e => e.checked = set.has(e.value));
+        return current();
+    }
     const attr = elem.type === 'checkbox' ? 'checked' : 'value';
     if (set != null) elem[attr] = set;
     return elem[attr];
