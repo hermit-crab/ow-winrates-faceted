@@ -1528,6 +1528,12 @@ class ConfHandler {
             conf => !conf.chinaOn && conf.selectedRegions.has('China'),
             conf => {conf.selectedRegions.delete('China'); alter('selectedRegions', conf.selectedRegions)}
             ], [
+            (conf, last) => last.cnExtra !== conf.cnExtra && conf.viewMode === 'plane' && conf.cnExtra,
+            conf => alert(WARNINGS.planekda)
+            ], [
+            conf => conf.viewMode === 'plane' && conf.cnExtra,
+            conf => alter('cnExtra', false)
+            ], [
             conf => !conf.chinaOn && conf.cnExtra,
             conf => alter('cnExtra', false)
             ], [
@@ -1545,12 +1551,6 @@ class ConfHandler {
             ], [
             conf => conf.viewMode === 'plane' && conf.facet === 'region' && conf.filterRegion !== 'all',
             conf => alter('filterRegion', 'all')
-            ], [
-            (conf, last) => last.cnExtra !== conf.cnExtra && conf.viewMode === 'plane' && conf.cnExtra,
-            conf => alert(WARNINGS.planekda)
-            ], [
-            conf => conf.viewMode === 'plane' && conf.cnExtra,
-            conf => alter('cnExtra', false)
             ], [
             conf => {
                 const fasets = this.getFacets(conf);
