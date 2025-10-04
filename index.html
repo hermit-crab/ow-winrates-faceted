@@ -1614,6 +1614,8 @@ class ConfHandler {
     _setDisabled() {
         const conf = this._conf;
         const facets = this.getFacets();
+        const cnElems = document.querySelectorAll('option[value="China"], input[value="China"]');
+        cnElems.forEach(el => el.disabled = false);
         this.elems.forEach(el => {
             el.disabled = false;
             el.querySelectorAll('option').forEach(el => el.disabled = false);
@@ -1651,9 +1653,8 @@ class ConfHandler {
         UI.sortingMode.disabled = conf.viewMode === 'plane' && conf.facet === 'tier';
         if (conf.viewMode === 'plane')
             [...this._sortElems[conf.facet].children].forEach(el => el.disabled = !facets.facetValuesSelected.has(el.value));
-        document.querySelectorAll('select option[value="China"], input[value="China"]').forEach(
-            elem => elem.disabled = elem.disabled || !conf.chinaOn
-        );
+        if (!conf.chinaOn)
+            cnElems.forEach(el => el.disabled = true);
         UI.cnExtra.disabled = !conf.chinaOn;
         if (conf.cnExtra)
             UI.filterRegion.disabled = true;
