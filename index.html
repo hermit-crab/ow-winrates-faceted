@@ -326,6 +326,9 @@ body {
     /* allow xtick tooltip overflow */
     overflow: visible;
 }
+.plot svg .hovertext path {
+    stroke-width: 0px !important;
+}
 
 /* bars */
 .entry .bar {
@@ -1189,7 +1192,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
 
         return {
             x: pluck(points, 'x'), y: pluck(points, 'y'),
-            name: ALT_NAMES[facetValue] || facetValue,
+            name: `<b>${ALT_NAMES[facetValue] || facetValue}</b>`,
             mode: 'lines+markers',
             line: {color: conf.facetCmap[facetValue], width: 1.2},
             marker: {size: size, symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
@@ -1226,6 +1229,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
         plot_bgcolor: '#0000',
         paper_bgcolor: '#0000',
         hovermode: 'x',
+        hoverlabel: {font: {size: 12}},
         dragmode: 'pan',
         xaxis: {
             range: [ALL_TIER_IDX, TIERS.length-1+.3],
@@ -1240,7 +1244,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
         },
         yaxis: {
             zeroline: false,
-            tickfont: {size: 10},
+            tickfont: {size: 10, color: '#0009'},
             ticklabelstandoff: 4,
             range: yrange.slice(),
             dtick: dtick,
