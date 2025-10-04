@@ -1641,6 +1641,9 @@ class ConfHandler {
             conf => conf.viewMode === 'bars' && conf.sortingMode === 'b-m-delta',
             conf => alter('sortingMode', 'all')
             ], [
+            conf => conf.viewMode === 'plane' && conf.sortingMode !== 'all' && !conf.sortingMode.startsWith('tier-'),
+            conf => alter('sortingMode', 'all')
+            ], [
             conf => conf.viewMode === 'plane' && conf.facet === 'region' && conf.filterRegion !== 'all',
             conf => alter('filterRegion', 'all')
             ], [
@@ -1720,8 +1723,14 @@ class ConfHandler {
             conf.viewMode === 'bars'
         );
         UI.sortingMode.disabled = conf.viewMode === 'plane' && conf.facet === 'tier';
-        if (conf.viewMode === 'plane')
-            [...this._sortElems[conf.facet].children].forEach(el => el.disabled = !facets.facetValuesSelected.has(el.value));
+        if (conf.viewMode === 'plane') {
+            [...this._sortElems[conf.facet].children].forEach(
+                el => el.disabled = !facets.facetValuesSelected.has(el.value)
+            );
+            [...UI.sortingMode.children].forEach(
+                el => el.disabled = el.value !== 'all' && !el.value.startsWith('tier-')
+            );
+        }
         if (!conf.chinaOn)
             cnElems.forEach(el => el.disabled = true);
         UI.cnExtra.disabled = !conf.chinaOn;
