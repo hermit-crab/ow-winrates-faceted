@@ -680,15 +680,15 @@ body {
         <select id='sortingGameMode'>
             <option class='fillModes'>...replaced via JS</option>
         </select>
+        <select id='sortingTier'>
+            <option class='fillTiers'>...replaced via JS</option>
+        </select>
         <select id='sortingColumn'>
             <option value='name'>Name</option>
             <option value='winrate' selected>Winrate</option>
             <option value='pickrate'>Pickrate</option>
             <option value='banrate'>Banrate</option>
             <option value='kda'>KDA</option>
-        </select>
-        <select id='sortingTiers'>
-            <option class='fillTiers'>...replaced via JS</option>
         </select>
         <label class='sorting-reversed'>
             <input type='checkbox' id='sortingReverse' checked></input>Reversed
@@ -1507,7 +1507,7 @@ class ConfHandler {
             'region': UI.sortingRegion,
             'input': UI.sortingPlatform,
             'mode': UI.sortingGameMode,
-            'tier': UI.sortingTiers,
+            'tier': UI.sortingTier,
         };
         this._firstSync = true;
         this.sync(false);
@@ -1545,7 +1545,7 @@ class ConfHandler {
             ['option.fillModes', toOptions(addTitle(GAMEMODES))],
             ['option.fillRoles', toOptions(ROLES.map(v => [v, capit(v)]))],
             ['#sortingMode option.fillTiers', toOptions(TIERS.map(v => [`tier-${v}`, `:${ALT_NAMES[v] || v}`]))],
-            ['#sortingTiers option.fillTiers', toOptions(addTitle(['All', ...TIERS]))],
+            ['#sortingTier option.fillTiers', toOptions(addTitle(['All', ...TIERS]))],
             ['checkbox.fillRegions', toChboxes(addTitle(REGIONS))],
             ['checkbox.fillPlatforms', toChboxes(addTitle(PLATFORMS))],
             ['checkbox.fillModes', toChboxes(addTitle(GAMEMODES))],
@@ -1697,7 +1697,7 @@ class ConfHandler {
             'region': [UI.sortingRegion, UI.selectedRegions],
             'input': [UI.sortingPlatform, UI.selectedPlatforms],
             'mode': [UI.sortingGameMode, UI.selectedGameModes],
-            'tier': [UI.sortingTiers, UI.selectedTiers],
+            'tier': [UI.sortingTier, UI.selectedTiers],
         }).forEach(([f, elems]) => {
             elems.forEach(el => {
                 el.classList.toggle('hidden', conf.facet !== f);
