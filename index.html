@@ -429,12 +429,10 @@ body {
     max-width: 1000px;
     flex-shrink: 0;
     padding: 0 40px 0 75px;
-    /* box-shadow: 0 0 0 1px red inset; */
     margin-bottom: 100px;
 }
 #planeplot {
-    /* box-shadow: 0 0 0 1px green inset; */
-    height: 100%;
+    flex-grow: 1;
 }
 #plane .border {
     height: 100%;
@@ -458,11 +456,40 @@ body {
     transform: scale(.9);
 }
 
+/* stacked pr bar */
+#stackedPRBar {
+    width: 10px;
+    height: 100%;
+}
+#stackedPRBar .bar {
+    width: 100%;
+    position: relative;
+    box-shadow: 0 -1px 0 #fff6 inset;
+}
+#stackedPRBar .bar .tooltip {
+    display: none;
+    position: absolute;
+    top: 0px;
+    font-size: 80%;
+    color: #666;
+    right: 9px;
+    background-color: #fff;
+    text-wrap: nowrap;
+    padding-left: 3px;
+}
+#stackedPRBar .bar:hover .tooltip {
+    display: block;
+}
+#stackedPRBar .bar .tooltip .extra {
+    display: inline-block;
+    padding: 3px 5px;
+}
+
 /* viewmode conditional */
 .viewmode-bars .entry .bar {display: flex;}
 .viewmode-plots .entry .plot {display: block;}
 .viewmode-plane #plots, .viewmode-plane .col-titles {display: none;}
-.viewmode-plane #plane {display: block;}
+.viewmode-plane #plane {display: flex;}
 .viewmode-plane .plane-conf {display: flex;}
 
 /* -- PC -- */
@@ -704,7 +731,7 @@ body {
         <label><input id='planeMarkerColor' type='checkbox'/>Dot Color</label>
     </div>
 </div>
-<div id='plane'><div class='border'></div><div id='planeplot'>Loading...</div></div>
+<div id='plane'><div class='border'></div><div id='planeplot'>Loading...</div><div id='stackedPRBar'></div></div>
 
 </div>
 
@@ -998,6 +1025,7 @@ function render() {
     // (render plane plot and exit)
     if (conf.viewMode === 'plane') {
         renderPlanePlot(name2entries, conf);
+        renderStackedPRBar(name2entries, conf);
         return;
     }
 
@@ -1399,6 +1427,42 @@ function renderPlanePlot(name2entries, conf) {
         UI.planeplot.on('plotly_hover', fn);
         UI.planeplot.on('plotly_click', fn);
     }
+}
+
+
+function renderStackedPRBar(name2entries, conf) {
+    if (conf.filterRole === 'all' || !conf.facetValuesSelected.size) {
+        UI.stackedPRBar.innerHTML = '';
+        return;
+    }
+    let entries = Object.entries(name2entries).map(([name, entries]) => {
+        entries = entries.filter(e => (
+            e[conf.facet] === conf.sortFacetValue && (e.tier === conf.lastTier || conf.facet === 'tier'))
+        );
+        if (entries.length > 1) throw new Error('unexpected multiple entries after filter');
+        if (!entries.length) return;
+        const e = entries[0];
+        const hero = heroes[name];
+        return {
+            pr: e.pickrate,
+            pct: e.pickrate / (hero.role === 'tank' ? 100 : 200),
+            avg: Math.round(e.pickrate / expectedBase.pr[hero.role] * 10)/10,
+            name: hero.name,
+            color: hero.color,
+        };
+    });
+    entries = sortBy(entries, e => -e.pr);
+    const fcolor = conf.facetCmap[conf.sortFacetValue];
+    UI.stackedPRBar.innerHTML = entries.map((e, i) =>
+        `<div class='bar' style='height:${e.pct*100}%;background-color:${e.color}88;'>
+            <div class='tooltip'>
+                <b>${e.name} <span style='color:${fcolor}'>${conf.sortFacetValue}</style></b>
+                <span class='extra' style='box-shadow:0 0 0 1px ${e.color}88 inset'>
+                    Pr <b>${e.pr}</b>%(${e.avg} Avg.)
+                </span>
+            </div>
+        </div>`
+    ).join('');
 }
 
 
