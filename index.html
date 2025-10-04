@@ -1457,10 +1457,11 @@ function renderStackedPRBar(name2entries, conf) {
     });
     entries = sortBy(entries, e => -e.pr);
     const fcolor = conf.facetCmap[conf.sortFacetValue];
+    const fname = ALT_NAMES[conf.sortFacetValue] || conf.sortFacetValue;
     UI.stackedPRBar.innerHTML = entries.map((e, i) =>
         `<div class='bar' style='height:${e.pct*100}%;background-color:${e.color}88;'>
             <div class='tooltip'>
-                <b>${e.name} <span style='color:${fcolor}'>${conf.sortFacetValue}</style></b>
+                <b>${e.name} <span style='color:${fcolor}'>${fname}</span></b>
                 <span class='extra' style='box-shadow:0 0 0 1px ${e.color}88 inset'>
                     Pr <b>${e.pr}</b>%(${e.avg} Avg.)
                 </span>
