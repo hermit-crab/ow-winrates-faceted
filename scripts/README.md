@@ -3,7 +3,7 @@ Data refreshment process is setup as such:
 
 Manual process is done like so:
 - To get the data: `update-data.py myresultfile.js`
-- Uploaded manually or via: `upload.sh myresultfile.js winrates-data.js`
+- Uploaded manually or via: `upload.sh myresultfile.js winrate-data.js`
 
 Envitonment variables: `NEOCITIES_APIKEY`
 

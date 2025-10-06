@@ -163,7 +163,7 @@ def main():
         print('==x CN crawl failure')
         traceback.print_exc()
 
-    dest = sys.argv[1] if sys.argv[1:] else 'winrates-data.js'
+    dest = sys.argv[1] if sys.argv[1:] else 'winrate-data.new.js'
     with open(dest, 'w', encoding='utf8') as f:
         f.write('jsonp(' + json.dumps(facets) + ')')
 
