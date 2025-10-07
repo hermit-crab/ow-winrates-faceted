@@ -743,6 +743,7 @@ body {
     </div>
     <div class='conf-block'>
         <label><input id='planeMarkerColor' type='checkbox'/>Dot Color</label>
+        <label><input id='planeZoomPr' type='checkbox' checked/>Zoom PR</label>
     </div>
 </div>
 <div id='plane'><div class='border'></div><div id='planeplot'>Loading...</div><div id='stackedPRBar'></div></div>
@@ -1269,7 +1270,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
 
 
 function renderPlanePlot(name2entries, conf) {
-    const [xrange, yrange] = [[40, 60], [0, 2.3]];
+    const [xrange, yrange] = [[40, 60], [0, conf.planeZoomPr ? 2.3 : 3.1]];
     const [xl, yl] = [(xrange[1]-xrange[0]), (yrange[1]-yrange[0])];
     const xmargin = 16;
     const bbox = UI.planeplot.getBoundingClientRect();
