@@ -762,7 +762,7 @@ const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Gra
 // const SD_TIERS = ['Rookie', 'Novice', 'Contender', 'Elite', 'Pro', 'AllStar', 'Legend'];
 const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8ae960', '#8d71fe'];
 const REGIONS = ['Americas', 'Europe', 'Asia', 'China'];
-const REGION_COLORS = ['#f14141', '#3c90ff', '#ffac00', '#58d986', 'black'];
+const REGION_COLORS = ['#f14141', '#3c90ff', '#ffac00', '#58d986'];
 const PLATFORMS = ['PC', 'Console'];
 const GAMEMODES = ['Comp', 'QP'];
 const EXTRA_COLORS = {
@@ -1754,7 +1754,7 @@ class ConfHandler {
         let facetColors, facets = {};
         if (conf.facet === 'region') {
             facets.facetValues = REGIONS;
-            facetColors = REGION_COLORS;
+            facetColors = [...REGION_COLORS, CMAP.mean];
             if (conf.filterRegion === 'mean' || conf.viewMode === 'plane')
                 facets.facetValues = [...REGIONS, 'mean'];
         } else if (conf.facet === 'input') {
