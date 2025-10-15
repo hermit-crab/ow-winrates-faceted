@@ -610,14 +610,7 @@ body {
             <li>Nicer post-processed long form variable: <code>allEntries</code></li>
         </ul></span></li>
 
-        <li class='spoiler'><span class='clicker'><b>Archive</b></span><span class='spoiler-body'><ul>
-            <li>Last <a href='?dataset=winrate-data.bak'>backup view</a> (typically previous day).</li>
-            <li>Archived view:
-                <a href='?dataset=archive/owwr/winrate-data.s18-mid'>S18-mid*</a>,
-                <a href='?dataset=archive/owwr/winrate-data.initial'>Initial*</a>
-            </li>
-            <li>*S18-mid: (no QP, no Console).</li>
-            <li>*Initial: (no QP) stats initial release, some span of S17.</li>
+        <li class='spoiler' id='archiveInfo' style='display:none'><span class='clicker'><b>Archive</b></span><span class='spoiler-body'><ul>
         </ul></span></li>
 
     </ul>
@@ -771,8 +764,9 @@ const EXTRA_COLORS = {
     mean: 'black', allTiers: 'black'
 };
 const ROLES = ['support', 'tank', 'damage'];
-const LOCAL_JSONP_SRC = 'winrate-data.js';
-const EXTERNAL_JSONP_SRC = 'https://hermit-crab.neocities.org/winrate-data.js';
+const DATASET_FPATH = 'winrate-data.js';
+const ARCHIVE_FPATH = 'archive/owwr/archive-info.js'; // does not need to exist
+const EXTERNAL_FPATH_BASE = 'https://hermit-crab.neocities.org/';
 const ALL_TIER_IDX = -.5;
 const ALT_NAMES = {'PC': 'KB&M', 'mean': '*Average', 'Grandmaster': 'GM+'};
 const VALTYPES = ['name', 'winrate', 'pickrate', 'kda', 'banrate'];
@@ -823,8 +817,9 @@ function setup() {
     confHandler = new ConfHandler();
     setupEventHandlers();
     setupColorTips();
+    loadArchiveInfo(localStorage.uselocal ? ARCHIVE_FPATH : EXTERNAL_FPATH_BASE + ARCHIVE_FPATH);
 
-    let datasetUrl = localStorage.uselocal ? LOCAL_JSONP_SRC : EXTERNAL_JSONP_SRC;
+    let datasetUrl = localStorage.uselocal ? DATASET_FPATH : EXTERNAL_FPATH_BASE + DATASET_FPATH;
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('dataset'))
         datasetUrl = datasetUrl.replace('winrate-data', urlParams.get('dataset'));
@@ -833,20 +828,27 @@ function setup() {
 }
 
 
-function loadData(jsonpSrc) {
+function loadJonp(jsonpSrc, errorCb) {
     const script = document.createElement('script');
     script.type = 'text/javascript';
     // allow retrieval from cache only within an hour
     script.src = jsonpSrc + '?nocache=' + parseInt(Date.now()/1000/60/60);
-    script.addEventListener('error', () => {
-        UI.plots.innerHTML = UI.planeplot.innerHTML = `Failed loading data from ${jsonpSrc}.`;
-    });
+    if (errorCb)
+        script.addEventListener('error', errorCb);
     document.body.appendChild(script);
 }
 
 
+function loadData(jsonpSrc) {
+    loadJonp(jsonpSrc, () => {
+        UI.plots.innerHTML = UI.planeplot.innerHTML = `Failed loading data from ${jsonpSrc}.`;
+    });
+}
+
+
 function jsonp(data) {
-    receiveRawData(data);
+    if (data.type === 'archive-info') receiveArchiveInfo(data.html);
+    else receiveRawData(data);
 }
 
 
@@ -1840,6 +1842,17 @@ function setupColorTips() {
     UI.colorTips.innerHTML = vals.map(v => {
         return `<span style='color:${CMAP[v]}'>${v}</span>`
     }).join(', ');
+}
+
+
+function loadArchiveInfo(jsonpSrc) {
+    loadJonp(jsonpSrc);
+}
+
+
+function receiveArchiveInfo(html) {
+    UI.archiveInfo.style.display = '';
+    UI.archiveInfo.querySelector('ul').innerHTML = html;
 }
 
 
