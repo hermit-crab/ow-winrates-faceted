@@ -64,6 +64,7 @@ body {
     opacity: .5;
     text-align: center;
     line-height: 120%;
+    padding-bottom: 3px;
 }
 
 /* -- conf+info box -- */
@@ -558,6 +559,7 @@ body {
 <div class='info-popup hidden'>
     <button id='infoPopupClose'>x</button>
     <ul>
+        <li>Dataset is refreshed daily from <a href='https://overwatch.blizzard.com/en-us/rates/'>official source</a>.</li>
         <li>Line colors: <span id='colorTips'></span>.</li>
 
         <li><b>Hover</b> (or click on mobile) on any plot to see exact values and legend at near position.</li>
@@ -631,7 +633,7 @@ body {
         <select id='viewMode'>
             <option value='plots' selected>Curves</option>
             <option value='bars'>Bars</option>
-            <option value='plane'>Plane</option>
+            <option value='plane'>Scatter</option>
         </select>
     </div>
     <div class='conf-block facet-block'>
@@ -664,7 +666,7 @@ body {
             <input type='checkbox' id='chinaOn'></input>On
         </label>
         <label title='Show KDA/Banrates'>
-            <input type='checkbox' id='cnExtra'></input>More
+            <input type='checkbox' id='cnExtra'></input>KD/Ban
         </label>
     </div>
     <div class='conf-block'>
@@ -1598,7 +1600,7 @@ class ConfHandler {
             ['checkbox.fillTiers', toChboxes(addTitle(['All', ...TIERS]))],
         ].forEach(([s, html]) => document.querySelectorAll(s).forEach(e => e.outerHTML = html));
         UI.sortingRegion.value = REGIONS[0];
-        inputElemValue(UI.selectedRegions, ['Americas', 'Asia']);
+        inputElemValue(UI.selectedRegions, ['Americas']);
         inputElemValue(UI.selectedTiers, ['Gold', 'Diamond', 'Master']);
     }
     _setUrlHash() {
