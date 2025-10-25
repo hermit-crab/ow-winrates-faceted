@@ -1460,6 +1460,10 @@ function renderPlanePlot(name2entries, conf) {
         ],
     }, {displayModeBar: false, doubleClick: 'reset'});
 
+    // fix zoom reset ignoring conf.planeZoomPr
+    // (Plotly does not update this when .react() is called)
+    UI.planeplot._fullLayout.xaxis._rangeInitial1 = xrange[1];
+
     if (!UI.planeplot._hoverBound) {
         UI.planeplot._hoverBound = true;
         const fn = data => {
