@@ -1499,7 +1499,7 @@ function renderStackedPRBar(name2entries, conf) {
             pct: e.pickrate / (hero.role === 'tank' ? 100 : 200),
             avg: Math.round(e.pickrate / expectedBase.pr[hero.role] * 10)/10,
             name: hero.name,
-            color: hero.color,
+            color: CMAP[name] || hero.color,
         };
     });
     entries = sortBy(entries, e => -e.pr);
