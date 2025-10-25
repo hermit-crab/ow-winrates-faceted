@@ -425,8 +425,9 @@ body {
 /* plane */
 #plane {
     display: none;
+    flex-direction: column;
     position: relative;
-    aspect-ratio: 10/7;
+    aspect-ratio: 11/8;
     width: 90%;
     min-width: 600px;
     max-width: 1000px;
@@ -438,7 +439,6 @@ body {
     flex-grow: 1;
 }
 #plane .border {
-    height: 100%;
     top: 0;
     left: 75px;
     box-shadow: 0 0 3px #0000004c inset;
@@ -461,21 +461,22 @@ body {
 
 /* stacked pr bar */
 #stackedPRBar {
-    width: 10px;
-    height: 100%;
+    height: 12px;
+    margin-top: 30px;
+    display: flex;
+    position: relative;
 }
 #stackedPRBar .bar {
-    width: 100%;
+    height: 100%;
     position: relative;
-    box-shadow: 0 -1px 0 #fff6 inset;
+    box-shadow: -1px 0 0 #fff6 inset;
 }
 #stackedPRBar .bar .tooltip {
     display: none;
     position: absolute;
-    top: 0px;
+    bottom: 12px;
     font-size: 80%;
     color: #666;
-    right: 9px;
     background-color: #fff;
     text-wrap: nowrap;
     padding-left: 3px;
@@ -1272,7 +1273,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
 
 
 function renderPlanePlot(name2entries, conf) {
-    const [xrange, yrange] = [[40, 60], [0, conf.planeZoomPr ? 2.3 : 3.1]];
+    const [xrange, yrange] = [[0, conf.planeZoomPr ? 2.3 : 3.1], [40, 60]];
     const [xl, yl] = [(xrange[1]-xrange[0]), (yrange[1]-yrange[0])];
     const xmargin = 16;
     const bbox = UI.planeplot.getBoundingClientRect();
@@ -1298,8 +1299,8 @@ function renderPlanePlot(name2entries, conf) {
             const entry = selected[0];
             if (!entry || entry.winrate === -1 || entry.pickrate === -1) return;
             return {
-                x: entry.winrate,
-                y: entry.pickrate / expectedBase.pr[hero.role],
+                x: entry.pickrate / expectedBase.pr[hero.role],
+                y: entry.winrate,
                 pr: entry.pickrate,
                 fc: conf.facetCmap[facetValue],
                 fname: facetValue,
@@ -1323,13 +1324,13 @@ function renderPlanePlot(name2entries, conf) {
             size: points.map((_, i) => (i === mainIdx) ? 6 : 4),
             hover: points.map(p =>
                 `<extra><b style='color:#666'>${hero.name}</b> <b style='color:${p.fc}'>${ALT_NAMES[p.fname] || p.fname}</b></extra>` +
-                `Wr <b>${p.x}</b>%  Pr <b>${p.pr}</b>%(${round1p(p.y)} Avg.)`
+                `Win <b>${p.y}</b>%  Pick <b>${p.pr}</b>%(${round1p(p.x)} Avg.)`
             ),
         };
     });
 
     // Algo to find better annotation positions:
-    // repell over y, snap to above or below marker, repell again
+    // repell over y -> snap to above or below marker -> repell again
     function repell(n) {
         Array.from({length: n}).forEach(_ => {lines.forEach(a => {lines.forEach(b => {
             if (b === a || a.xt == null || b.xt == null || a.y > yrange[1]) return;
@@ -1341,9 +1342,15 @@ function renderPlanePlot(name2entries, conf) {
         }); }); });
     }
     repell(5);
-    lines.forEach(l => { l.yt = l.yc + (pixr[1]*13*(l.yt - l.yc > 0 ? 1 : -1)); });
+    lines.forEach(l => {
+        let dir = l.yt - l.yc > 0 ? 1 : -1;
+        if (l.y < yrange[0]+limPad[1]) dir = 1;
+        l.yt = l.yc + pixr[1]*13*dir;
+    });
     repell(5);
 
+    const yticks = Array.from({length: 21}).map((_, i) => i*5).filter(v => !yrange.includes(v));
+    const tickfont = {size: 12, color: 'rgba(0,0,0,0.6)'};
     Plotly.react(UI.planeplot, lines.flatMap(l => {
         let traces = [{
             // Solid line from text to point (when out of bounds)
@@ -1388,11 +1395,11 @@ function renderPlanePlot(name2entries, conf) {
             range: yrange,
             zeroline: false,
             showgrid: false,
-            ticklen: 5,
+            ticklen: 2,
             tickcolor: '#0000',
-            tickvals: [1, 2, 3],
-            ticktext: ['Role Avg.<br><b>PICKRATE</b>', '2X Avg.', '3X Avg.'],
-            tickfont: {size: 12, color: 'rgba(0,0,0,0.6)'},
+            tickvals: yticks,
+            ticktext: yticks.map(v => `${v}%` + (v === 50 ? '<br><b>WINRATE</b>' : '')),
+            tickfont: tickfont,
         },
         xaxis: {
             range: xrange,
@@ -1400,30 +1407,43 @@ function renderPlanePlot(name2entries, conf) {
             zeroline: false,
             ticklen: 1,
             tickcolor: '#0000',
-            tickvals: Array.from({length: 21}).map((_, i) => i*5),
-            ticktext: Array.from({length: 21}).map((_, i) => `${i*5}%` + (i === 10 ? '<br><b>WINRATE</b>' : '')),
-            tickfont: {size: 12, color: 'rgba(0,0,0,0.6)'},
+            tickvals: [1, 2, 3],
+            ticktext: ['Role Avg. <b>PICKRATE</b>', '2X Avg.', '3X Avg.'],
+            tickfont: tickfont,
         },
         shapes: [
         ...[
-            [[0, 100, 1, 1], 1, 1.5, 'dot'],
-            [[50, 50, -100, 100], 1, 1.5, 'dot'],
-            [[50, 50, -100, 100], 1, 1.5, 'dot'],
-            [[0, 100, 2, 2], .2, .5, 'dash'],
-            [[0, 100, 3, 3], .2, .5, 'dash'],
-            [[45, 45, -100, 100], .2, .5, 'dash'],
-            [[55, 55, -100, 100], .2, .5, 'dash'],
-            [[-100, 100, 0, 0], .2, .5, 'solid'],
+            [[0, 0, -100, 100], .2, .5, 'solid'],
+            [[1, 1, 0, 100,], 1, 1.5, 'dot'],
+            [[2, 2, 0, 100], .2, .5, 'dash'],
+            [[3, 3, 0, 100], .2, .5, 'dash'],
+            [[-100, 100, 50, 50], 1, 1.5, 'dot'],
+            [[-100, 100, 50, 50], 1, 1.5, 'dot'],
+            [[-100, 100, 45, 45], .2, .5, 'dash'],
+            [[-100, 100, 55, 55], .2, .5, 'dash'],
         ].map(([c, o, w, dash]) => ({
             type: 'line', x0: c[0], x1: c[1], y0: c[2], y1: c[3], opacity: o,
             line: {color: 'black', width: w, dash: dash}, layer: 'between',
         }))],
-        annotations: [{
-            xref: 'x', yref: 'y', x: xrange[0]+xl/2+quadPad[0], y: yrange[0]+quadPad[1],
+        annotations: [
+
+        {
+            xref: 'x', yref: 'y', x: 1+quadPad[0], y: yrange[0]+quadPad[1],
             xanchor: 'left', yanchor: 'bottom',
             text: `Rank: <span  style="background-color: yellow; padding: 2px;">${ALT_NAMES[conf.lastTier] || conf.lastTier}</span>`,
             opacity: conf.facet !== 'tier' ? .3 : 0, showarrow: false, font: {size: 11, weight: 600},
         },
+
+        ...[
+            [yrange[0], 'bottom'],
+            [yrange[1], 'top']
+        ].map(([val, align]) => ({
+            // we build yaxis limit ticks via annotations to be able to align them to edges
+            xref: 'paper', yref: 'y', x: 0, y: val,
+            xanchor: 'right', yanchor: align, text: `${val}%`,
+            xshift: -4, showarrow: false, font: {size: 12, color: 'rgba(0,0,0,0.6)'},
+        })),
+
         ...[
             [xrange[0]+quadPad[0], yrange[0]+quadPad[1], 'LOW', 'LOW', 'left', 'bottom'],
             [xrange[0]+quadPad[0], yrange[1]-quadPad[1], 'LOW', 'HIGH', 'left', 'top'],
@@ -1431,9 +1451,11 @@ function renderPlanePlot(name2entries, conf) {
             [xrange[1]-quadPad[0], yrange[1]-quadPad[1], 'HIGH', 'HIGH', 'right', 'top'],
         ].map(a => ({
             xref: 'x', yref: 'y', x: a[0], y: a[1], xanchor: a[4], yanchor: a[5], text:
-                `<span style="color:${quadCmap[a[2]]}">${a[2]} WIN</span>  <span style="color:${quadCmap[a[3]]}">${a[3]} PICK</span>`,
+                `<span style="color:${quadCmap[a[2]]}">${a[2]} PICK</span>  <span style="color:${quadCmap[a[3]]}">${a[3]} WIN</span>`,
             opacity: .3, showarrow: false, font: {size: 12, weight: 600},
-        }))],
+        }))
+
+        ],
     }, {displayModeBar: false, doubleClick: 'reset'});
 
     if (!UI.planeplot._hoverBound) {
@@ -1453,6 +1475,11 @@ function renderStackedPRBar(name2entries, conf) {
         UI.stackedPRBar.innerHTML = '';
         return;
     }
+
+    const planeBorderElem = UI.plane.querySelector('.border');
+    UI.stackedPRBar.style.width = planeBorderElem.style.width;
+    UI.stackedPRBar.style.left = planeBorderElem.style.marginLeft;
+
     let entries = Object.entries(name2entries).map(([name, entries]) => {
         entries = entries.filter(e => (
             e[conf.facet] === conf.sortFacetValue && (e.tier === conf.lastTier || conf.facet === 'tier'))
@@ -1470,14 +1497,19 @@ function renderStackedPRBar(name2entries, conf) {
         };
     });
     entries = sortBy(entries, e => -e.pr);
+    entries.forEach((e, i) => e.cum = (i ? entries[i-1].cum : 0) + e.pct);
     const fcolor = conf.facetCmap[conf.sortFacetValue];
     const fname = ALT_NAMES[conf.sortFacetValue] || conf.sortFacetValue;
     UI.stackedPRBar.innerHTML = entries.map((e, i) =>
-        `<div class='bar' style='height:${e.pct*100}%;background-color:${e.color}88;'>
-            <div class='tooltip'>
+        `<div class='bar' style='width:${e.pct*100}%;background-color:${e.color}88;'>
+            <div class='tooltip' style='
+                box-shadow:0 0 0 1px ${e.color}88 inset;
+                ${e.cum < .5 ? 'left:0' : 'right:1px'};
+                border-${e.cum < .5 ? 'left' : 'right'}:2px solid ${e.color}88;
+            '>
                 <b>${e.name} <span style='color:${fcolor}'>${fname}</span></b>
-                <span class='extra' style='box-shadow:0 0 0 1px ${e.color}88 inset'>
-                    Pr <b>${e.pr}</b>%(${e.avg} Avg.)
+                <span class='extra' style='background-color:${e.color}00'>
+                    Pick <b>${e.pr}</b>%(${e.avg} Avg.)
                 </span>
             </div>
         </div>`
