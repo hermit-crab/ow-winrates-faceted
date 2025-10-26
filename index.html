@@ -1926,7 +1926,7 @@ function toggleWarnings(conf) {
         [WARNINGS.avg, (
             conf.filterRegion === 'mean' ||
             conf.sortFacetValue === 'mean' ||
-            conf.facetValuesSelected.has('mean')
+            (conf.viewMode === 'plane' && conf.facetValuesSelected.has('mean'))
         )],
     ].map(
         ([text, cond]) => cond ? `<span class="trigger-info">${text}</span>` : null
