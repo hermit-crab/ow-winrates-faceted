@@ -612,7 +612,7 @@ body {
             <li>Corresponding page variables: <code>rawData</code>, <code>allEntries</code> (post-processed long form).</li>
         </ul></span></li>
 
-        <li class='spoiler' id='archiveInfo' style='display:none'><span class='clicker'><b>Archive</b></span><span class='spoiler-body'><ul>
+        <li class='spoiler' id='archiveInfo' style='display:none'><span class='clicker'><b>Archive</b> info</span><span class='spoiler-body'><ul>
         </ul></span></li>
 
     </ul>
@@ -700,16 +700,24 @@ body {
             <input type='checkbox' id='sortingReverse' checked></input>Reversed
         </label>
     </div>
+    <div class='conf-block' style='display:none'>
+        <div class='conf-title'>Archive</div>
+        <select id='selectArchive'>
+            <option value='current'>Current</option>
+            <option class='fillArchive'>...replaced via JS</option>
+        </select>
+    </div>
 </div>
 
 <div class='info'>
     <button class='trigger-info'>legend and info ★</button> ┊
-    data refreshed: <span id='datasetTs'></span> ┊
+    data timestamp: <span id='datasetTs'></span> ┊
     <a href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
     <a href='https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog'>report issue</a>
 </div>
 <div class='warnings hidden'></div>
 </div>
+<div id='loadingInfo'>Loading...</div>
 
 <div class='col-titles'>
     <div class='col-title nm' data-sort='name'><span>Hero</span></div>
@@ -724,7 +732,7 @@ body {
         <option class='extra' value='br'>Banrate</option>
     </select>
 </div>
-<div id='plots'>Loading...</div>
+<div id='plots'></div>
 
 <div class='conf plane-conf'>
     <div class='conf-block'>
@@ -741,7 +749,7 @@ body {
         <label><input id='planeZoomPr' type='checkbox' checked/>Zoom PR</label>
     </div>
 </div>
-<div id='plane'><div class='border'></div><div id='planeplot'>Loading...</div><div id='stackedPRBar'></div></div>
+<div id='plane'><div class='border'></div><div id='planeplot'></div><div id='stackedPRBar'></div></div>
 
 </div>
 
@@ -776,8 +784,9 @@ const VALTYPES_SHORT = ['nm', 'wr', 'pr', 'kd', 'br'];
 const WARNINGS = {
     cn: 'see notes about CN data',
     avg: 'synthetic unweighted *Average',
-    planekda: 'Not supported in Plane-view.',
+    planekda: 'Not supported in Scatter-view.',
 };
+const DEBUG = false;
 
 const UI = Object.fromEntries([...document.querySelectorAll('*[id]')].map(e => [e.id, e]));
 const CMAP = Object.fromEntries([
@@ -808,8 +817,8 @@ const layoutConf = {
         bar: {general: [1.5, 6], damage: [1.5, 4]},
     },
 };
-let rawData, heroes, allEntries, regionMeans, regionMeansWithCN, confHandler,
-    pressedKeys = new Set(), expectedBase = {};
+let rawData, heroes, regionMeans, regionMeansWithCN, confHandler, datasetTs, fpathBase,
+    loadingData = true, pressedKeys = new Set(), expectedBase = {}, allEntries = [];
 
 
 function setup() {
@@ -819,12 +828,16 @@ function setup() {
     confHandler = new ConfHandler();
     setupEventHandlers();
     setupColorTips();
-    loadArchiveInfo(localStorage.uselocal ? ARCHIVE_FPATH : EXTERNAL_FPATH_BASE + ARCHIVE_FPATH);
 
-    let datasetUrl = localStorage.uselocal ? DATASET_FPATH : EXTERNAL_FPATH_BASE + DATASET_FPATH;
+    fpathBase = localStorage.uselocal ? '' :  EXTERNAL_FPATH_BASE;
+    let datasetUrl = fpathBase + DATASET_FPATH;
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('dataset'))
         datasetUrl = datasetUrl.replace('winrate-data', urlParams.get('dataset'));
+    else
+        loadArchiveInfo(fpathBase + ARCHIVE_FPATH);
+
     UI.datasetLink.href = datasetUrl;
     loadData(datasetUrl);
 }
@@ -842,33 +855,47 @@ function loadJonp(jsonpSrc, errorCb) {
 
 
 function loadData(jsonpSrc) {
+    loadingData = true;
     loadJonp(jsonpSrc, () => {
-        UI.plots.innerHTML = UI.planeplot.innerHTML = `Failed loading data from ${jsonpSrc}.`;
+        debug('NO DATA', jsonpSrc);
+        UI.loadingInfo.innerHTML = `Failed loading data from ${jsonpSrc}.`;
+        UI.loadingInfo.style.display = '';
+        UI.datasetTs.innerHTML = 'no data';
+        datasetTs = rawData = null;
+        allEntries = regionMeans = regionMeansWithCN = [];
+        loadingData = false;
+        confHandler.sync(false);
     });
 }
 
 
 function jsonp(data) {
-    if (data.type === 'archive-info') receiveArchiveInfo(data.html);
+    debug('JSONP', data?.type, data[0] && data[0]?._ts);
+    if (data.type === 'archive-info') receiveArchiveInfo(data);
     else receiveRawData(data);
 }
 
 
 function receiveRawData(data) {
+    const firstLoad = !rawData;
     rawData = data;
-    [heroes, allEntries] = processRawData(rawData);
+    const processed = processRawData(rawData);
+    if (firstLoad) heroes = processed[0];
+    allEntries = processed[1];
     regionMeans = computeRegionMeans(allEntries.filter(e => e.region !== 'China'));
     regionMeansWithCN = computeRegionMeans(allEntries);
     expectedBase.pr = Object.fromEntries(ROLES.map(role =>
         [role, (role === 'tank' ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
     ));
     expectedBase.br = 400 / Object.keys(heroes).length;
-    const dataTs = rawData[0]._ts;
-    UI.datasetTs.innerHTML = moment(dataTs * 1000).fromNow();
-    UI.datasetTs.title = moment(dataTs * 1000).toString();
-    UI.planeplot.innerHTML = '';
-    renderHeroes();
-    render();
+    datasetTs = rawData[0]._ts;
+    UI.datasetTs.innerHTML = moment(datasetTs * 1000).fromNow();
+    UI.datasetTs.title = moment(datasetTs * 1000).toString();
+    UI.loadingInfo.style.display = 'none';
+    UI.loadingInfo.innerHTML = '';
+    loadingData = false;
+    if (firstLoad) renderHeroes();
+    confHandler.sync();
 }
 
 
@@ -986,6 +1013,7 @@ function renderHeroes() {
 
 function render() {
     const conf = confHandler.frozenConf();
+    debug('RENDER', datasetTs && moment(datasetTs*1000).toString(), conf);
     let entries = [...allEntries, ...(conf.chinaOn ? regionMeansWithCN : regionMeans)];
 
     // ==> Filter entries
@@ -1049,7 +1077,7 @@ function render() {
     }
 
     // ==> Update plots
-    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.cnExtra].join(',');
+    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.cnExtra, datasetTs].join(',');
     names.forEach((name, idx) => {
         const hero = heroes[name];
         hero.elems.main.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
@@ -1573,7 +1601,7 @@ class ConfHandler {
             this._loadUrlHash();
         }
         this._applyRules(oldConf);
-        this._setDisabled();
+        this._setDisabled(oldConf);
         this._applyEffects(oldConf);
         this._setUrlHash();
 
@@ -1582,8 +1610,20 @@ class ConfHandler {
         if (conf.sortingMode.includes('tier-')) this.lastTier = conf.sortingMode.slice(5);
 
         this.regionMeanView = (conf.filterRegion === 'mean' && conf.facet === 'region');
+        debug('SYNC', {doRender: doRender, loadingData: loadingData}, conf);
 
-        if (doRender) render();
+        if (oldConf.selectArchive !== conf.selectArchive)
+            loadArchiveData(this._archive[conf.selectArchive]);
+        else if (doRender && !loadingData) render();
+    }
+    setArchive(entries) {
+        this._archive = Object.fromEntries(entries.map(e => [e.id, e.fpath]));
+        this._archive.current = DATASET_FPATH.replace(/.js$/, '');
+        UI.selectArchive.children[1].outerHTML = entries.map(e => `<option value='${e.id}'>${e.name}</option>`).join('\n');
+        if (this._selectArchive && this._archive[this._selectArchive]) {
+            inputElemValue(UI.selectArchive, this._selectArchive);
+            this.sync(false);
+        }
     }
     _fillFacetOptions() {
         const capit = v => v.charAt(0).toUpperCase() + v.slice(1);
@@ -1622,6 +1662,11 @@ class ConfHandler {
             if (!UI[k]) return;
             if (UI[k].classList.contains('checkboxes')) v = new Set(v.split(','));
             if (UI[k].type === 'checkbox') v = {'true': true, 'false': false}[v];
+            if (k === 'selectArchive') {
+                // we have no archive entries yet so need to stash and defer this
+                this._selectArchive = v;
+                v = this._conf.selectArchive;
+            }
             this._conf[k] = inputElemValue(UI[k], v);
         });
     }
@@ -1734,7 +1779,7 @@ class ConfHandler {
             oldConf = {...this._conf};
         } while (anyChanges);
     }
-    _setDisabled() {
+    _setDisabled(oldConf) {
         const conf = this._conf;
         const facets = this.getFacets();
         const cnElems = document.querySelectorAll('option[value="China"], input[value="China"]');
@@ -1787,6 +1832,8 @@ class ConfHandler {
         UI.cnExtra.disabled = !conf.chinaOn;
         if (conf.cnExtra)
             UI.filterRegion.disabled = true;
+
+        UI.selectArchive.disabled = loadingData || oldConf.selectArchive !== conf.selectArchive;
     }
     getFacets(conf) {
         conf = conf || this._conf;
@@ -1887,9 +1934,24 @@ function loadArchiveInfo(jsonpSrc) {
 }
 
 
-function receiveArchiveInfo(html) {
-    UI.archiveInfo.style.display = '';
-    UI.archiveInfo.querySelector('ul').innerHTML = html;
+async function loadArchiveData(fpath) {
+    debug('LOAD ARCHIVE', fpath);
+    await waitFor(() => !loadingData);
+    Object.values(heroes).forEach(h => clearTimeout(h.renderTimeout));
+    debug('LOAD ARCHIVE GO', fpath);
+    loadData(fpathBase + fpath + '.js');
+}
+
+
+function receiveArchiveInfo(data) {
+    const entries = data.entries || [];
+    if (data.infoHtml) {
+        UI.archiveInfo.style.display = '';
+        UI.archiveInfo.querySelector('ul').innerHTML = data.infoHtml;
+    }
+    if (!entries.length) return;
+    UI.selectArchive.parentElement.style.display = '';
+    confHandler.setArchive(data.entries);
 }
 
 
@@ -1958,6 +2020,19 @@ function inputElemValue(elem, set) {
     const attr = elem.type === 'checkbox' ? 'checked' : 'value';
     if (set != null) elem[attr] = set;
     return elem[attr];
+}
+
+
+function waitFor(predicate) {
+    return new Promise(resolve => {
+        const check = () => predicate() ? resolve() : setTimeout(check, 0);
+        check();
+    });
+}
+
+
+function debug(...messages) {
+    if (DEBUG) console.log(...messages);
 }
 
 
