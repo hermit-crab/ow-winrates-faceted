@@ -1859,7 +1859,7 @@ class ConfHandler {
             'input': conf.selectedPlatforms,
             'tier': conf.selectedTiers,
         }[conf.facet];
-        facets.sortFacetValue = this._sortElems[conf.facet].value;
+        facets.sortFacetValue = conf[this._sortElems[conf.facet].id];
         facets.facetCmap = Object.fromEntries(facets.facetValues.map((v, i) => [v, facetColors[i]]));
         return facets;
     }
