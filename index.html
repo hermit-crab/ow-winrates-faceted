@@ -1350,7 +1350,7 @@ function renderPlanePlot(name2entries, conf) {
             colorFacet: pluck(points, 'fc'),
             symbol: 'circle',
             mainIdx: mainIdx,
-            size: points.map((_, i) => (i === mainIdx) ? 6 : 4),
+            size: points.map((_, i) => (i === mainIdx) ? 6 : 5),
             hover: points.map(p =>
                 `<extra><b style='color:#666'>${hero.name}</b> <b style='color:${p.fc}'>${ALT_NAMES[p.fname] || p.fname}</b></extra>` +
                 `Win <b>${p.y}</b>%  Pick <b>${p.pr}</b>%(${round1p(p.x)} Avg.)`
