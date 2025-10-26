@@ -119,6 +119,17 @@ body {
 .conf label:first-of-type input[type='checkbox'] {
     margin-left: 0;
 }
+#viewMode.button-select {
+    margin-bottom: 5px;
+    cursor: default;
+}
+#viewMode.button-select button {
+    width: 100px;
+    opacity: .5;
+}
+#viewMode.button-select button.active {
+    opacity: 1;
+}
 
 /* -- info line -- */
 .info, .warnings {
@@ -627,14 +638,6 @@ body {
 
 <div class='scroller'>
 <div class='conf'>
-    <div class='conf-block conf-viewmode'>
-        <div class='conf-title'>View</div>
-        <select id='viewMode'>
-            <option value='plots' selected>Curves</option>
-            <option value='bars'>Bars</option>
-            <option value='plane'>Scatter</option>
-        </select>
-    </div>
     <div class='conf-block facet-block'>
         <div class='conf-title'>Facet</div>
         <select id='facet'>
@@ -707,6 +710,12 @@ body {
             <option class='fillArchive'>...replaced via JS</option>
         </select>
     </div>
+</div>
+
+<div id='viewMode' class='button-select'>
+    <button value='plots' class='active'>Curves</button>
+    <button value='bars'>Bars</button>
+    <button value='plane'>Scatter</button>
 </div>
 
 <div class='info'>
@@ -1578,7 +1587,7 @@ function computeRegionMeans(entries) {
 class ConfHandler {
     constructor() {
         this._fillFacetOptions();
-        this.elems = [...document.querySelectorAll('.conf *[id]')];
+        this.elems = [...document.querySelectorAll('.conf *[id], #viewMode')];
         this.elems.forEach(el => el.addEventListener('change', _ => this.sync()));
         this._conf = {};
         this._defaultConf = {};
@@ -1901,6 +1910,13 @@ function setupEventHandlers() {
     document.querySelectorAll('.info-popup .spoiler .clicker').forEach(
         elem => elem.addEventListener('click', () => elem.parentElement.classList.toggle('open'))
     );
+    document.querySelectorAll('.button-select > button').forEach(
+        elem => elem.addEventListener('click', () => {
+            const oldVal = inputElemValue(elem.parentElement);
+            if (oldVal !== inputElemValue(elem.parentElement, elem.value))
+                elem.parentElement.dispatchEvent(new Event('change'));
+        })
+    );
 }
 
 
@@ -2010,11 +2026,17 @@ function mobileFocusPlot(plotParent, focus = true, evt = null) {
 
 
 function inputElemValue(elem, set) {
+    if (elem.classList.contains('button-select')) {
+        const current = () => elem.querySelector('button.active')?.value;
+        if (set == null) return current();
+        elem.querySelectorAll('button').forEach(el => el.classList.toggle('active', el.value === set));
+        return current();
+    }
     if (elem.classList.contains('checkboxes')) {
-        const current = () => new Set([...elem.querySelectorAll('input[type=checkbox]:checked')].map(e => e.value));
+        const current = () => new Set([...elem.querySelectorAll('input[type=checkbox]:checked')].map(el => el.value));
         if (set == null) return current();
         set = new Set(set)
-        elem.querySelectorAll('input[type=checkbox]').forEach(e => e.checked = set.has(e.value));
+        elem.querySelectorAll('input[type=checkbox]').forEach(el => el.checked = set.has(el.value));
         return current();
     }
     const attr = elem.type === 'checkbox' ? 'checked' : 'value';
