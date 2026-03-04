@@ -958,30 +958,35 @@ function processRawData(rawData) {
 
     // const sd2comp = Object.fromEntries(TIERS.map((t, i) => [SD_TIERS[i], t]));
     modes = {kuaisu: 'QP', jingji: 'Comp', juedou: 'Stadium'};
+    const namefix = {'jetpackcat': 'jetpack-cat'};
     for (const facet of cnData) {
-        continue;
-        const selected = Object.fromEntries(new URL(facet._url).searchParams);
-        const rolesTotalPR = Object.fromEntries(ROLES.map(r => [r, facet.data.filter(
-            e => heroes[e.hero_id].role === r
-        ).map(e => e.selection_ratio).reduce(sum, 0)]));
-        for (const entry of facet['data']) {
-            if (selected.mmr === 'Champion') continue;
-            if (modes[selected.game_mode] === 'Stadium') continue;
-            let tier = selected.mmr === '-127' ? 'All' : selected.mmr;
-            const role = heroes[entry.hero_id].role;
-            const roleSlots = role === 'tank' ? 1 : 2;
-            rows.push({
-                hero: entry.hero_id,
-                url: facet._url,
-                winrate: entry.win_ratio,
-                pickrate: pct1f((entry.selection_ratio / rolesTotalPR[role]) * roleSlots),
-                banrate: entry.ban_ratio * 4,
-                kda: entry.kda,
-                mode: modes[selected.game_mode],
-                // tier: sd2comp[tier] || tier,
-                tier: tier,
-                map: 'all-maps', input: 'PC', region: 'China'
-            });
+        try {
+            facet['data'].forEach(e => e.hero_id = namefix[e.hero_id] || e.hero_id);
+            const selected = Object.fromEntries(new URL(facet._url).searchParams);
+            const rolesTotalPR = Object.fromEntries(ROLES.map(r => [r, facet.data.filter(
+                e => heroes[e.hero_id].role === r
+            ).map(e => e.selection_ratio).reduce(sum, 0)]));
+            for (const entry of facet['data']) {
+                if (selected.mmr === 'Champion') continue;
+                if (modes[selected.game_mode] === 'Stadium') continue;
+                let tier = selected.mmr === '-127' ? 'All' : selected.mmr;
+                const role = heroes[entry.hero_id].role;
+                const roleSlots = role === 'tank' ? 1 : 2;
+                rows.push({
+                    hero: entry.hero_id,
+                    url: facet._url,
+                    winrate: entry.win_ratio,
+                    pickrate: pct1f((entry.selection_ratio / rolesTotalPR[role]) * roleSlots),
+                    banrate: entry.ban_ratio * 4,
+                    kda: entry.kda,
+                    mode: modes[selected.game_mode],
+                    // tier: sd2comp[tier] || tier,
+                    tier: tier,
+                    map: 'all-maps', input: 'PC', region: 'China'
+                });
+            }
+        } catch (err) {
+            console.error(err);
         }
     }
 
