@@ -959,6 +959,7 @@ function processRawData(rawData) {
     // const sd2comp = Object.fromEntries(TIERS.map((t, i) => [SD_TIERS[i], t]));
     modes = {kuaisu: 'QP', jingji: 'Comp', juedou: 'Stadium'};
     for (const facet of cnData) {
+        continue;
         const selected = Object.fromEntries(new URL(facet._url).searchParams);
         const rolesTotalPR = Object.fromEntries(ROLES.map(r => [r, facet.data.filter(
             e => heroes[e.hero_id].role === r
