@@ -36,6 +36,13 @@ def ensure(cond, message):
     if not cond:
         print(message)
 
+if not LOCAL:
+    log = rq.get(LOG_URL).text.replace('\r', '\n').splitlines()
+    badlines = [l for l in log if re.search(r'(?i)==x|err|excep|traceb', l)]
+    badlines = [f'    > {l}' for l in badlines if 'mmr=Champion' not in l]
+    if badlines:
+        print('update log issues:\n' + '\n'.join(badlines))
+
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page()
@@ -49,12 +56,5 @@ with sync_playwright() as p:
     browser.close()
     ensure(js_errors == [], f'Errors: {js_errors}')
     ensure(not ret, f'Test failed: {ret}')
-
-if not LOCAL:
-    log = rq.get(LOG_URL).text.replace('\r', '\n').splitlines()
-    badlines = [l for l in log if re.search(r'(?i)==x|err|excep|traceb', l)]
-    badlines = [f'    > {l}' for l in badlines if 'mmr=Champion' not in l]
-    if badlines:
-        print('update log issues:\n' + '\n'.join(badlines))
 
 print('done')
