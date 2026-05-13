@@ -120,6 +120,9 @@ body {
 .conf label:first-of-type input[type='checkbox'] {
     margin-left: 0;
 }
+.conf .highlighted {
+    background-color: #ffa50061;
+}
 #viewMode.button-select {
     margin-bottom: 5px;
     cursor: default;
@@ -665,7 +668,7 @@ body {
     </div>
     <div class='conf-block'>
         <div class='conf-title'>Other</div>
-        <label title='Show KDA/Banrates'>
+        <label title='Show KDA/Banrates' class='highlighted'>
             <input type='checkbox' id='kdban'></input>KD/Ban
         </label>
         <label>
