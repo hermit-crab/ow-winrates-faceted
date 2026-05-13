@@ -1050,8 +1050,8 @@ function render() {
     if (conf.kdban) expectedKd = Object.fromEntries(ROLES.map(role => {
         const vals = entries.filter(
             e => heroes[e.hero].role === role && e.tier === 'All' && e.kda !== -1
-        ).map(e => e.kda);
-        return [role, vals.reduce(sum, 0) / vals.length];
+        ).map(e => e.kda).filter(v => v != null);
+        return [role, vals.length ? vals.reduce(sum, 0) / vals.length : null];
     }));
 
     // ==> Sort heroes
