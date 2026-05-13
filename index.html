@@ -1274,7 +1274,12 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
     let yrange = layoutConf[valtype].yrange[hero.role] || layoutConf[valtype].yrange.general;
     let dtick, annotations = [];
     if (valtype === 'banrate') {
-        const maxAll = Math.max(...entries.filter(e => e.tier === 'All').map(e => e.banrate));
+        const maxAll = Math.max(
+            ...entries
+            .filter(e => e.tier === 'All')
+            .map(e => e.banrate)
+            .filter(v => v != -1 && v != null)
+        );
         if (maxAll > expected) {
             yrange = layoutConf.banrate.high.yrange;
             dtick = layoutConf.banrate.high.dtick;
