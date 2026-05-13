@@ -98,7 +98,7 @@ def crawl_main_site():
             print('\n==x no data for', url)
             continue
         expected = sorted(combo)
-        reported = sorted(data['selected'].items())
+        reported = sorted(data['rates']['selected'].items())
         if expected != reported:
             print(f'\n==x unexpected selection reported, expected:\n{expected}\ngot:\n{reported}')
             raise Exception
