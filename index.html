@@ -928,7 +928,7 @@ function processRawData(rawData) {
 
     // NOTE: Main site data bundles GM+Champ together, CN data gives Champ as is. We ignore it.
 
-    if (mainData[0].rates) mainData = mainData.map(a => a.rates);
+    if (mainData[0].rates.rates) mainData = mainData.map(a => a.rates);
 
     const rqCodes = [...new Set(mainData.map(a => a.selected.rq))];
     rqCodes.sort();
