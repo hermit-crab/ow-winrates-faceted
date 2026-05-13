@@ -1319,6 +1319,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
        shapes: shapes, annotations: annotations,
     }, {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: false});
     plot._defaultYrange = yrange.slice();
+    plot._defaultDtick = plot._fullLayout.yaxis.dtick;
     plot.removeAllListeners('plotly_doubleclick');
     plot.on('plotly_doubleclick', () => plotToggleZoom(plot));
 }
@@ -1993,11 +1994,12 @@ function titleClickSort(evt) {
 
 
 function plotToggleZoom(plot) {
-    const default_ = plot._defaultYrange;
+    const defaultY = plot._defaultYrange;
+    const defaultDtick = plot._defaultDtick;
     const cur = plot._fullLayout.yaxis.range;
     const ctrl = pressedKeys.has('Control');
-    if (default_[0] !== cur[0] && default_[1] !== cur[1] && !ctrl) {
-        Plotly.relayout(plot, {'yaxis.range': default_.slice()});
+    if (defaultY[0] !== cur[0] && defaultY[1] !== cur[1] && !ctrl) {
+        Plotly.relayout(plot, {'yaxis.range': defaultY.slice(), 'yaxis.dtick': defaultDtick});
         flash(plot.parentElement, 'blink', 200);
         return;
     }
@@ -2010,7 +2012,10 @@ function plotToggleZoom(plot) {
     let a = Math.min(...ys), b = Math.max(...ys);
     if (ctrl) a = 0;
     const margin = (b - a)*.1;
-    Plotly.relayout(plot, {'yaxis.range': [a-margin, b+margin]});
+    Plotly.relayout(plot, {
+        'yaxis.range': [a-margin, b+margin],
+        'yaxis.dtick': plot._altDtick == null ? null : plot._altDtick});
+    plot._altDtick = plot._fullLayout.yaxis.dtick;
 }
 
 
