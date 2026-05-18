@@ -6,6 +6,7 @@
 <meta name='viewport' content='width=device-width, initial-scale=1.0' />
 <meta name='description' content='Overwatch hero stats (win rates, pick rates) graphed and presented in a comprehensive context. From the official source.' />
 <script src='https://cdn.plot.ly/plotly-3.1.0.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.min.js'></script>
 <script src='https://momentjs.com/downloads/moment.min.js'></script>
 <!-- basic analytics, just for me to know if page has any visitors and I need to maintain it -->
 <script async src='https://scripts.simpleanalyticscdn.com/latest.js'></script>
@@ -216,7 +217,6 @@ body {
     display: none;
 }
 
-
 /* -- column titles -- */
 .col-titles {
     display: flex;
@@ -344,6 +344,26 @@ body {
 }
 .plot svg .hovertext path {
     stroke-width: 0px !important;
+}
+.echarts-tooltip {
+    box-shadow: rgba(0, 0, 0, 0.1) 1px 2px 3px !important;
+    border-radius: 2px !important;
+}
+.echarts-tooltip .tooltip-title {
+    font-weight: bold;
+}
+.echarts-tooltip .tooltip-entry > div {
+    display: inline-block;
+}
+.echarts-tooltip .tooltip-entry-value {
+    float: right;
+    margin-left: 20px;
+    font-weight: bold;
+}
+.echarts-tooltip .tooltip-marker {
+    height: 10px;
+    width: 10px;
+    border-radius: 5px;
 }
 
 /* bars */
@@ -809,9 +829,11 @@ const CMAP = Object.fromEntries([
     ...Object.entries(EXTRA_COLORS),
 ]);
 const zeroline = {
-    type: 'line', x0: -1, x1: 10, y0: 0, y1: 0,
-    line: {color: '#0007', width: .5, dash: ''}, layer: 'between',
-};
+    type: 'custom', markLine: {
+        symbol: 'none', z: 1, data: [{yAxis: 0}], emphasis: {disabled: true}, silent: true,
+        lineStyle: {color: '#0007', opacity: .3, type: 'solid'},
+    }
+}
 const layoutConf = {
     winrate: {
         yrange: {general: [41, 59]},
@@ -824,7 +846,7 @@ const layoutConf = {
     banrate: {
         yrange: {general: [-1, 30]}, guideline: zeroline,
         bar: {general: [0, 90]},
-        high: {yrange: [-1, 100], dtick: 30},
+        high: {yrange: [-1, 100]},
     },
     kda: {
         yrange: {general: [1, 6]}, guideline: zeroline,
@@ -1243,39 +1265,44 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
             entry = entry[0];
             if (!entry) return;
             if (t === 'All')
-                return {x: ALL_TIER_IDX, y: entry[valtype], symbol: 'arrow-left', size: 6};
+                return {x: ALL_TIER_IDX, y: entry[valtype], symbol: 'path://M 10 0 L 0 5 L 10 10 Z', size: 6};
             return {x: idx, y: entry[valtype], symbol: 'circle', size: 4};
         }).filter(e => e);
         if (points.length === 1) return;
 
-        let extraAttrs = {};
         let size = pluck(points, 'size');
+        let opacity = 1;
         if (conf.regionMeanView && facetValue !== 'mean') {
-            extraAttrs = {hoverinfo: 'skip', opacity: .45};
+            opacity = .45;
             size = [...size.slice(0, -1).map(_ => 0), size.at(-1)];
         }
 
         return {
-            x: pluck(points, 'x'), y: pluck(points, 'y'),
-            name: `<b>${ALT_NAMES[facetValue] || facetValue}</b>`,
-            mode: 'lines+markers',
-            line: {color: conf.facetCmap[facetValue], width: 1.2},
-            marker: {size: size, symbol: pluck(points, 'symbol'), line: {width: 0}, opacity: 1},
-            ...extraAttrs,
+            type: 'line',
+            data: points.map(p => [p.x, p.y]),
+            name: facetValue,
+            silent: true,
+            emphasis: {scale: false},
+            symbol: (_, params) => points[params.dataIndex].symbol,
+            symbolSize: (_, params) => size[params.dataIndex],
+            lineStyle: {color: conf.facetCmap[facetValue], width: 1.2, opacity: opacity},
+            itemStyle: {color: conf.facetCmap[facetValue], opacity: opacity},
         };
     }).filter(t => t);
 
-    const shapes = [];
+    const reflines = [];
     if (layoutConf[valtype].guideline)
-        shapes.push(layoutConf[valtype].guideline)
+        reflines.push(layoutConf[valtype].guideline)
     if (expected != null)
-        shapes.push({
-            type: 'line', x0: -1, x1: 10, y0: expected, y1: expected,
-            line: {color: 'black', width: .5, dash: 'dot'}, layer: 'between',
+        reflines.push({
+            type: 'custom', markLine: {
+                symbol: 'none', z: 1, data: [{yAxis: expected}], emphasis: {disabled: true}, silent: true,
+                lineStyle: {color: 'black', opacity: .5, type: [3,3]},
+            }
         });
 
     let yrange = layoutConf[valtype].yrange[hero.role] || layoutConf[valtype].yrange.general;
-    let dtick, annotations = [];
+    let annotations = [];
     if (valtype === 'banrate') {
         const maxAll = Math.max(
             ...entries
@@ -1285,46 +1312,63 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
         );
         if (maxAll > expected) {
             yrange = layoutConf.banrate.high.yrange;
-            dtick = layoutConf.banrate.high.dtick;
             annotations.push({
-                xref: 'paper', yref: 'paper', x: 1, y: 1, text: 'zoomed out', opacity: .45, showarrow: false
+                type: 'text', top: 5, right: 10, z: 1, silent: true,
+                style: {text: 'zoomed out', opacity: .35, font: '12px sans-serif'},
             });
         }
     }
 
-    const plot = hero.elems[valtype].plot;
-    Plotly.react(plot, traces, {
-        margin: { l: 20, r: 0, t: 0, b: 15 },
-        showlegend: false,
-        plot_bgcolor: '#0000',
-        paper_bgcolor: '#0000',
-        hovermode: 'x',
-        hoverlabel: {font: {size: 12}},
-        dragmode: 'pan',
-        xaxis: {
-            range: [ALL_TIER_IDX, TIERS.length-1+.3],
-            fixedrange: true,
-            zeroline: false,
-            tickvals: [...TIERS.map((_, idx) => idx), ALL_TIER_IDX],
-            ticktext: [
-                ...TIERS.map((t, i) => `<span style='color: ${CMAP[t]}; font-weight: bold'>${ALT_NAMES[t] || t[0]}</span>`),
-                `<span style='color:#fafafa;'>All</span>`
-            ],
-            tickfont: {size: 9},
+    let plot = hero.elems[valtype].plot;
+    if (!plot._echart) {
+        plot._echart = echarts.init(plot, null, {renderer: 'svg'});
+        plot.addEventListener('dblclick', () => plotToggleZoom(plot));
+        plot._defaultYrange = yrange.slice();
+    }
+    const gridlineStyle = {opacity: .7, width: .6};
+    plot._echart.setOption({
+        series: [...traces, ...reflines],
+        graphic: annotations,
+        animation: false,
+        grid: {top: 4, right: 2, bottom: 17, left: 0},
+        tooltip: {
+            trigger: 'axis',
+            appendTo: document.body,
+            className: 'echarts-tooltip',
+            formatter: params => makeTieredPlotTooltip(params, conf),
         },
-        yaxis: {
-            zeroline: false,
-            tickfont: {size: 10, color: '#0009'},
-            ticklabelstandoff: 4,
-            range: yrange.slice(),
-            dtick: dtick,
+        dataZoom: [{
+            type: 'inside',
+            yAxisIndex: 0,
+            startValue: yrange[0],
+            endValue: yrange[1],
+            filterMode: 'none',
+            zoomLock: true,
+        }],
+        axisPointer: {z: -1},
+        xAxis: {
+            type: 'value', axisTick: {show: false}, axisLine: {show: false},
+            splitLine: {showMinLine: false, showMaxLine: false, lineStyle: gridlineStyle},
+            min: ALL_TIER_IDX, max: TIERS.length-1 + .3,
+            axisLabel: {
+                formatter: (v) => !TIERS[v] ? '' : ALT_NAMES[TIERS[v]] || TIERS[v][0],
+                color: (v) => CMAP[TIERS[v]],
+                fontFamily: 'verdana, arial, sans-serif',
+                fontWeight: 'bold', fontSize: 9,
+                margin: 5,
+            }
         },
-       shapes: shapes, annotations: annotations,
-    }, {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: false});
-    plot._defaultYrange = yrange.slice();
-    plot._defaultDtick = plot._fullLayout.yaxis.dtick;
-    plot.removeAllListeners('plotly_doubleclick');
-    plot.on('plotly_doubleclick', () => plotToggleZoom(plot));
+        yAxis: {
+            type: 'value', axisTick: {show: false}, axisLine: {show: false},
+            min: -10, max: 150,
+            splitLine: {showMinLine: false, showMaxLine: false, lineStyle: gridlineStyle},
+            splitNumber: 4,
+            axisLabel: {
+                showMinLabel: false, showMaxLabel: false,
+                fontSize: 10, color: '#0009'
+            },
+        },
+    }, {replaceMerge: ['series'], lazyUpdate: true});
 }
 
 
@@ -1577,9 +1621,30 @@ function renderStackedPRBar(name2entries, conf) {
 }
 
 
+function makeTieredPlotTooltip(params, conf) {
+    params = params.filter(p => p.value[1] != null);
+    params = sortBy(params, p => p.seriesName === 'mean' ? -999 : -p.value[1]);
+    const tierIdx = params[0].axisValue;
+    const tier = tierIdx === ALL_TIER_IDX ? 'All Tiers' : TIERS[tierIdx];
+    return `
+        <div>
+            <div class='tooltip-title' style='color:${CMAP[tier]}'>${tier}</div>
+            ${params.map(p => {
+                const [a, b] = p.value[1].toFixed(1).split('.');
+                return `
+                <div class='tooltip-entry'>
+                    <div class='tooltip-marker' style='background-color:${conf.facetCmap[p.seriesName]}'></div>
+                    <div>${ALT_NAMES[p.seriesName] || p.seriesName}</div>
+                    <div class='tooltip-entry-value'>${a}<span class='frac'>.${b}</span></div>
+                </div>`
+            }).join('')}
+    `;
+}
+
+
 function computeRegionMeans(entries) {
     const staticFields = ['hero', 'mode', 'map', 'input', 'tier'];
-    const computeFor = ['winrate', 'pickrate'];
+    const computeFor = ['winrate', 'pickrate', 'banrate', 'kda'];
     const calcMean = (objs, k) => {
         const vals = objs.map(o => o[k]).filter(v => v !== -1);
         if (!vals.length) return -1;
@@ -1998,27 +2063,20 @@ function titleClickSort(evt) {
 
 function plotToggleZoom(plot) {
     const defaultY = plot._defaultYrange;
-    const defaultDtick = plot._defaultDtick;
-    const cur = plot._fullLayout.yaxis.range;
+    const zoom = plot._echart.getOption().dataZoom[0];
+    const cur = [zoom.startValue, zoom.endValue];
     const ctrl = pressedKeys.has('Control');
     if (defaultY[0] !== cur[0] && defaultY[1] !== cur[1] && !ctrl) {
-        Plotly.relayout(plot, {'yaxis.range': defaultY.slice(), 'yaxis.dtick': defaultDtick});
+        plot._echart.setOption({dataZoom: [{startValue: defaultY[0], endValue: defaultY[1]}]});
         flash(plot.parentElement, 'blink', 200);
         return;
     }
-    let traces = plot._fullData;
-    const conf = confHandler.frozenConf();
-    if (conf.filterRegion === 'mean' && conf.facet === 'region')
-        // in mean view we only show regional traces for faint reference so ignore them
-        traces = [traces.at(-1)];
-    const ys = traces.flatMap(trace => trace.y).filter(v => v != null);
+    const traces = plot._echart.getOption().series;
+    const ys = pluck(traces, 'data').filter(v => v).flatMap(points => points.map(p => p[1])).filter(v => v != null);
     let a = Math.min(...ys), b = Math.max(...ys);
     if (ctrl) a = 0;
     const margin = (b - a)*.1;
-    Plotly.relayout(plot, {
-        'yaxis.range': [a-margin, b+margin],
-        'yaxis.dtick': plot._altDtick == null ? null : plot._altDtick});
-    plot._altDtick = plot._fullLayout.yaxis.dtick;
+    plot._echart.setOption({dataZoom: [{startValue: a-margin, endValue: b+margin}]});
 }
 
 
