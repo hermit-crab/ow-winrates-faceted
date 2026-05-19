@@ -1809,9 +1809,6 @@ class ConfHandler {
             (conf, last) => last.filterRegion !== conf.filterRegion && conf.filterRegion === 'mean',
             conf => alter('sortingRegion', conf.filterRegion)
             ], [
-            (conf, last) => last.viewMode !== conf.viewMode && conf.viewMode === 'plane' && conf.filterRole === 'all',
-            conf => alter('filterRole', ROLES[0])
-            ], [
             (conf, last) => last.facet !== conf.facet && conf.facet === 'region',
             conf => alter('filterRegion', 'all')
             ]
