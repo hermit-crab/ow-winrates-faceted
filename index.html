@@ -1591,23 +1591,26 @@ function renderStackedPRBar(name2entries, conf) {
 
 
 function makeTieredPlotTooltip(params, conf) {
-    params = params.filter(p => p.value[1] != null);
-    params = sortBy(params, p => p.seriesName === 'mean' ? -999 : -p.value[1]);
-    const tierIdx = params[0].axisValue;
-    const tier = tierIdx === ALL_TIER_IDX ? 'All Tiers' : TIERS[tierIdx];
-    return `
-        <div>
-            <div class='tooltip-title' style='color:${CMAP[tier]}'>${ALT_NAMES[tier] || tier}</div>
-            ${params.map(p => {
-                const [a, b] = p.value[1].toFixed(1).split('.');
-                return `
-                <div class='tooltip-entry'>
-                    <div class='tooltip-marker' style='background-color:${conf.facetCmap[p.seriesName]}'></div>
-                    <div>${ALT_NAMES[p.seriesName] || p.seriesName}</div>
-                    <div class='tooltip-entry-value'>${a}<span class='frac'>.${b}</span></div>
-                </div>`
-            }).join('')}
-    `;
+    try {
+        params = params.filter(p => p.value[1] != null);
+        if (!params.length) return;
+        params = sortBy(params, p => p.seriesName === 'mean' ? -999 : -p.value[1]);
+        const tierIdx = params[0].axisValue;
+        const tier = tierIdx === ALL_TIER_IDX ? 'All Tiers' : TIERS[tierIdx];
+        return `
+            <div>
+                <div class='tooltip-title' style='color:${CMAP[tier]}'>${ALT_NAMES[tier] || tier}</div>
+                ${params.map(p => {
+                    const [a, b] = p.value[1].toFixed(1).split('.');
+                    return `
+                    <div class='tooltip-entry'>
+                        <div class='tooltip-marker' style='background-color:${conf.facetCmap[p.seriesName]}'></div>
+                        <div>${ALT_NAMES[p.seriesName] || p.seriesName}</div>
+                        <div class='tooltip-entry-value'>${a}<span class='frac'>.${b}</span></div>
+                    </div>`
+                }).join('')}
+        `;
+    } catch (e) {console.error(e);}
 }
 
 
