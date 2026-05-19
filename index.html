@@ -468,23 +468,11 @@ body {
     min-width: 600px;
     max-width: 1000px;
     flex-shrink: 0;
-    padding: 0 40px 0 75px;
+    padding-right: 10px;
     margin-bottom: 100px;
 }
 #planeplot {
     flex-grow: 1;
-}
-#plane .border {
-    top: 0;
-    left: 75px;
-    box-shadow: 0 0 3px #0000004c inset;
-    z-index: -100;
-    background-color: #f1f1f178;
-    position: absolute;
-}
-#planeplot svg.main-svg, .plot svg.main-svg * {
-    /* allow xtick tooltip overflow */
-    overflow: visible;
 }
 .plane-conf {
     display: none;
@@ -498,7 +486,7 @@ body {
 /* stacked pr bar */
 #stackedPRBar {
     height: 12px;
-    margin-top: 30px;
+    margin-top: 8px;
     display: flex;
     position: relative;
 }
@@ -782,7 +770,7 @@ body {
         <label><input id='planeZoomPr' type='checkbox' checked/>Zoom PR</label>
     </div>
 </div>
-<div id='plane'><div class='border'></div><div id='planeplot'></div><div id='stackedPRBar'></div></div>
+<div id='plane'><div id='planeplot'></div><div id='stackedPRBar'></div></div>
 
 </div>
 
@@ -1373,19 +1361,12 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
 
 
 function renderPlanePlot(name2entries, conf) {
-    const [xrange, yrange] = [[0, conf.planeZoomPr ? 2.3 : 3.1], [40, 60]];
+    const [xrange, yrange] = [[0, conf.planeZoomPr ? 2.3 : 3.1], [39.9, 60.1]];
     const [xl, yl] = [(xrange[1]-xrange[0]), (yrange[1]-yrange[0])];
     const xmargin = 16;
     const bbox = UI.planeplot.getBoundingClientRect();
     const pixr = [xl/(bbox.width-xmargin*2), yl/(bbox.height)]; // pixel ratio
     const limPad = [pixr[0]*20, pixr[1]*10]; // visible limits inward padding
-    const quadCmap = {'LOW': '#8f3c3c', 'HIGH': '#3c8543'};
-    const quadPad = [pixr[0]*7, pixr[1]*3];
-    const round1p = v => Math.round(v*10)/10;
-    const borderElem = UI.plane.querySelector('.border');
-    borderElem.style.width = (bbox.width-xmargin*2) + 'px';
-    borderElem.style.height = bbox.height + 'px';
-    borderElem.style.marginLeft = xmargin + 'px';
 
     const lines = Object.entries(name2entries).map(([name, entries]) => {
         const hero = heroes[name];
@@ -1417,15 +1398,10 @@ function renderPlanePlot(name2entries, conf) {
             xt: clamped[0], yt: clamped[1],
             name: hero.name,
             color: color,
-            colorFade: color + '66',
             colorFacet: pluck(points, 'fc'),
             symbol: 'circle',
             mainIdx: mainIdx,
             size: points.map((_, i) => (i === mainIdx) ? 6 : 5),
-            hover: points.map(p =>
-                `<extra><b style='color:#666'>${hero.name}</b> <b style='color:${p.fc}'>${ALT_NAMES[p.fname] || p.fname}</b></extra>` +
-                `Win <b>${p.y}</b>%  Pick <b>${p.pr}</b>%(${round1p(p.x)} Avg.)`
-            ),
         };
     });
 
@@ -1449,128 +1425,123 @@ function renderPlanePlot(name2entries, conf) {
     });
     repell(5);
 
-    const yticks = Array.from({length: 21}).map((_, i) => i*5).filter(v => !yrange.includes(v));
-    const tickfont = {size: 12, color: 'rgba(0,0,0,0.6)'};
-    Plotly.react(UI.planeplot, lines.flatMap(l => {
-        let traces = [{
-            // Solid line from text to point (when out of bounds)
-            x: [l.x[l.mainIdx], l.xc], y: [l.y[l.mainIdx], l.yc],
-            mode: 'lines',
-            name: l.name,
-            line: {simplify: false},
-            hoverinfo: 'skip',
-            marker: {color: l.color, size: 7, symbol: l.symbol, line: {width: 0}, opacity: [1, 0]},
-        }, {
-            // Main line: facet connection line and dots
-            x: l.x, y: l.y,
-            mode: 'lines+markers',
-            line: {color: l.colorFade, dash: 'solid', simplify: false},
-            hovertemplate: l.hover,
-            name: l.name,
-            hoverlabel: {bgcolor: 'white', font: {color: '#666'}, bordercolor: l.colorFade},
-            marker: {
-                size: l.size, symbol: l.symbol, opacity: 1,
-                color: conf.planeMarkerColor ?  l.colorFacet : l.color,
-                line: {width: conf.planeMarkerColor ? 1.5 : 0, color: l.colorFade}
-            },
-        }, {
-            // Text annotation
-            x: [l.xt], y: [l.yt],
-            // x: [l.xt], y: [l.yc-pixr[1]*13],
-            mode: 'text',
-            text: l.name,
-            zorder: 10,
-            hoverinfo: 'skip',
-            textfont: {color: l.color, size: 12, weight: 600}
-        }];
-        if (l.mainIdx === -1) traces = [{}, traces[1], {}];
-        return traces;
-    }), {
-        margin: {l: xmargin, r: xmargin, t: 0, b: 0},
-        showlegend: false,
-        plot_bgcolor: '#0000',
-        paper_bgcolor: '#0000',
-        dragmode: 'pan',
-        yaxis: {
-            range: yrange,
-            zeroline: false,
-            showgrid: false,
-            ticklen: 2,
-            tickcolor: '#0000',
-            tickvals: yticks,
-            ticktext: yticks.map(v => `${v}%` + (v === 50 ? '<br><b>WINRATE</b>' : '')),
-            tickfont: tickfont,
-        },
-        xaxis: {
-            range: xrange,
-            showgrid: false,
-            zeroline: false,
-            ticklen: 1,
-            tickcolor: '#0000',
-            tickvals: [1, 2, 3],
-            ticktext: ['Role Avg. <b>PICKRATE</b>', '2X Avg.', '3X Avg.'],
-            tickfont: tickfont,
-        },
-        shapes: [
-        ...[
-            [[0, 0, -100, 100], .2, .5, 'solid'],
-            [[1, 1, 0, 100,], 1, 1.5, 'dot'],
-            [[2, 2, 0, 100], .2, .5, 'dash'],
-            [[3, 3, 0, 100], .2, .5, 'dash'],
-            [[-100, 100, 50, 50], 1, 1.5, 'dot'],
-            [[-100, 100, 50, 50], 1, 1.5, 'dot'],
-            [[-100, 100, 45, 45], .2, .5, 'dash'],
-            [[-100, 100, 55, 55], .2, .5, 'dash'],
-        ].map(([c, o, w, dash]) => ({
-            type: 'line', x0: c[0], x1: c[1], y0: c[2], y1: c[3], opacity: o,
-            line: {color: 'black', width: w, dash: dash}, layer: 'between',
-        }))],
-        annotations: [
-
-        {
-            xref: 'x', yref: 'y', x: 1+quadPad[0], y: yrange[0]+quadPad[1],
-            xanchor: 'left', yanchor: 'bottom',
-            text: `Rank: <span  style="background-color: yellow; padding: 2px;">${ALT_NAMES[conf.lastTier] || conf.lastTier}</span>`,
-            opacity: conf.facet !== 'tier' ? .3 : 0, showarrow: false, font: {size: 11, weight: 600},
-        },
-
-        ...[
-            [yrange[0], 'bottom'],
-            [yrange[1], 'top']
-        ].map(([val, align]) => ({
-            // we build yaxis limit ticks via annotations to be able to align them to edges
-            xref: 'paper', yref: 'y', x: 0, y: val,
-            xanchor: 'right', yanchor: align, text: `${val}%`,
-            xshift: -4, showarrow: false, font: {size: 12, color: 'rgba(0,0,0,0.6)'},
-        })),
-
-        ...[
-            [xrange[0]+quadPad[0], yrange[0]+quadPad[1], 'LOW', 'LOW', 'left', 'bottom'],
-            [xrange[0]+quadPad[0], yrange[1]-quadPad[1], 'LOW', 'HIGH', 'left', 'top'],
-            [xrange[1]-quadPad[0], yrange[0]+quadPad[1], 'HIGH', 'LOW', 'right', 'bottom'],
-            [xrange[1]-quadPad[0], yrange[1]-quadPad[1], 'HIGH', 'HIGH', 'right', 'top'],
-        ].map(a => ({
-            xref: 'x', yref: 'y', x: a[0], y: a[1], xanchor: a[4], yanchor: a[5], text:
-                `<span style="color:${quadCmap[a[2]]}">${a[2]} PICK</span>  <span style="color:${quadCmap[a[3]]}">${a[3]} WIN</span>`,
-            opacity: .3, showarrow: false, font: {size: 12, weight: 600},
-        }))
-
-        ],
-    }, {displayModeBar: false, doubleClick: 'reset'});
-
-    // fix zoom reset ignoring conf.planeZoomPr
-    // (Plotly does not update this when .react() is called)
-    UI.planeplot._fullLayout.xaxis._rangeInitial1 = xrange[1];
-
-    if (!UI.planeplot._hoverBound) {
-        UI.planeplot._hoverBound = true;
-        const fn = data => {
-            const p = data.points[0];
-            Plotly.Fx.hover(UI.planeplot, p.data.x.map((_, i) => ({curveNumber: p.curveNumber, pointNumber: i})));
-        };
-        UI.planeplot.on('plotly_hover', fn);
-        UI.planeplot.on('plotly_click', fn);
+    if (!UI.planeplot._echart) {
+        UI.planeplot._echart = echarts.init(UI.planeplot, null, {renderer: 'svg'});
     }
+    const traces = lines.flatMap(l => {
+        const series = [];
+        series.push({
+            type: 'line',
+            name: l.name,
+            data: [
+                // Main line: facet connection line and dots
+                ...l.x.map((x, i) => ({
+                    value: [x, l.y[i]],
+                    itemStyle: {color: conf.planeMarkerColor ? l.colorFacet[i] : l.color},
+                    symbol: l.symbol,
+                    symbolSize: l.size[i],
+                })),
+                null,
+                // Text label point
+                {
+                    value: [l.xt, l.yt],
+                    symbolSize: 0,
+                    emphasis: {scale: false},
+                    label: {
+                        show: true,
+                        formatter: l.name,
+                        color: l.color,
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        position: 'inside'
+                    },
+                },
+            ],
+            lineStyle: {color: l.color, width: 2, opacity: .5},
+            emphasis: {focus: 'series'},
+        });
+        if (l.mainIdx === -1) return series;
+        // Solid hint line from text to main point (when out of default zoom bounds)
+        series.push({
+            type: 'line',
+            data: [[l.x[l.mainIdx], l.y[l.mainIdx]], [l.xc, l.yc]],
+            showSymbol: false,
+            silent: true,
+            lineStyle: {color: l.color, width: 2, opacity: .7, type: [2, 1]}
+        });
+        return series;
+    });
+    const guidelines = [
+        [{xAxis: 0}, 0.6, 0.2, 'solid'],
+        [{xAxis: 1}, 1.5, .8, [3, 3]],
+        [{xAxis: 2}, 0.6, 0.2, [8, 7]],
+        [{xAxis: 3}, 0.6, 0.2, [8, 7]],
+        [{yAxis: 50}, 1.5, .8, [3, 3]],
+        [{yAxis: 45}, 0.6, 0.2, [8, 7]],
+        [{yAxis: 55}, 0.6, 0.2, [8, 7]],
+    ].map(([pos, width, opacity, dash]) => ({
+        type: 'custom', markLine: {
+            symbol: 'none', z: 1, data: [pos],
+            emphasis: {disabled: true}, silent: true, label: {show: false},
+            lineStyle: {color: 'black', width: width, opacity: opacity, type: dash},
+        }
+    }));
+    const xAxis = {
+        type: 'value',
+        min: -10, max: 150,
+        axisLine: {show: false},
+        axisTick: {show: false},
+        splitLine: {show: false},
+        axisLabel: {
+            formatter: v => {
+                if (v === 1) return 'Role Avg. {b|PICKRATE}';
+                if (v > 1 && v === Math.round(v)) return `${v}X Avg.`;
+                return '';
+            },
+            color: 'rgba(0,0,0,0.6)',
+            fontSize: 12,
+            interval: 0,
+            showMinLabel: false, showMaxLabel: false,
+            rich: {b: {fontWeight: 'bold'}},
+        }
+    }
+    const zoomX = {
+        type: 'inside',
+        xAxisIndex: 0,
+        startValue: xrange[0],
+        endValue: xrange[1],
+        filterMode: 'none',
+        zoomLock: true,
+    }
+
+    UI.planeplot._echart.setOption({
+        series: [...traces, ...guidelines],
+        animation: false,
+        grid: {
+            top: 5, right: 60, bottom: 25, left: 75, show: true, containLabel: false,
+            borderWidth: 1, backgroundColor: '#f1f1f178', borderColor: '#ddd',
+            containLabel: false, outerBoundsMode: 'none',
+        },
+        xAxis: [xAxis],
+        yAxis: [{
+            ...xAxis,
+            axisLabel: {
+                ...xAxis.axisLabel,
+                formatter: v => v === 50 ? `${v}%\n{b|WINRATE}` : `${v}%`,
+            }
+        }],
+        dataZoom: [zoomX, {
+            ...zoomX,
+            xAxisIndex: null,
+            yAxisIndex: 0,
+            startValue: yrange[0],
+            endValue: yrange[1],
+        }],
+        graphic: conf.facet === 'tier' ? [] : [{
+            type: 'text', top: 10, left: 100, silent: true,
+            style: {text: 'Rank: ' + (ALT_NAMES[conf.lastTier] || conf.lastTier), opacity: .3},
+        }],
+    }, {replaceMerge: ['series'], lazyUpdate: false});
 }
 
 
@@ -1580,9 +1551,10 @@ function renderStackedPRBar(name2entries, conf) {
         return;
     }
 
-    const planeBorderElem = UI.plane.querySelector('.border');
-    UI.stackedPRBar.style.width = planeBorderElem.style.width;
-    UI.stackedPRBar.style.left = planeBorderElem.style.marginLeft;
+    const cartesianElem = UI.plane.querySelector('svg > g > path[stroke]');
+    const cartesianBbox = cartesianElem.getBoundingClientRect();
+    UI.stackedPRBar.style.width = cartesianBbox.width + 'px';
+    UI.stackedPRBar.style.left = cartesianBbox.x - UI.planeplot.getBoundingClientRect().x + 'px';
 
     let entries = Object.entries(name2entries).map(([name, entries]) => {
         entries = entries.filter(e => (
