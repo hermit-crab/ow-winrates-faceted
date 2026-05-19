@@ -814,28 +814,22 @@ const CMAP = Object.fromEntries([
     ...REGIONS.map((k, i) => [k, REGION_COLORS[i]]),
     ...Object.entries(EXTRA_COLORS),
 ]);
-const zeroline = {
-    type: 'custom', markLine: {
-        symbol: 'none', z: 1, data: [{yAxis: 0}], emphasis: {disabled: true}, silent: true,
-        lineStyle: {color: '#0007', opacity: .3, type: 'solid'},
-    }
-}
 const layoutConf = {
     winrate: {
         yrange: {general: [41, 59]},
         bar: {general: [40, 60]},
     },
     pickrate: {
-        yrange: {general: [-1, 40], tank: [-1, 20]}, guideline: zeroline,
+        yrange: {general: [-1, 40], tank: [-1, 20]},
         bar: {general: [0, 40], tank: [0, 20]},
     },
     banrate: {
-        yrange: {general: [-1, 30]}, guideline: zeroline,
+        yrange: {general: [-1, 30]},
         bar: {general: [0, 90]},
         high: {yrange: [-1, 100]},
     },
     kda: {
-        yrange: {general: [1, 6]}, guideline: zeroline,
+        yrange: {general: [1, 6]},
         bar: {general: [1.5, 6], damage: [1.5, 4]},
     },
 };
@@ -1277,8 +1271,13 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
     }).filter(t => t);
 
     const reflines = [];
-    if (layoutConf[valtype].guideline)
-        reflines.push(layoutConf[valtype].guideline)
+    if (valtype !== 'winrate')
+        reflines.push({
+            type: 'custom', markLine: {
+                symbol: 'none', z: 1, data: [{yAxis: 0}], emphasis: {disabled: true}, silent: true,
+                lineStyle: {color: '#0007', opacity: .3, type: 'solid'},
+            }
+        });
     if (expected != null)
         reflines.push({
             type: 'custom', markLine: {
