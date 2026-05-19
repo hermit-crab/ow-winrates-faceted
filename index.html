@@ -1628,7 +1628,7 @@ function makeTieredPlotTooltip(params, conf) {
     const tier = tierIdx === ALL_TIER_IDX ? 'All Tiers' : TIERS[tierIdx];
     return `
         <div>
-            <div class='tooltip-title' style='color:${CMAP[tier]}'>${tier}</div>
+            <div class='tooltip-title' style='color:${CMAP[tier]}'>${ALT_NAMES[tier] || tier}</div>
             ${params.map(p => {
                 const [a, b] = p.value[1].toFixed(1).split('.');
                 return `
