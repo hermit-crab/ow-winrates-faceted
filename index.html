@@ -498,17 +498,42 @@ body {
 
 /* stacked pr bar */
 #stackedPRBar {
+    display: flex;
+    position: relative;
+    flex-flow: column;
+    margin-top: 10px;
+}
+#stackedPRBar .bar {
     height: 12px;
     margin-top: 8px;
     display: flex;
     position: relative;
+    width: 100%;
 }
-#stackedPRBar .bar {
+#stackedPRBar .bar.selected .bar-title, #stackedPRBar .bar.selected .strip .filler {
+    opacity: 1;
+}
+#stackedPRBar .bar-title {
+    position: absolute;
+    right: 100%;
+    opacity: .4;
+    text-transform: uppercase;
+    font-size: 10px;
+    padding-right: 5px;
+    padding-top: 1px;
+    color: #000a;
+}
+#stackedPRBar .strip {
     height: 100%;
     position: relative;
-    box-shadow: -1px 0 0 #fff6 inset;
 }
-#stackedPRBar .bar .tooltip {
+#stackedPRBar .strip .filler {
+    box-shadow: -1px 0 0 #fff6 inset;
+    height: 100%;
+    width: 100%;
+    opacity: .4;
+}
+#stackedPRBar .strip .tooltip {
     display: none;
     position: absolute;
     bottom: 12px;
@@ -517,11 +542,19 @@ body {
     background-color: #fff;
     text-wrap: nowrap;
     padding-left: 3px;
+    pointer-events: none;
 }
-#stackedPRBar .bar:hover .tooltip {
+#stackedPRBar .strip .tooltip .marker {
+    height: 7px;
+    width: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 2px 0 3px;
+}
+#stackedPRBar .strip:hover .tooltip {
     display: block;
 }
-#stackedPRBar .bar .tooltip .extra {
+#stackedPRBar .strip .tooltip .extra {
     display: inline-block;
     padding: 3px 5px;
 }
@@ -808,7 +841,7 @@ const EXTRA_COLORS = {
     mizuki: '#8acca7', 'jetpack-cat': '#aab1b7',
     mean: 'black', allTiers: 'black'
 };
-const ROLES = ['support', 'tank', 'damage'];
+const ROLES = ['tank', 'damage', 'support'];
 const DATASET_FPATH = 'winrate-data.js';
 const ARCHIVE_FPATH = 'archive/owwr/archive-info.js'; // does not need to exist
 const EXTERNAL_FPATH_BASE = 'https://hermit-crab.neocities.org/';
@@ -1110,7 +1143,7 @@ function render() {
     // (render plane plot and exit)
     if (conf.viewMode === 'plane') {
         renderPlanePlot(name2entries, conf);
-        renderStackedPRBar(name2entries, conf);
+        renderStackedPRBars(entries, conf);
         return;
     }
 
@@ -1570,17 +1603,29 @@ function renderPlanePlot(name2entries, conf) {
 }
 
 
-function renderStackedPRBar(name2entries, conf) {
-    if (conf.filterRole === 'all' || !conf.facetValuesSelected.size) {
-        UI.stackedPRBar.innerHTML = '';
-        return;
-    }
+function renderStackedPRBars(entries, conf) {
+    UI.stackedPRBar.innerHTML = '';
+    if (!conf.facetValuesSelected.size) return;
 
     const cartesianElem = UI.plane.querySelector('svg > g > path[stroke]');
     const cartesianBbox = cartesianElem.getBoundingClientRect();
     UI.stackedPRBar.style.width = cartesianBbox.width + 'px';
     UI.stackedPRBar.style.left = cartesianBbox.x - UI.planeplot.getBoundingClientRect().x + 'px';
 
+    const names = Object.keys(heroes);
+    ROLES.forEach(role => {
+        const selected = names.filter(name => heroes[name].role === role);
+        const name2entries = Object.fromEntries(selected.map(n => [n, entries.filter(e => e.hero === n)]));
+        UI.stackedPRBar.innerHTML += `
+            <div class="bar ${conf.filterRole === role || conf.filterRole === 'all' ? 'selected' : ''}">
+                ${renderStackedPRBar(name2entries, role, conf)}
+            </div>
+        `;
+    });
+}
+
+
+function renderStackedPRBar(name2entries, role, conf) {
     let entries = Object.entries(name2entries).map(([name, entries]) => {
         entries = entries.filter(e => (
             e[conf.facet] === conf.sortFacetValue && (e.tier === conf.lastTier || conf.facet === 'tier'))
@@ -1601,14 +1646,16 @@ function renderStackedPRBar(name2entries, conf) {
     entries.forEach((e, i) => e.cum = (i ? entries[i-1].cum : 0) + e.pct);
     const fcolor = conf.facetCmap[conf.sortFacetValue];
     const fname = ALT_NAMES[conf.sortFacetValue] || conf.sortFacetValue;
-    UI.stackedPRBar.innerHTML = entries.map((e, i) =>
-        `<div class='bar' style='width:${e.pct*100}%;background-color:${e.color}88;'>
+    return `<div class='bar-title'>${role}</div>` + entries.map((e, i) =>
+        `<div class='strip' style='width:${e.pct*100}%;'>
+            <div class='filler' style='background-color:${e.color}88;'></div>
             <div class='tooltip' style='
                 box-shadow:0 0 0 1px ${e.color}88 inset;
                 ${e.cum < .5 ? 'left:0' : 'right:1px'};
                 border-${e.cum < .5 ? 'left' : 'right'}:2px solid ${e.color}88;
             '>
-                <b>${e.name} <span style='color:${fcolor}'>${fname}</span></b>
+                <b style='color:${e.color};'>${e.name}</b>
+                <span class='marker' style='background-color:${fcolor}'></span>${fname}
                 <span class='extra' style='background-color:${e.color}00'>
                     Pick <b>${e.pr}</b>% (${e.avg} Avg.)
                 </span>
