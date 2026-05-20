@@ -1397,6 +1397,7 @@ function renderPlanePlot(name2entries, conf) {
                 pickrate: entry.pickrate,
                 facetColor: conf.facetCmap[facetValue],
                 facetValue: facetValue,
+                size: facetValue === conf.sortFacetValue ? 6 : 5,
             };
         }).filter(p => p);
         const mainIdx = points.map(p => p.facetValue).indexOf(conf.sortFacetValue);
@@ -1405,17 +1406,13 @@ function renderPlanePlot(name2entries, conf) {
             clamp(points[mainIdx]?.y, yrange[0]+limPad[1], yrange[1]-limPad[1])
         ];
         return {
-            x: pluck(points, 'x'), y: pluck(points, 'y'),
+            points: points,
             xc: clamped[0], yc: clamped[1],
             xt: clamped[0], yt: clamped[1],
-            pickrate: pluck(points, 'pickrate'),
             name: hero.name,
             color: color,
-            facetValue: pluck(points, 'facetValue'),
-            facetColor: pluck(points, 'facetColor'),
             symbol: 'circle',
             mainIdx: mainIdx,
-            size: points.map((_, i) => (i === mainIdx) ? 6 : 5),
         };
     });
 
@@ -1449,13 +1446,13 @@ function renderPlanePlot(name2entries, conf) {
             name: l.name,
             data: [
                 // Main line: facet connection line and dots
-                ...l.x.map((x, i) => ({
-                    value: [x, l.y[i]],
-                    facetValue: l.facetValue[i],
-                    pickrate: l.pickrate[i],
-                    itemStyle: {color: conf.planeMarkerColor ? l.facetColor[i] : l.color},
+                ...l.points.map((p) => ({
+                    value: [p.x, p.y],
+                    facetValue: p.facetValue,
+                    pickrate: p.pickrate,
+                    itemStyle: {color: conf.planeMarkerColor ? p.facetColor : l.color},
                     symbol: l.symbol,
-                    symbolSize: l.size[i],
+                    symbolSize: p.size,
                 })),
                 null,
                 // Text label point
@@ -1480,7 +1477,7 @@ function renderPlanePlot(name2entries, conf) {
         // Solid hint line from text to main point (when out of default zoom bounds)
         series.push({
             type: 'line',
-            data: [[l.x[l.mainIdx], l.y[l.mainIdx]], [l.xc, l.yc]],
+            data: [[l.points[l.mainIdx].x, l.points[l.mainIdx].y], [l.xc, l.yc]],
             showSymbol: false,
             silent: true,
             lineStyle: {color: l.color, width: 2, opacity: .7, type: [2, 1]}
