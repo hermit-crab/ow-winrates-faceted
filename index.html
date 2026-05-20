@@ -1438,6 +1438,12 @@ function renderPlanePlot(name2entries, conf) {
 
     if (!UI.planeplot._echart) {
         UI.planeplot._echart = echarts.init(UI.planeplot, null, {renderer: 'svg'});
+        UI.planeplot.addEventListener('dblclick', () => {
+            UI.planeplot._echart.setOption({dataZoom: [
+                {startValue: xrange[0], endValue: xrange[1]},
+                {startValue: yrange[0], endValue: yrange[1]},
+            ]});
+        });
     }
     const traces = lines.flatMap(l => {
         const series = [];
