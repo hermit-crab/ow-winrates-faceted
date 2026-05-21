@@ -1070,6 +1070,8 @@ function renderHeroes() {
                 bar: main.querySelector(`.plot-parent.${v} .bar`),
             }]
         ));
+        main.addEventListener('mouseenter', () => heroTogglePlotsXAxis(hero, 1));
+        main.addEventListener('mouseleave', () => heroTogglePlotsXAxis(hero, 0));
         hero.elems.main = main;
     });
     setupObserver();
@@ -1382,7 +1384,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
                 color: (v) => CMAP[TIERS[v]],
                 fontFamily: 'verdana, arial, sans-serif',
                 fontWeight: 'bold', fontSize: 9,
-                margin: 5,
+                margin: 5, opacity: 0
             }
         },
         yAxis: {
@@ -2148,6 +2150,15 @@ function plotToggleZoom(plot) {
     if (ctrl) a = 0;
     const margin = (b - a)*.1;
     plot._echart.setOption({dataZoom: [{startValue: a-margin, endValue: b+margin}]});
+}
+
+
+function heroTogglePlotsXAxis(hero, state) {
+    VALTYPES.slice(1).forEach(t => {
+        const plot = hero.elems[t].plot;
+        if (!plot._echart) return;
+        plot._echart.setOption({xAxis: [{axisLabel: {opacity: state}}]});
+    });
 }
 
 
