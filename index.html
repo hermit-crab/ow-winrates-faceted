@@ -874,7 +874,7 @@ const layoutConf = {
         bar: {general: [1.5, 6], damage: [1.5, 4]},
     },
 };
-let rawData, heroes, regionMeans, regionMeansWithCN, confHandler, datasetTs, fpathBase,
+let rawData, heroes, regionMeans, regionMeansWithCN, confHandler, datasetTs, fpathBase, observer,
     loadingData = true, pressedKeys = new Set(), expectedBase = {}, allEntries = [];
 
 
@@ -1069,9 +1069,10 @@ function renderHeroes() {
                 plot: main.querySelector(`.plot-parent.${v} .plot`),
                 bar: main.querySelector(`.plot-parent.${v} .bar`),
             }]
-        ))
+        ));
         hero.elems.main = main;
     });
+    setupObserver();
 }
 
 
@@ -1156,13 +1157,12 @@ function render() {
             return;
         }
         if (hero.viewKey === viewKey) return;
-        clearTimeout(hero.renderTimeout);
-        hero.renderTimeout = setTimeout(_ => {
-            // Schedule updates one after another with a minor delay for better UX.
-            // (doing all in one go takes .8-1s of stagger, yes I should switch to d3 or charts.js)
-            hero.viewKey = viewKey;
-            cols.forEach(valtype => renderTieredPlot(hero, name2entries[name], valtype, expected[valtype], conf));
-        }, 30 * idx);
+        hero.viewKey = viewKey;
+        cols.forEach(valtype => {
+            const plot = hero.elems[valtype].plot;
+            plot._render = () => renderTieredPlot(hero, name2entries[name], valtype, expected[valtype], conf);
+            observer.unobserve(plot); observer.observe(plot); // trigger observer interesction check
+        });
     });
 }
 
@@ -2046,6 +2046,24 @@ function setupEventHandlers() {
 }
 
 
+function setupObserver() {
+    observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const elem = entry.target;
+            if (entry.isIntersecting) {
+                elem._cleared = false;
+                elem._render();
+            } else {
+                if (elem._cleared || !elem._echart) return;
+                elem._echart.clear();
+                elem._cleared = true;
+            }
+        })
+    }, {rootMargin: '200px'});
+    UI.plots.querySelectorAll('.plot').forEach(elem => observer.observe(elem));
+}
+
+
 function toggleWarnings(conf) {
     const html = [
         [WARNINGS.cn, conf.chinaOn],
@@ -2079,7 +2097,6 @@ function loadArchiveInfo(jsonpSrc) {
 async function loadArchiveData(fpath) {
     debug('LOAD ARCHIVE', fpath);
     await waitFor(() => !loadingData);
-    Object.values(heroes).forEach(h => clearTimeout(h.renderTimeout));
     debug('LOAD ARCHIVE GO', fpath);
     loadData(fpathBase + fpath + '.js');
 }
