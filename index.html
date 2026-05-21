@@ -568,15 +568,11 @@ body {
 
 /* -- PC -- */
 @media screen and (min-width: 700px) {
-    /* kdban conditional */
+    /* kda conditional */
     .plot-parent.extra, .col-title.extra, #selectColumn .extra {display: none;}
-    .show-kd-ban .plot-parent.extra,
-    .show-kd-ban .col-title.extra {
+    .show-cn-extra .plot-parent.extra,
+    .show-cn-extra .col-title.extra {
         display: block;
-    }
-    .show-kd-ban .plot-parent.base,
-    .show-kd-ban .col-title.base {
-        display: none;
     }
 }
 
@@ -598,9 +594,9 @@ body {
         padding: 3px 0;
     }
 
-    /* kdban conditional */
-    .show-kd-ban #selectColumn .base {display: none;}
-    .show-kd-ban #selectColumn .extra {display: block;}
+    /* kda conditional TODO */
+    .show-cn-extra #selectColumn .base {display: none;}
+    .show-cn-extra #selectColumn .extra {display: block;}
     #selectColumn .extra {display: none;}
 
     /* selectColumn conditional */
@@ -722,9 +718,6 @@ body {
     </div>
     <div class='conf-block'>
         <div class='conf-title'>Other</div>
-        <label title='Show KDA/Banrates' class='highlighted'>
-            <input type='checkbox' id='kdban'></input>KD/Ban
-        </label>
         <label>
             <input type='checkbox' id='chinaOn'></input>China
         </label>
@@ -790,13 +783,13 @@ body {
     <div class='col-title nm' data-sort='name'><span>Hero</span></div>
     <div class='col-title wr base active' data-sort='winrate'><span>Winrate</span></div>
     <div class='col-title pr base' data-sort='pickrate'><span>Pickrate</span></div>
+    <div class='col-title br base' data-sort='banrate'><span>Banrate</span></div>
     <div class='col-title kd extra' data-sort='kda'><span>KDA</span></div>
-    <div class='col-title br extra' data-sort='banrate'><span>Banrate</span></div>
     <select id='selectColumn'>
         <option class='base' value='wr' selected>Winrate</option>
         <option class='base' value='pr'>Pickrate</option>
+        <option class='base' value='br'>Banrate</option>
         <option class='extra' value='kd'>KDA</option>
-        <option class='extra' value='br'>Banrate</option>
     </select>
 </div>
 <div id='plots'></div>
@@ -847,8 +840,8 @@ const ARCHIVE_FPATH = 'archive/owwr/archive-info.js'; // does not need to exist
 const EXTERNAL_FPATH_BASE = 'https://hermit-crab.neocities.org/';
 const ALL_TIER_IDX = -.5;
 const ALT_NAMES = {'PC': 'KB&M', 'mean': '*Average', 'Grandmaster': 'GM+'};
-const VALTYPES = ['name', 'winrate', 'pickrate', 'kda', 'banrate'];
-const VALTYPES_SHORT = ['nm', 'wr', 'pr', 'kd', 'br'];
+const VALTYPES = ['name', 'winrate', 'pickrate', 'banrate', 'kda'];
+const VALTYPES_SHORT = ['nm', 'wr', 'pr', 'br', 'kd'];
 const WARNINGS = {
     cn: 'see notes about CN data',
     avg: 'synthetic unweighted *Average',
@@ -1058,7 +1051,7 @@ function renderHeroes() {
         <img src='${hero.iconUrl}' title='${hero.name}'>
         ${VALTYPES_SHORT.slice(1).map(
             k => `
-            <div class='plot-parent ${k} ${['wr', 'pr'].includes(k) ? 'base' : 'extra'}'>
+            <div class='plot-parent ${k} ${k !== 'kd' ? 'base' : 'extra'}'>
                 <div class='plot'></div>
                 <div class='stub'></div>
                 <div class='bar'></div>
@@ -1100,7 +1093,7 @@ function render() {
 
     // (calc KDA guideline)
     let expectedKd = {};
-    if (conf.kdban) expectedKd = Object.fromEntries(ROLES.map(role => {
+    if (conf.chinaOn) expectedKd = Object.fromEntries(ROLES.map(role => {
         const vals = entries.filter(
             e => heroes[e.hero].role === role && e.tier === 'All' && e.kda !== -1
         ).map(e => e.kda).filter(v => v != null);
@@ -1148,11 +1141,12 @@ function render() {
     }
 
     // ==> Update plots
-    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.kdban, datasetTs].join(',');
+    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, datasetTs].join(',');
     names.forEach((name, idx) => {
         const hero = heroes[name];
         hero.elems.main.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
-        const cols = !conf.kdban ? ['winrate', 'pickrate'] : ['kda', 'banrate'];
+        const cols = VALTYPES.slice(1);
+        if (!conf.chinaOn) cols.pop();
         const expected = {
             winrate: 50, pickrate: expectedBase.pr[hero.role],
             kda: expectedKd[hero.role], banrate: expectedBase.br,
@@ -1839,8 +1833,6 @@ class ConfHandler {
 
         Object.keys(oldConf).forEach(key => {
             if (oldConf[key] === conf[key]) return;
-            if (key === 'kdban')
-                UI.selectColumn.value = conf.kdban ? 'kd' : 'wr';
             if (this._firstSync) return;
             if (key === 'sortingMode' || this.getFacets(conf).sortFacetValue !== this.getFacets(oldConf).sortFacetValue)
                 flash(document.querySelector('.col-title.active span'), 'flash');
@@ -1855,7 +1847,7 @@ class ConfHandler {
             el.classList.toggle('active', el.dataset.sort === conf.sortingColumn);
         });
 
-        document.body.classList.toggle('show-kd-ban', conf.kdban);
+        document.body.classList.toggle('show-cn-extra', conf.chinaOn);
         mobileSelectColumns();
         toggleWarnings(this.frozenConf());
     }
@@ -1876,12 +1868,6 @@ class ConfHandler {
             ], [
             conf => !conf.chinaOn && conf.selectedRegions.has('China'),
             conf => {conf.selectedRegions.delete('China'); alter('selectedRegions', conf.selectedRegions)}
-            ], [
-            (conf, last) => last.kdban !== conf.kdban && conf.viewMode === 'plane' && conf.kdban,
-            conf => alert(WARNINGS.planekda)
-            ], [
-            conf => conf.viewMode === 'plane' && conf.kdban,
-            conf => alter('kdban', false)
             ], [
             conf => !['all', 'mean'].includes(conf.filterRegion) && conf.sortingRegion !== conf.filterRegion,
             conf => alter('sortingRegion', conf.filterRegion)
