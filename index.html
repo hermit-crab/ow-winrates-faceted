@@ -235,7 +235,7 @@ body {
 .col-titles .col-title {
     text-align: right;
     text-transform: uppercase;
-    width: 300px;
+    width: 250px;
     margin: auto;
 }
 .col-titles .col-title span {
@@ -325,12 +325,12 @@ body {
 /* plots */
 .entry .plot {
     height: 100px;
-    width: 300px;
+    width: 250px;
     display: none;
 }
 .entry .stub {
     height: 100px;
-    width: 300px;
+    width: 250px;
     display: none;
     position: absolute;
     top: 0;
@@ -362,7 +362,7 @@ body {
     display: none;
     flex-direction: column;
     justify-content: center;
-    width: 300px;
+    width: 250px;
     height: 100px;
     font-size: 80%;
 }
@@ -1170,7 +1170,7 @@ function render() {
 function renderBar(hero, entries, valtype, expected, conf) {
     entries = entries.filter(e => e.tier === conf.lastTier && e[valtype] !== -1);
     const [a, b] = layoutConf[valtype].bar[conf.filterRole] || layoutConf[valtype].bar.general;
-    const [w, h] = [300, 30];
+    const [w, h] = [250, 30];
     const bar = hero.elems[valtype].bar;
     const s = x => (x-a)/(b-a)*w; // scaler
     entries = entries.map(e => ({
