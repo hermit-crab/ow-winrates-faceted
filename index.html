@@ -308,6 +308,16 @@ body {
     font-size: 80%;
     color: #0000;
 }
+.entry .hero-role {
+    height: 30px;
+    width: 30px;
+    background-size: contain;
+    position: absolute;
+    opacity: .3;
+    top: 65px;
+    left: -15px;
+    z-index: -1;
+}
 .entry img {
     height: 80px;
     width: 80px;
@@ -1047,6 +1057,7 @@ function renderHeroes() {
         const main = document.createElement('div');
         main.className = `entry role-${hero.role}`;
         main.innerHTML = `
+        <div class='hero-role' style='background-image:url("${hero.roleIconUrl}");' title='${hero.role.toUpperCase()}'></div>
         <div class='hero-name' title='${hero.name}'>${hero.name}</div>
         <img src='${hero.iconUrl}' title='${hero.name}'>
         ${VALTYPES_SHORT.slice(1).map(
