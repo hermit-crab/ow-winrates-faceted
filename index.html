@@ -1643,7 +1643,7 @@ function renderStackedPRBar(name2entries, role, conf) {
             name: hero.name,
             color: CMAP[name] || hero.color,
         };
-    });
+    }).filter(e => e);
     entries = sortBy(entries, e => -e.pr);
     entries.forEach((e, i) => e.cum = (i ? entries[i-1].cum : 0) + e.pct);
     const fcolor = conf.facetCmap[conf.sortFacetValue];
