@@ -579,8 +579,7 @@ body {
 
 /* -- PC -- */
 @media screen and (min-width: 700px) {
-    /* kda conditional */
-    .plot-parent.extra, .col-title.extra, #selectColumn .extra {display: none;}
+    .plot-parent.extra, .col-title.extra {display: none;}
     .show-cn-extra .plot-parent.extra,
     .show-cn-extra .col-title.extra {
         display: block;
@@ -588,7 +587,7 @@ body {
 }
 
 /* -- mobile -- */
-@media screen and (max-width: 700px) {
+@media screen and (max-width: 699px) {
     .conf {justify-content: left;}
     .title {font-size: 100%;}
     .entry img {height: 60px; width: 60px;}
@@ -604,11 +603,6 @@ body {
         font-size: 80%;
         padding: 3px 0;
     }
-
-    /* kda conditional TODO */
-    .show-cn-extra #selectColumn .base {display: none;}
-    .show-cn-extra #selectColumn .extra {display: block;}
-    #selectColumn .extra {display: none;}
 
     /* selectColumn conditional */
     .plot-parent.pr, .plot-parent.wr, .plot-parent.br, .plot-parent.kd,
@@ -800,7 +794,7 @@ body {
         <option class='base' value='wr' selected>Winrate</option>
         <option class='base' value='pr'>Pickrate</option>
         <option class='base' value='br'>Banrate</option>
-        <option class='extra' value='kd'>KDA</option>
+        <option class='extra' value='kd'>KDA (CN)</option>
     </select>
 </div>
 <div id='plots'></div>
@@ -2037,10 +2031,9 @@ function setupEventHandlers() {
         else if (e.target.classList.contains('trigger-info'))
             infoPopup.classList.remove('hidden');
         // for phones: unhover/unfocus plot if clicked off it
-        document.querySelectorAll('.plot.js-plotly-plot').forEach(plot => {
+        document.querySelectorAll('.plot[_echarts_instance_]').forEach(plot => {
             if (e.target.classList.contains('stub') && e.target.parentElement.contains(plot)) return;
             if (plot.contains(e.target)) return;
-            Plotly.Fx.unhover(plot);
             mobileFocusPlot(plot.parentElement, false);
         });
     });
@@ -2186,14 +2179,19 @@ function timeAgo(timestampMs) {
 
 
 function mobileFocusPlot(plotParent, focus = true, evt = null) {
+    const plot = plotParent.querySelector('.plot');
     if (focus && !plotParent.classList.contains('mobile-focused')) {
         // the stub will be hidden, now propagate hover into the plot itself
-        const plot = plotParent.querySelector('.plot');
         const rect = plotParent.getBoundingClientRect();
-        Plotly.Fx.hover(plot, {
-            xpx: evt.clientX - rect.left - plot._fullLayout.margin.l,
-            ypx: evt.clientY - rect.top,
+        plot._echart.dispatchAction({
+            type: 'showTip',
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
         });
+    } else if (!focus) {
+        plot._echart.dispatchAction({type: 'hideTip'});
+        // hack to hide axisPointer also (echart bug https://github.com/apache/echarts/issues/18595)
+        plot._echart.dispatchAction({type: 'showTip', seriesIndex: 0, dataIndex: -1});
     }
     plotParent.classList.toggle('mobile-focused', focus);
 }
