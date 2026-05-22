@@ -1600,9 +1600,13 @@ function renderPlanePlot(name2entries, conf) {
             startValue: yrange[0],
             endValue: yrange[1],
         }],
-        graphic: conf.facet === 'tier' ? [] : [{
+        graphic: [{
             type: 'text', top: 10, left: 100, silent: true,
-            style: {text: 'Rank: ' + (ALT_NAMES[conf.lastTier] || conf.lastTier), opacity: .3},
+            style: {
+                font: 'bold 12px sans-serif',
+                text: 'Rank: ' + (ALT_NAMES[conf.lastTier] || conf.lastTier),
+                opacity: conf.facet === 'tier' ? 0 : .35,
+            },
         }],
     }, {replaceMerge: ['series'], lazyUpdate: false});
 }
