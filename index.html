@@ -777,7 +777,7 @@ body {
 <div class='info'>
     <button class='trigger-info'>legend and info ★</button> ┊
     data timestamp: <span id='datasetTs'></span> ┊
-    <a href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
+    <a id='officialSourceLink' href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
     <a href='https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog'>report issue</a>
 </div>
 <div class='warnings hidden'></div>
@@ -1819,8 +1819,9 @@ class ConfHandler {
         inputElemValue(UI.selectedTiers, ['Gold', 'Diamond', 'Master']);
     }
     _setUrlHash() {
+        const conf = this._conf;
         const simple = (v) => v instanceof Set ? [...v].sort().join(',') : v;
-        let kvs = Object.entries(this._conf).map(([k, v]) => [k, simple(v)]).filter(([k, v]) =>
+        let kvs = Object.entries(conf).map(([k, v]) => [k, simple(v)]).filter(([k, v]) =>
             v !== simple(this._defaultConf[k]) && !UI[k]?.disabled
         );
         const order = this.elems.map(e => e.id);
@@ -1828,6 +1829,20 @@ class ConfHandler {
         history.replaceState(null, '', '#' + kvs.map(kv => kv.join('=')).join('&'));
         // remove lone trailing #
         if (!location.hash) history.replaceState(null, '', location.pathname + location.search);
+
+        // set query string on link to official source so its filter roughly matches ours
+        const params = {
+            region: REGIONS.includes(conf.filterRegion) ? conf.filterRegion : conf.sortingRegion,
+            input: conf.facet !== 'input' ? conf.filterPlatform : conf.sortingPlatform,
+            role: conf.filterRole,
+            tier: conf.sortingMode.replace(/^tier-/, ''),
+            rq: conf.sortingGameMode === 'QP' ? 0 : 2,
+        };
+        if (!REGIONS.includes(params.region)) delete params.region;
+        if (!TIERS.includes(params.tier)) delete params.tier;
+        const url = new URL(UI.officialSourceLink.href);
+        url.search = new URLSearchParams(params).toString()
+        UI.officialSourceLink.href = url.href;
     }
     _loadUrlHash() {
         (new URLSearchParams(location.hash.slice(1))).forEach((v, k) => {
