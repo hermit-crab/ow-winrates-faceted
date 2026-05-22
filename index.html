@@ -951,8 +951,11 @@ function receiveRawData(data) {
     ));
     expectedBase.br = 400 / Object.keys(heroes).length;
     datasetTs = rawData[0]._ts;
-    UI.datasetTs.innerHTML = timeAgo(datasetTs * 1000);
-    UI.datasetTs.title = new Date(datasetTs * 1000).toString();
+    const datasetDate = new Date(datasetTs * 1000)
+    UI.datasetTs.title = datasetDate.toString();
+    UI.datasetTs.innerHTML = datasetDate.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
+    if ((Date.now()/1000 - datasetTs) / 86400 < 30)
+        UI.datasetTs.innerHTML = timeAgo(datasetTs * 1000);
     UI.loadingInfo.style.display = 'none';
     UI.loadingInfo.innerHTML = '';
     loadingData = false;
