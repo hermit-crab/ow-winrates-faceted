@@ -880,7 +880,7 @@ const layoutConf = {
         bar: {general: [1.5, 6], damage: [1.5, 4]},
     },
 };
-let rawData, heroes, regionMeans, regionMeansWithCN, confHandler, datasetTs, fpathBase, observer,
+let rawData, heroes, regionMeans, regionMeansWithCN, confHandler, datasetTs, fpathBase, observer, compRqCode,
     loadingData = true, pressedKeys = new Set(), expectedBase = {}, allEntries = [];
 
 
@@ -989,7 +989,8 @@ function processRawData(rawData) {
     rqCodes.sort();
     if (rqCodes.length !== 2)
         console.error('unexpected amount of rqCodes (expected 2)', rqCodes);
-    let modes = Object.fromEntries([['0', 'QP'], [rqCodes.at(-1), 'Comp']]);
+    compRqCode = rqCodes.at(-1);
+    let modes = Object.fromEntries([['0', 'QP'], [compRqCode, 'Comp']]);
     for (const facet of mainData) {
         for (const entry of facet['rates'])
             rows.push({
@@ -1837,7 +1838,7 @@ class ConfHandler {
             input: conf.facet !== 'input' ? conf.filterPlatform : conf.sortingPlatform,
             role: conf.filterRole,
             tier: conf.sortingMode.replace(/^tier-/, ''),
-            rq: conf.sortingGameMode === 'QP' ? 0 : 2,
+            rq: conf.sortingGameMode === 'QP' ? 0 : compRqCode,
         };
         if (!REGIONS.includes(params.region)) delete params.region;
         if (!TIERS.includes(params.tier)) delete params.tier;
