@@ -353,19 +353,42 @@ body {
 }
 .tooltip-tier .tooltip-title {
     font-weight: bold;
+    padding-left: 10px;
 }
 .tooltip-tier .tooltip-entry > div {
     display: inline-block;
 }
 .tooltip-tier .tooltip-entry-value {
-    float: right;
-    margin-left: 20px;
+    float: left;
+    margin-right: 5px;
     font-weight: bold;
+    width: 45px;
+    text-align: end;
 }
 .tooltip-tier .tooltip-marker {
     height: 10px;
     width: 10px;
     border-radius: 5px;
+}
+.tooltip-tier .unit-symbol {
+    font-weight: normal;
+    padding-left: 1px;
+}
+.tooltip-tier.winrate .tooltip-entry.baseline {
+    display: none;
+}
+.tooltip-tier .tooltip-entry.baseline .tooltip-marker {
+    outline: 1px dashed black;
+    outline-offset: -1px;
+}
+.tooltip-tier .tooltip-entry.baseline .tag {
+    text-transform: uppercase;
+    border-radius: 3px;
+    font-size: 9px;
+    padding: 0 3px;
+    vertical-align: middle;
+    font-family: 'Trebuchet MS', sans-serif;
+    outline: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 /* bars */
@@ -1374,8 +1397,8 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
         tooltip: {
             trigger: 'axis',
             appendTo: document.body,
-            className: 'tooltip-tier',
-            formatter: params => makeTieredPlotTooltip(params, conf),
+            className: 'tooltip-tier ' + valtype,
+            formatter: params => makeTieredPlotTooltip(params, hero, valtype, expected, conf),
         },
         dataZoom: [{
             type: 'inside',
@@ -1676,21 +1699,28 @@ function renderStackedPRBar(name2entries, role, conf) {
 }
 
 
-function makeTieredPlotTooltip(params, conf) {
+function makeTieredPlotTooltip(params, hero, valtype, expected, conf) {
     try {
         params = params.filter(p => p.value[1] != null);
         if (!params.length) return;
-        params = sortBy(params, p => p.seriesName === 'mean' ? -999 : -p.value[1]);
         const tierIdx = params[0].axisValue;
         const tier = tierIdx === ALL_TIER_IDX ? 'All Tiers' : TIERS[tierIdx];
+        const unitSymbol = valtype === 'kda' ? '' : '<span class="unit-symbol">%</span>';
+        let baselineRole = (valtype === 'pickrate' || valtype === 'kda') ? hero.role : 'all';
+        params.push({
+            seriesName: `Baseline <span class='tag'>${baselineRole}</span>`,
+            className: 'baseline',
+            value: [null, expected]
+        });
+        params = sortBy(params, p => -p.value[1]);
         return `
             <div class='tooltip-title' style='color:${CMAP[tier]}'>${ALT_NAMES[tier] || tier}</div>
             ${params.map(p => {
                 return `
-                <div class='tooltip-entry'>
+                <div class='tooltip-entry ${p.className || ''}'>
+                    <div class='tooltip-entry-value'>${p.value[1].toFixed(1)}${unitSymbol}</div>
                     <div class='tooltip-marker' style='background-color:${conf.facetCmap[p.seriesName]}'></div>
-                    <div>${ALT_NAMES[p.seriesName] || p.seriesName}</div>
-                    <div class='tooltip-entry-value'>${p.value[1].toFixed(1)}</div>
+                    <div class='tooltip-entry-name'>${ALT_NAMES[p.seriesName] || p.seriesName}</div>
                 </div>`
             }).join('')}
         `;
