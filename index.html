@@ -659,9 +659,7 @@ body {
 
         <li><b>Double click</b> any plot to zoom in/out (toggle relative scale). Hold Ctrl to include zeroline.</li>
 
-        <li>Starting "<b>All</b>" values represent Competitive total values across all tiers (Curves-view).</li>
-
-        <li><b>Dashed</b> lines represents "expected" or average value.<ul>
+        <li><b>Dashed</b> baselines represents expected / average value.<ul>
             <li>For winrate it's 50%.</li>
             <li>For pickrate it's the value if every hero was picked equally often within their role.</li>
             <li>For banrate it's the value if every hero was banned equally often.</li>
@@ -674,8 +672,10 @@ body {
                 In Bars-view only currently shown tier is considered ("All" or last sorted-by tier).</li>
         </ul></li>
 
-        <li><b>*Average</b> (mean) values are computed by this page (Blizzard does not provide it).
-        Since we do not know population sizes (weights) – our mean is only an estimate of true mean.</li>
+        <li class='spoiler'><span class='clicker'>Region <b>*Average</b></span><span class='spoiler-body'>
+            (mean) values are computed by this page (Blizzard does not provide it).
+            Since we do not know population sizes (weights) – our mean is only an estimate of true mean.
+            Does not apply to baseline values (dashed lines).</span></li>
 
         <li class='spoiler'><span class='clicker'><b>Chinese</b> data</span><span class='spoiler-body'>
             comes from a <a href='https://ow.blizzard.cn/herolist/'>separate official source</a>.
