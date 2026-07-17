@@ -423,7 +423,6 @@ body {
 .entry .bar .total.aleft::before {content: '◄';}
 .entry .bar .total.aright::after {content: '►';}
 .entry .bar .total {
-    position: relative;
     opacity: .6;
 }
 .entry .bar .total.est .full:first-child::before {
@@ -432,10 +431,6 @@ body {
 }
 .entry .bar .total .full {
     font-weight: bold;
-}
-.entry .bar .total .prefix {
-    font-weight: bold;
-    opacity: .6;
 }
 .entry .bar .total .frac {
     opacity: .6;
@@ -1267,13 +1262,12 @@ function renderBar(hero, entries, valtype, expected, conf) {
         (min < a ? 'aleft ' : ''), (max > b ? 'aright' : ''),
         (conf.filterRegion === 'mean' ? 'est' : '')
     ].join(' ');
-    const offset = clamp(s(min), 0, w);
     const tierBg = conf.lastTier !== 'All' ? CMAP[conf.lastTier] + '99' : 'unset';
     bar.innerHTML = `
         <div class='tier'>Rank: <span style='background-color:${tierBg};'>
             ${ALT_NAMES[conf.lastTier] || conf.lastTier}
         </span></div>
-        <div class='total ${classes}' style='left:${offset}px;'>
+        <div class='total ${classes}'>
             <span class='full'>${minA}</span><span class='frac'>.${minB}</span>
             ${min === max ? '' : `
                 – <span class='full'>${maxA}</span><span class='frac'>.${maxB}</span>
@@ -1298,12 +1292,6 @@ function renderBar(hero, entries, valtype, expected, conf) {
         </div>
         <div class='range'><div style="left:0px;">${a}</div><div style="right:0px;">${b}</div></div>
     `;
-    setTimeout(_ => {
-        const elem = bar.querySelector('.total');
-        const bbox = elem.getBoundingClientRect();
-        if (bbox.right > elem.parentElement.getBoundingClientRect().right)
-            elem.style.left = `${w - bbox.width}px`;
-    }, 0);
 }
 
 
