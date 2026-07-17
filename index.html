@@ -16,7 +16,7 @@ body {
     margin: 0;
 }
 .hidden {display: none !important;}
-.flash {animation: flash 0.7s ease;}
+.flash-bg {animation: flash-bg 0.7s ease;}
 
 /* -- main box -- */
 #main {
@@ -407,6 +407,10 @@ body {
     top: 0;
     right: 0;
     display: none;
+    cursor: pointer;
+}
+.entry .bar .tier > span {
+    padding: 0 2px;
 }
 .entry .bar:hover .tier {
     display: block;
@@ -635,7 +639,7 @@ body {
     .mobile-show-br .col-title.br {display: block;}
 }
 
-@keyframes flash {
+@keyframes flash-bg {
     0%   {background-color: transparent;}
     50%  {background-color: rgba(74, 210, 255, 0.5);}
     100% {background-color: transparent;}
@@ -1292,6 +1296,10 @@ function renderBar(hero, entries, valtype, expected, conf) {
         </div>
         <div class='range'><div style="left:0px;">${a}</div><div style="right:0px;">${b}</div></div>
     `;
+    bar.querySelector('.tier').addEventListener('click', () => {
+        UI.sortingMode.focus();
+        UI.sortingMode.showPicker();
+    });
 }
 
 
@@ -1885,7 +1893,7 @@ class ConfHandler {
             if (oldConf[key] === conf[key]) return;
             if (this._firstSync) return;
             if (key === 'sortingMode' || this.getFacets(conf).sortFacetValue !== this.getFacets(oldConf).sortFacetValue)
-                flash(document.querySelector('.col-title.active span'), 'flash');
+                flash(document.querySelector('.col-title.active span'), 'flash-bg');
         });
 
         UI.main.classList.remove([...UI.main.classList].filter(c => c.startsWith('viewmode-')));
