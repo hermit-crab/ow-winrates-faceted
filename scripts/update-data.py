@@ -66,6 +66,7 @@ def crawl_main_site():
         # Sometimes Comp is on 1 for a few days. At first both 1 and 2 were available (
         # with 2 having seemingly older data and 1 having new season data).
         print(f'Modes: {modes}') # 0=QP; 2(or 1)=Comp;
+        print(f'Tiers: {list(selects["tier"].values())}')
     except Exception:
         print('==x HTML parse failure')
         raise
@@ -76,7 +77,7 @@ def crawl_main_site():
         'rq': modes,
         'input': ['Console', 'PC'],
         'region': ['Americas', 'Asia', 'Europe'],
-        'tier': ['All', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'],
+        'tier': ['All', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Master', 'Grandmaster'],
     }
 
     facets = []
@@ -118,7 +119,7 @@ def crawl_cn_site():
     params = {
         'game_mode': ['kuaisu', 'jingji'], # qp, comp
         'season': [season],
-        'mmr': ['-127', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster', 'Champion']
+        'mmr': ['-127', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Master', 'Grandmaster', 'Champion']
     }
     params_stadium = {
         'game_mode': ['juedou'], # stadium

@@ -848,9 +848,10 @@ Overwatch is a trademark of Blizzard Entertainment, Inc., in the U.S. and/or oth
 <script>
 'use strict';
 
-const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'];
+const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Master', 'Grandmaster'];
 // const SD_TIERS = ['Rookie', 'Novice', 'Contender', 'Elite', 'Pro', 'AllStar', 'Legend'];
-const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#5f9ff0', '#8ae960', '#8d71fe'];
+const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#03d983', '#5f9ff0', '#8ae960', '#8d71fe'];
+const EMERALD_TIER_ADDED_TS = 1786573200;
 const REGIONS = ['Americas', 'Europe', 'Asia', 'China'];
 const REGION_COLORS = ['#f14141', '#3c90ff', '#ffac00', '#58d986'];
 const PLATFORMS = ['PC', 'Console'];
@@ -1005,7 +1006,7 @@ function processRawData(rawData) {
 
     // NOTE: Main site data bundles GM+Champ together, CN data gives Champ as is. We ignore it.
 
-    if (mainData[0].rates.rates) mainData = mainData.map(a => a.rates);
+    if (mainData[0].rates.rates) mainData = mainData.map(f => ({...f, ...f.rates}));
 
     const rqCodes = [...new Set(mainData.map(a => a.selected.rq))];
     rqCodes.sort();
@@ -1019,6 +1020,7 @@ function processRawData(rawData) {
                 hero: entry.id,
                 mode: modes[facet.selected.rq],
                 url: facet._url,
+                ts: facet._ts,
                 kda: -1,
                 ...select(entry.cells, ['winrate', 'pickrate', 'banrate']),
                 ...select(facet.selected, ['map', 'input', 'region', 'tier']),
@@ -1054,6 +1056,7 @@ function processRawData(rawData) {
                 rows.push({
                     hero: entry.hero_id,
                     url: facet._url,
+                    ts: facet._ts,
                     winrate: entry.win_ratio,
                     pickrate: pct1f((entry.selection_ratio / rolesTotalPR[role]) * roleSlots),
                     banrate: entry.ban_ratio * 4,
@@ -1304,6 +1307,10 @@ function renderBar(hero, entries, valtype, expected, conf) {
 
 
 function renderTieredPlot(hero, entries, valtype, expected, conf) {
+    // Exclude Emerald tier for older data
+    let tiers = [...TIERS];
+    if (!entries.find(e => e.ts >= EMERALD_TIER_ADDED_TS)) tiers.splice(tiers.indexOf('Emerald'), 1);
+
     // Line traces
     const traces = conf.facetValues.map(facetValue => {
         const facetEntries = entries.filter(e => (
@@ -1312,8 +1319,8 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
 
         // Insert total points at the end.
         // Dud in front breaks the line so All is disconnected from GM.
-        const points = [...TIERS, null, 'All'].map((t, idx) => {
-            if (!t) return {x: TIERS.length-1};
+        const points = [...tiers, null, 'All'].map((t, idx) => {
+            if (!t) return {x: tiers.length-1};
             let entry = facetEntries.filter(e => e.tier === t);
             if (entry.length > 1) throw new Error('unexpected multiple entries after filter');
             entry = entry[0];
@@ -1394,7 +1401,7 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
             trigger: 'axis',
             appendTo: document.body,
             className: 'tooltip-tier ' + valtype,
-            formatter: params => makeTieredPlotTooltip(params, hero, valtype, expected, conf),
+            formatter: params => makeTieredPlotTooltip(params, tiers, hero, valtype, expected, conf),
         },
         dataZoom: [{
             type: 'inside',
@@ -1408,10 +1415,11 @@ function renderTieredPlot(hero, entries, valtype, expected, conf) {
         xAxis: {
             type: 'value', axisTick: {show: false}, axisLine: {show: false},
             splitLine: {showMinLine: false, showMaxLine: false, lineStyle: gridlineStyle},
-            min: ALL_TIER_IDX, max: TIERS.length-1 + .3,
+            min: ALL_TIER_IDX, max: tiers.length-1 + .3,
             axisLabel: {
-                formatter: (v) => !TIERS[v] ? '' : ALT_NAMES[TIERS[v]] || TIERS[v][0],
-                color: (v) => CMAP[TIERS[v]],
+                customValues: [ALL_TIER_IDX, ...tiers.map((_, i) => i)],
+                formatter: (i) => !tiers[i] ? '' : ALT_NAMES[tiers[i]] || tiers[i][0],
+                color: (i) => CMAP[tiers[i]],
                 fontFamily: 'verdana, arial, sans-serif',
                 fontWeight: 'bold', fontSize: 9,
                 margin: 5, opacity: 0
@@ -1695,12 +1703,12 @@ function renderStackedPRBar(name2entries, role, conf) {
 }
 
 
-function makeTieredPlotTooltip(params, hero, valtype, expected, conf) {
+function makeTieredPlotTooltip(params, tiers, hero, valtype, expected, conf) {
     try {
         params = params.filter(p => p.value[1] != null);
         if (!params.length) return;
         const tierIdx = params[0].axisValue;
-        const tier = tierIdx === ALL_TIER_IDX ? 'All Tiers' : TIERS[tierIdx];
+        const tier = tierIdx === ALL_TIER_IDX ? 'All Tiers' : tiers[tierIdx];
         const unitSymbol = valtype === 'kda' ? '' : '<span class="unit-symbol">%</span>';
         let baselineRole = (valtype === 'pickrate' || valtype === 'kda') ? hero.role : 'all';
         params.push({
