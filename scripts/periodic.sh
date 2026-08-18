@@ -7,6 +7,7 @@ logfile="archive/update.${dt}.log"
 # Archiving
 cp winrate-data.js "archive/winrate-data.${dt}.js"
 cp cache/main.html "archive/main.${dt}.html"
+cp cache/main-kr.html "archive/main-kr.${dt}.html"
 cp cache/index-cn.json "archive/index-cn.${dt}.json"
 rm -r cache.bak
 mv cache cache.bak
