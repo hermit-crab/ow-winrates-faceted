@@ -748,9 +748,8 @@ body {
     </div>
     <div class='conf-block'>
         <div class='conf-title'>Other</div>
-        <label>
-            <input type='checkbox' id='chinaOn'></input>China
-        </label>
+        <label><input type='checkbox' id='koreaOn'></input>Korea</label>
+        <label><input type='checkbox' id='chinaOn'></input>China</label>
     </div>
     <div class='conf-block'>
         <div class='conf-title'>Sort mode</div>
@@ -855,8 +854,8 @@ const TIERS = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Ma
 // const SD_TIERS = ['Rookie', 'Novice', 'Contender', 'Elite', 'Pro', 'AllStar', 'Legend'];
 const TIER_COLORS = ['#cd7850', '#c4c6c8', '#d8a43d', '#98d8b9', '#03d983', '#5f9ff0', '#8ae960', '#8d71fe'];
 const EMERALD_TIER_ADDED_TS = 1786573200;
-const REGIONS = ['Americas', 'Europe', 'Asia', 'China'];
-const REGION_COLORS = ['#f14141', '#3c90ff', '#ffac00', '#58d986'];
+const REGIONS = ['Americas', 'Europe', 'Asia', 'Korea', 'China'];
+const REGION_COLORS = ['#f14141', '#3c90ff', '#ffac00', '#a3d414', '#58d986'];
 const PLATFORMS = ['PC', 'Console'];
 const GAMEMODES = ['Comp', 'QP'];
 const EXTRA_COLORS = {
@@ -875,7 +874,7 @@ const ALT_NAMES = {'PC': 'KB&M', 'mean': '*Average', 'Grandmaster': 'GM+'};
 const VALTYPES = ['name', 'winrate', 'pickrate', 'banrate', 'kda'];
 const VALTYPES_SHORT = ['nm', 'wr', 'pr', 'br', 'kd'];
 const WARNINGS = {
-    cn: 'see notes about CN data',
+    cn: 'see notes about CN and KR data',
     avg: 'synthetic unweighted *Average',
     planekda: 'Not supported in Scatter-view.',
 };
@@ -994,20 +993,13 @@ function receiveRawData(data) {
 function processRawData(rawData) {
     let mainData = rawData.filter(o => o._url.includes('blizzard.com'));
     const cnData = rawData.filter(o => o._url.includes('blizzard.cn'));
+    const krData = rawData.filter(o => o._url.includes('nexon.com'));
     const rows = [];
 
     const select = (o, keys) => Object.fromEntries(keys.map(k => [k, o[k]]));
     const pct1f = (v) => Math.round(v*1000)/10;
 
-    // NOTE: On main site pickrates data sum up to 500% [sum(tank)=100 + sum(support)=200 + sum(damage)=200]
-    // in CN data it is all normalized to sum up to 100%. We stick to main site convention so
-    // CN data will be rescaled to same proportions and total.
-
-    // NOTE: Main site (blog) presented the banrates with a view that sums up to 400%.
-    // https://overwatch.blizzard.com/en-us/news/24205940/weekly-recall-hero-bans/
-    // CN data has it sum up to 100, we rescale it to follow main site convention.
-
-    // NOTE: Main site data bundles GM+Champ together, CN data gives Champ as is. We ignore it.
+    // Main site ///////////////////////////////////////////////////////////////
 
     if (mainData[0].rates.rates) mainData = mainData.map(f => ({...f, ...f.rates}));
 
@@ -1039,6 +1031,18 @@ function processRawData(rawData) {
             roleIconUrl: e.hero.roleIcon,
         }]
     ));
+
+    // CN site /////////////////////////////////////////////////////////////////
+
+    // NOTE: On main site pickrates data sum up to 500% [sum(tank)=100 + sum(support)=200 + sum(damage)=200]
+    // in CN data it is all normalized to sum up to 100%. We stick to main site convention so
+    // CN data will be rescaled to same proportions and total.
+
+    // NOTE: Main site (blog) presented the banrates with a view that sums up to 400%.
+    // https://overwatch.blizzard.com/en-us/news/24205940/weekly-recall-hero-bans/
+    // CN data has it sum up to 100, we rescale it to follow main site convention.
+
+    // NOTE: Main site data bundles GM+Champ together, CN data gives Champ as is. We ignore it.
 
     // const sd2comp = Object.fromEntries(TIERS.map((t, i) => [SD_TIERS[i], t]));
     modes = {kuaisu: 'QP', jingji: 'Comp', juedou: 'Stadium'};
@@ -1073,6 +1077,30 @@ function processRawData(rawData) {
         } catch (err) {
             console.error(err);
         }
+    }
+
+    // KR site /////////////////////////////////////////////////////////////////
+
+    const cap = s => s[0].toUpperCase() + s.slice(1);
+
+    for (const facet of krData) {
+        const urlParams = new URLSearchParams(facet._url.split('?')[1]);
+        const input = cap(urlParams.get('input'));
+        for (const entry of facet['data']['list'])
+            rows.push({
+                hero: entry.heroId,
+                mode: facet._url.includes('rq=0') ? 'QP' : 'Comp',
+                winrate: entry.winRate,
+                pickrate: entry.pickRate,
+                banrate: entry.banRate,
+                kda: -1,
+                url: facet._url,
+                ts: facet._ts,
+                map: 'all-maps',
+                tier: cap(urlParams.get('rank')),
+                input: input === 'Pc' ? 'PC' : input,
+                region: cap(urlParams.get('region')),
+            });
     }
 
     return [heroes, rows];
@@ -1128,7 +1156,8 @@ function render() {
         (e.mode === 'Comp' || conf.facet === 'mode') &&
         (e.input === conf.filterPlatform || conf.facet === 'input') &&
         (e.region === conf.filterRegion || ['all', 'mean'].includes(conf.filterRegion)) &&
-        (e.region !== 'China' || conf.chinaOn)
+        (e.region !== 'China' || conf.chinaOn) &&
+        (e.region !== 'Korea' || conf.koreaOn)
     ));
     if (conf.filterRegion === 'mean' && conf.facet !== 'region')
         entries = entries.filter(e => e.region === conf.filterRegion);
@@ -1183,7 +1212,7 @@ function render() {
     }
 
     // ==> Update plots
-    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, datasetTs].join(',');
+    const viewKey = [conf.facet, conf.filterRegion, conf.filterPlatform, conf.chinaOn, conf.koreaOn, datasetTs].join(',');
     names.forEach((name, idx) => {
         const hero = heroes[name];
         hero.elems.main.style.zIndex = names.length - idx; // fixes xtick tooltip clipping
@@ -1938,6 +1967,15 @@ class ConfHandler {
             conf => !conf.chinaOn && conf.selectedRegions.has('China'),
             conf => {conf.selectedRegions.delete('China'); alter('selectedRegions', conf.selectedRegions)}
             ], [
+            conf => !conf.koreaOn && conf.sortingRegion === 'Korea',
+            conf => alter('sortingRegion', REGIONS[0])
+            ], [
+            conf => !conf.koreaOn && conf.filterRegion === 'Korea',
+            conf => alter('filterRegion', 'all')
+            ], [
+            conf => !conf.koreaOn && conf.selectedRegions.has('Korea'),
+            conf => {conf.selectedRegions.delete('Korea'); alter('selectedRegions', conf.selectedRegions)}
+            ], [
             conf => !['all', 'mean'].includes(conf.filterRegion) && conf.sortingRegion !== conf.filterRegion,
             conf => alter('sortingRegion', conf.filterRegion)
             ], [
@@ -1990,7 +2028,9 @@ class ConfHandler {
         const conf = this._conf;
         const facets = this.getFacets();
         const cnElems = document.querySelectorAll('option[value="China"], input[value="China"]');
+        const krElems = document.querySelectorAll('option[value="Korea"], input[value="Korea"]');
         cnElems.forEach(el => el.disabled = false);
+        krElems.forEach(el => el.disabled = false);
         this.elems.forEach(el => {
             el.disabled = false;
             el.querySelectorAll('option').forEach(el => el.disabled = false);
@@ -2036,6 +2076,8 @@ class ConfHandler {
         }
         if (!conf.chinaOn)
             cnElems.forEach(el => el.disabled = true);
+        if (!conf.koreaOn)
+            krElems.forEach(el => el.disabled = true);
 
         UI.selectArchive.disabled = loadingData || oldConf.selectArchive !== conf.selectArchive;
     }
@@ -2134,8 +2176,7 @@ function setupObserver() {
 
 function toggleWarnings(conf) {
     const html = [
-        ['about Korean (Nexon) stats', true],
-        [WARNINGS.cn, conf.chinaOn],
+        [WARNINGS.cn, conf.chinaOn || conf.koreaOn],
         [WARNINGS.avg, (
             conf.filterRegion === 'mean' ||
             conf.sortFacetValue === 'mean' ||

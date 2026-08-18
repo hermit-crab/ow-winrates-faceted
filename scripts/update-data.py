@@ -14,6 +14,7 @@ from urllib3.util.retry import Retry
 
 BASE_URL =  'https://overwatch.blizzard.com/en-us/rates'
 BASE_URL_CN = 'https://webapi.blizzard.cn/ow-armory-server'
+BASE_URL_KR = 'https://overwatch-api.nexon.com/HeroRate'
 CACHE_DIR = 'cache'
 os.makedirs(CACHE_DIR, exist_ok=True)
 
@@ -154,14 +155,73 @@ def crawl_cn_site():
     return facets
 
 
+def crawl_kr_site():
+    try:
+        tree = lxml.html.fromstring(get('https://overwatch.nexon.com/hero/rate', 'main-kr.html')[0])
+        state_script = tree.cssselect('script[id="__NUXT_DATA__"]')[0]
+        init_state = json.loads(state_script.text)
+        for i, val in enumerate(init_state):
+            if '경쟁전 - 역할 고정' in str(val): # tr: "Competitive Play - Role Queue"
+                break
+        comp_rq_code = int(init_state[i-1])
+    except Exception:
+        print('==x index parse failure')
+        raise
+
+    params = {
+        'map': ['all'],
+        'role': ['all'],
+        'rq': ['0', str(comp_rq_code)],
+        'input': ['console', 'pc'],
+        # 'region': ['korea', 'americas', 'asia', 'europe'],
+        'region': ['korea'],
+        'rank': ['all', 'bronze', 'silver', 'gold', 'platinum', 'emerald', 'diamond', 'master', 'grandmaster'],
+    }
+
+    facets = []
+    cache_hits = 0
+    rqs = []
+    for combo in combinations(params):
+        if ('rq', '0') in combo and ('tier', 'all') not in combo:
+            continue
+        rqs.append((combo, BASE_URL_KR + '?' + '&'.join(f'{k}={v}' for k, v in combo)))
+
+    for n, (combo, url) in enumerate(rqs, 1):
+        print(f'\r{n}/{len(rqs)} Loading data...', end='')
+        key = 'owwr-kr.' + hashlib.md5(url.encode('utf8')).hexdigest() + '.json'
+        data, ts, cached = get(url, key)
+        if cached:
+            cache_hits += 1
+        print(url)
+        print(data)
+        data = json.loads(data)
+        if not data['data']['list']:
+            print('\n==x no data for', url)
+            continue
+        data['_url'] = url
+        data['_ts'] = ts
+        facets.append(data)
+
+    print(f'\nCache hits: {cache_hits}/{len(rqs)}')
+    return facets
+
+
 def main():
     print('==> Main site')
     facets = crawl_main_site()
+
     try:
         print('==> CN site')
         facets.extend(crawl_cn_site())
     except Exception:
         print('==x CN crawl failure')
+        traceback.print_exc()
+
+    try:
+        print('==> KR site')
+        facets.extend(crawl_kr_site())
+    except Exception:
+        print('==x KR crawl failure')
         traceback.print_exc()
 
     dest = sys.argv[1] if sys.argv[1:] else 'winrate-data.new.js'
