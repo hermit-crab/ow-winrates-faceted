@@ -905,7 +905,7 @@ const layoutConf = {
         bar: {general: [1.5, 6], damage: [1.5, 4]},
     },
 };
-let rawData, heroes, regionMeans, regionMeansWithCN, confHandler, datasetTs, fpathBase, observer, compRqCode,
+let rawData, heroes, confHandler, datasetTs, fpathBase, observer, compRqCode,
     loadingData = true, pressedKeys = new Set(), expectedBase = {}, allEntries = [];
 
 
@@ -950,7 +950,7 @@ function loadData(jsonpSrc) {
         UI.loadingInfo.style.display = '';
         UI.datasetTs.innerHTML = 'no data';
         datasetTs = rawData = null;
-        allEntries = regionMeans = regionMeansWithCN = [];
+        allEntries = [];
         loadingData = false;
         confHandler.sync(false);
     });
@@ -970,8 +970,6 @@ function receiveRawData(data) {
     const processed = processRawData(rawData);
     if (firstLoad) heroes = processed[0];
     allEntries = processed[1];
-    regionMeans = computeRegionMeans(allEntries.filter(e => e.region !== 'China'));
-    regionMeansWithCN = computeRegionMeans(allEntries);
     expectedBase.pr = Object.fromEntries(ROLES.map(role =>
         [role, (role === 'tank' ? 100 : 200) / Object.values(heroes).filter(h => h.role === role).length]
     ));
@@ -1148,7 +1146,17 @@ function renderHeroes() {
 function render() {
     const conf = confHandler.frozenConf();
     debug('RENDER', datasetTs && new Date(datasetTs*1000).toString(), conf);
-    let entries = [...allEntries, ...(conf.chinaOn ? regionMeansWithCN : regionMeans)];
+    let entries = allEntries;
+
+    // ==> Add region means (if needed)
+    if (conf.filterRegion === 'mean' || conf.sortingRegion === 'mean' || conf.viewMode === 'plane')
+        entries = [
+            ...entries,
+            ...computeRegionMeans(allEntries.filter(e => (
+                (e.region !== 'China' || conf.chinaOn) &&
+                (e.region !== 'Korea' || conf.koreaOn)
+            )))
+        ];
 
     // ==> Filter entries
     entries = entries.filter(e => (
