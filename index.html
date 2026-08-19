@@ -301,6 +301,10 @@ body {
     position: relative;
     column-gap: 10px;
 }
+.entry:hover {
+    /* edge case cover: allow bar mouseover legend to be top level */
+    z-index: unset !important;
+}
 .entry .hero-name {
     position: absolute;
     top: 0px;
@@ -1252,6 +1256,7 @@ function render() {
 
 
 function renderBar(hero, entries, valtype, expected, conf) {
+    // XXX: Spectacularly horrible dense code style, hard refactor needed, scrap and redesign the mouseover legend.
     entries = entries.filter(e => e.tier === conf.lastTier && e[valtype] !== -1);
     const [a, b] = layoutConf[valtype].bar[conf.filterRole] || layoutConf[valtype].bar.general;
     const [w, h] = [250, 30];
@@ -1285,7 +1290,7 @@ function renderBar(hero, entries, valtype, expected, conf) {
         let x = clamp(s(e.x), 0, w);
         const padR = 2;
         let [rectxa, rectxb]  = [x-twa-padR*2, x];
-        const [offA, offB] = [8, (Math.floor(i / 2) % 2)*(th+padR*2)];
+        const [offA, offB] = [8, (Math.floor(i / 2) % 3)*(th+padR*2)];
         let y = -offB - offA - padR + pad;
         let [l1, l2] = [y, pad];
         if (i%2) {
