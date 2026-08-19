@@ -1264,7 +1264,7 @@ function render() {
 
 function renderBar(hero, entries, valtype, expected, conf) {
     // XXX: Spectacularly horrible dense code style, hard refactor needed, scrap and redesign the mouseover legend.
-    entries = entries.filter(e => e.tier === conf.lastTier && e[valtype] !== -1);
+    entries = entries.filter(e => e.tier === conf.lastTier && e[valtype] !== -1 && e[valtype] != null);
     const [a, b] = layoutConf[valtype].bar[conf.filterRole] || layoutConf[valtype].bar.general;
     const [w, h] = [250, 30];
     const bar = hero.elems[valtype].bar;
