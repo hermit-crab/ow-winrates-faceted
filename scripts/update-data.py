@@ -193,8 +193,6 @@ def crawl_kr_site():
         data, ts, cached = get(url, key)
         if cached:
             cache_hits += 1
-        print(url)
-        print(data)
         data = json.loads(data)
         if not data['data']['list']:
             print('\n==x no data for', url)
