@@ -2201,6 +2201,7 @@ function setupObserver() {
 
 function toggleWarnings(conf) {
     const html = [
+        ['KR data currently unavalable, working on it', conf.koreaOn],
         [WARNINGS.cn, conf.chinaOn || conf.koreaOn],
         [WARNINGS.avg, (
             conf.filterRegion === 'mean' ||
