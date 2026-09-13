@@ -1,5 +1,5 @@
 Data refreshment process is setup as such:
-- Cron job runs the following job once a day. It does all the needful.
+- Cron runs the following job once a day. It does all the needful.
 - `PYTHONUNBUFFERED=1 NEOCITIES_APIKEY=XXX CLEAR_CACHE=1 SKIP_CACHE_READ=1 RETRY=1 python scripts/periodic.py`
 
 Simplest manual process is done as such:
@@ -9,4 +9,4 @@ Simplest manual process is done as such:
 - At that point `index.html` can see the `winrate-data.js` alongside it (given `localStorage.uselocal="1"` was set).
 - If needed uploaded manually or via: `NEOCITIES_APIKEY=XXX python scripts/upload.py myresultfile.js winrate-data.js`
 
-Required python dependencies: `pip install requests, lxml, cssselect`
+Required python dependencies: `pip install requests lxml cssselect`
