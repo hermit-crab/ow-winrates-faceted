@@ -720,12 +720,6 @@ body {
 
         <li class='spoiler' id='archiveInfo' style='display:none'><span class='clicker'><b>Archive</b> info</span><span class='spoiler-body'><ul>
         </ul></span></li>
-
-        <li style="background-color: #ffa60040">
-            Decided to swap WR/PR columns (Winrate was first column before) to be in line with official sources.
-            This it to avoid having to re-adjust when checking official pages and for easier audit. I apologize for the inconvenience, hoping it's not too annoying.
-        </li>
-
     </ul>
 </div>
 
@@ -815,7 +809,7 @@ body {
 </div>
 
 <div class='info'>
-    <button class='trigger-info'>legend and info <span class='trigger-info' style="background-color: #ffa50054;">[ ⚠ ]</span> ★</button> ┊
+    <button class='trigger-info'>legend and info ★</button> ┊
     data timestamp: <span id='datasetTs'></span> ┊
     <a id='officialSourceLink' href='https://overwatch.blizzard.com/en-us/rates/'>official source</a> ┊
     <a href='https://docs.google.com/forms/d/e/1FAIpQLSd8aEzuAdIPjHKv_0VND6HbKdywIi7SWBeIFV2k1t_3bvHaIw/viewform?usp=dialog'>report issue</a>
@@ -2201,7 +2195,6 @@ function setupObserver() {
 
 function toggleWarnings(conf) {
     const html = [
-        ['KR data currently unavalable, working on it', conf.koreaOn],
         [WARNINGS.cn, conf.chinaOn || conf.koreaOn],
         [WARNINGS.avg, (
             conf.filterRegion === 'mean' ||
