@@ -1,1 +1,0 @@
-curl -H "Authorization: Bearer $NEOCITIES_APIKEY" -F "$2=@$1" "https://neocities.org/api/upload"
