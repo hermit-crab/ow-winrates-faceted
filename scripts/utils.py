@@ -76,6 +76,7 @@ def cli_load_and_store(loader):
 
     print(f'cache hits: {_cache_stats[1]}/{_cache_stats[0]}')
     print(f'==> {loader.__name__!r} success, storing in {dest}')
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
     with open(dest, 'w', encoding='utf8') as f:
         json.dump(output, f)
 
@@ -88,6 +89,7 @@ def combine_sources(target_fpaths, dest_fpath):
         with open(target) as f:
             combined.extend(json.load(f))
 
+    os.makedirs(os.path.dirname(dest_fpath), exist_ok=True)
     with open(dest_fpath, 'w', encoding='utf8') as f:
         f.write('jsonp(' + json.dumps(combined) + ')')
 
